@@ -1,0 +1,6 @@
+{
+  "name": "MCU RoV Draft Assistant",
+  "description": "Professional RoV (Arena of Valor) esports draft simulator and strategy tool for team coaches.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
