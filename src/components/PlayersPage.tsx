@@ -90,6 +90,9 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
             <span className="font-['Orbitron'] text-xs font-bold px-2 py-0.5 rounded bg-[#a82844]/20 border border-[#a82844]/60 text-red-200">
               {players.length} PLAYERS
             </span>
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-['Barlow_Condensed'] font-semibold px-2 py-0.5 rounded-md bg-sky-950/50 text-sky-300 border border-sky-500/30">
+              <span>☁️ Cloud Synced</span>
+            </span>
           </div>
           <p className="text-xs font-['Kanit'] text-[#a0a0a8] mt-0.5">
             จัดการรายชื่อผู้เล่น ตำแหน่ง และกำหนดระดับความชำนาญ Hero Pool (⭐ Signature / ★ Comfortable) เพื่อซิงค์ขึ้นหน้าดราฟ

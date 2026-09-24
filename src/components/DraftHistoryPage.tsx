@@ -110,6 +110,9 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
             <span className="font-['Barlow_Condensed'] text-xs font-bold px-2 py-0.5 rounded-full bg-[#a82844]/30 text-[#ff7b95] border border-[#a82844]/50">
               {records.length} DRAFTS SAVED
             </span>
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-['Barlow_Condensed'] font-semibold px-2 py-0.5 rounded-md bg-sky-950/50 text-sky-300 border border-sky-500/30">
+              <span>☁️ Cloud Synced</span>
+            </span>
           </div>
           <p className="text-xs text-[#a0a0a8] mt-1">
             คลังประวัติดราฟต์ RoV Pro League & Scrim พร้อมผลการแข่งขัน Ban/Pick และบทวิเคราะห์

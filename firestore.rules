@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidDraft(data) {
+      return data is map
+        && data.title is string && data.title.size() <= 100
+        && (data.blueTeamName == null || (data.blueTeamName is string && data.blueTeamName.size() <= 50))
+        && (data.redTeamName == null || (data.redTeamName is string && data.redTeamName.size() <= 50));
+    }
+
+    match /users/{userId}/drafts/{draftId} {
+      allow read, write: if (isSignedIn() && request.auth.uid == userId) || (!isSignedIn());
+    }
+
+    match /users/{userId}/settings/{docId} {
+      allow read, write: if (isSignedIn() && request.auth.uid == userId) || (!isSignedIn());
+    }
+
+    match /shared_drafts/{draftId} {
+      allow read, write: if true;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

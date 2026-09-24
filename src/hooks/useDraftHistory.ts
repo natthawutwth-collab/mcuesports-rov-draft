@@ -22,8 +22,8 @@ export function useDraftHistory() {
     setIsLoading(true);
     try {
       // Seed samples on first load if empty
-      if (draftRepository instanceof LocalStorageDraftRepository) {
-        draftRepository.seedSampleIfEmpty();
+      if ('seedSampleIfEmpty' in draftRepository && typeof (draftRepository as any).seedSampleIfEmpty === 'function') {
+        (draftRepository as any).seedSampleIfEmpty();
       }
       const data = await draftRepository.getAll();
       setRecords(data);
@@ -37,9 +37,9 @@ export function useDraftHistory() {
   useEffect(() => {
     loadRecords();
 
-    // Subscribe to repository updates
-    if (draftRepository instanceof LocalStorageDraftRepository) {
-      return draftRepository.subscribe(() => {
+    // Subscribe to repository updates (Firebase or LocalStorage)
+    if ('subscribe' in draftRepository && typeof (draftRepository as any).subscribe === 'function') {
+      return (draftRepository as any).subscribe(() => {
         loadRecords();
       });
     }

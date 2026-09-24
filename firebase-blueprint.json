@@ -1,0 +1,121 @@
+{
+  "entities": {
+    "SavedDraft": {
+      "title": "SavedDraft",
+      "description": "User saved draft session with picks, bans, scores, and metadata",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique draft document ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "User identifier who created or owns the draft"
+        },
+        "title": {
+          "type": "string",
+          "description": "User provided title or match label for the draft",
+          "maxLength": 100
+        },
+        "gameMode": {
+          "type": "string",
+          "description": "Tournament, Ranked, or Global Ban Pick mode"
+        },
+        "blueTeamName": {
+          "type": "string",
+          "description": "Blue team name",
+          "maxLength": 50
+        },
+        "redTeamName": {
+          "type": "string",
+          "description": "Red team name",
+          "maxLength": 50
+        },
+        "bluePicks": {
+          "type": "array",
+          "description": "List of blue team hero names picked"
+        },
+        "redPicks": {
+          "type": "array",
+          "description": "List of red team hero names picked"
+        },
+        "blueBans": {
+          "type": "array",
+          "description": "List of blue team hero bans"
+        },
+        "redBans": {
+          "type": "array",
+          "description": "List of red team hero bans"
+        },
+        "blueScore": {
+          "type": "number",
+          "description": "Calculated score or win advantage for blue team"
+        },
+        "redScore": {
+          "type": "number",
+          "description": "Calculated score or win advantage for red team"
+        },
+        "gameNumber": {
+          "type": "number",
+          "description": "Game index in a Best-of series"
+        },
+        "boSeries": {
+          "type": "number",
+          "description": "Total games in series, e.g. 5 for Bo5"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when draft was saved"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp when draft was last updated"
+        }
+      },
+      "required": ["id", "userId", "title", "createdAt", "updatedAt"]
+    },
+    "UserSettings": {
+      "title": "UserSettings",
+      "description": "User custom settings, favorite heroes, and stats preferences",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "User ID"
+        },
+        "theme": {
+          "type": "string",
+          "description": "Theme style"
+        },
+        "favoriteHeroes": {
+          "type": "array",
+          "description": "List of user favorite hero names"
+        },
+        "autoSaveDrafts": {
+          "type": "boolean",
+          "description": "Flag to automatically save draft changes"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp"
+        }
+      },
+      "required": ["userId", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/drafts/{draftId}": {
+      "schema": "SavedDraft",
+      "description": "Individual draft session created and owned by a user"
+    },
+    "/users/{userId}/settings/preferences": {
+      "schema": "UserSettings",
+      "description": "User preferences and sync settings"
+    },
+    "/shared_drafts/{draftId}": {
+      "schema": "SavedDraft",
+      "description": "Publicly shared drafts accessible across devices via share link or ID"
+    }
+  }
+}

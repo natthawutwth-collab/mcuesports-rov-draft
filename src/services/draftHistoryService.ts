@@ -236,8 +236,10 @@ export class LocalStorageDraftRepository implements DraftRepository {
   }
 }
 
-// Singleton repository instance (can easily be swapped with Firebase/Supabase implementation in future)
-export const draftRepository: DraftRepository = new LocalStorageDraftRepository();
+import { FirebaseDraftRepository } from './firebaseDraftRepository';
+
+// Singleton repository instance: Powered by Firebase Cloud Firestore with automatic offline/localStorage fallback
+export const draftRepository: DraftRepository = new FirebaseDraftRepository();
 
 // Helper hook or query function for filtering
 export function filterDraftHistory(

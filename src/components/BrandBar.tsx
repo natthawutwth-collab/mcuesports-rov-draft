@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, Swords, History } from 'lucide-react';
+import { Users, Swords, History, Cloud } from 'lucide-react';
 
 interface BrandBarProps {
   status: 'ready' | 'drafting' | 'complete';
@@ -79,6 +79,12 @@ export const BrandBar: React.FC<BrandBarProps> = ({
 
       {/* Right status badge */}
       <div className="flex items-center gap-2">
+        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded bg-sky-950/40 border border-sky-500/30 text-sky-400 text-[10px] font-['Orbitron'] font-semibold" title="Cloud Firestore Realtime Sync Active">
+          <Cloud size={12} className="text-sky-300" />
+          <span>CLOUD SYNC</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+        </div>
+
         <div className="font-['Orbitron'] text-[10px] tracking-[2px] font-bold px-3 py-1 rounded bg-white/5 border border-white/10 text-[#a0a0a8] flex items-center gap-1.5">
           <span
             className={`w-2 h-2 rounded-full ${

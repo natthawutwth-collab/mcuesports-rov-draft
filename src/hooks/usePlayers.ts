@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Player, PlayerPosition, HeroPlayerBadge, PlayerHeroPoolItem } from '../types/player';
 import { INITIAL_PLAYERS } from '../data/initialPlayers';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { db, ensureAuth, getCurrentUser } from '../services/firebase';
 
 const STORAGE_KEY = 'mcu_rov_players_v1';
 
@@ -20,14 +22,67 @@ export function usePlayers() {
     return INITIAL_PLAYERS;
   });
 
-  // Save to localStorage
+  // Cloud Firestore Sync (Cross-device persistence)
   useEffect(() => {
+    let unsubscribe: (() => void) | null = null;
+
+    async function initCloudSync() {
+      try {
+        const user = await ensureAuth();
+        const uid = user.uid || getCurrentUser()?.uid;
+        if (!uid) return;
+
+        const docRef = doc(db, 'users', uid, 'settings', 'players_pool');
+        
+        // Listen to cloud updates
+        unsubscribe = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            if (data && Array.isArray(data.players) && data.players.length > 0) {
+              setPlayers(data.players);
+              try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data.players));
+              } catch {
+                // ignore
+              }
+            }
+          } else {
+            // First time: save default/current players to Cloud
+            setDoc(docRef, { players, updatedAt: new Date().toISOString() }, { merge: true }).catch(() => {});
+          }
+        });
+      } catch (err) {
+        console.warn('Player cloud sync offline fallback:', err);
+      }
+    }
+
+    initCloudSync();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  // Save to localStorage & Cloud
+  const persistPlayers = useCallback(async (newPlayers: Player[]) => {
+    setPlayers(newPlayers);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newPlayers));
     } catch (e) {
       console.error('Failed to save players to localStorage', e);
     }
-  }, [players]);
+
+    try {
+      const user = await ensureAuth();
+      const uid = user.uid || getCurrentUser()?.uid;
+      if (uid) {
+        const docRef = doc(db, 'users', uid, 'settings', 'players_pool');
+        await setDoc(docRef, { players: newPlayers, updatedAt: new Date().toISOString() }, { merge: true });
+      }
+    } catch (err) {
+      console.warn('Failed to sync players to Cloud:', err);
+    }
+  }, []);
 
   // Add player
   const addPlayer = useCallback((newPlayerData: {
@@ -42,26 +97,26 @@ export function usePlayers() {
       id: 'player_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
       createdAt: Date.now(),
     };
-    setPlayers((prev) => [newPlayer, ...prev]);
+    persistPlayers([newPlayer, ...players]);
     return newPlayer;
-  }, []);
+  }, [players, persistPlayers]);
 
   // Update player
   const updatePlayer = useCallback((id: string, updates: Partial<Omit<Player, 'id' | 'createdAt'>>) => {
-    setPlayers((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
-    );
-  }, []);
+    const updated = players.map((p) => (p.id === id ? { ...p, ...updates } : p));
+    persistPlayers(updated);
+  }, [players, persistPlayers]);
 
   // Delete player
   const deletePlayer = useCallback((id: string) => {
-    setPlayers((prev) => prev.filter((p) => p.id !== id));
-  }, []);
+    const remaining = players.filter((p) => p.id !== id);
+    persistPlayers(remaining);
+  }, [players, persistPlayers]);
 
   // Reset to default seed players
   const resetToDefaultPlayers = useCallback(() => {
-    setPlayers(INITIAL_PLAYERS);
-  }, []);
+    persistPlayers(INITIAL_PLAYERS);
+  }, [persistPlayers]);
 
   // Compute map of heroName -> HeroPlayerBadge[] for O(1) hero card badge lookup
   const heroToPlayersMap = useMemo(() => {

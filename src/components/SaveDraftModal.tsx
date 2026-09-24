@@ -75,10 +75,10 @@ export const SaveDraftModal: React.FC<SaveDraftModalProps> = ({
             </div>
             <div>
               <h2 className="font-['Orbitron'] text-base font-bold tracking-wider text-white">
-                SAVE DRAFT TO HISTORY
+                SAVE DRAFT TO CLOUD & HISTORY
               </h2>
-              <p className="text-[11px] text-[#a0a0a8]">
-                บันทึกสถิติดราฟต์ ผลการแข่งขัน Ban/Pick และบทวิเคราะห์
+              <p className="text-[11px] text-emerald-400/90 flex items-center gap-1">
+                <span>☁️ ซิงค์ขึ้น Cloud อัตโนมัติ — บันทึกแล้วข้อมูลไม่หาย เปิดจากเครื่องอื่นก็ยังอยู่</span>
               </p>
             </div>
           </div>
