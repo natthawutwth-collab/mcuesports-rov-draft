@@ -1,5 +1,6 @@
 export interface HeroStats {
-  heroName: string;
+  heroName?: string;
+  hero?: string;
   games: number;
   wins: number;
   losses: number;
@@ -8,6 +9,7 @@ export interface HeroStats {
   banRate: number; // e.g. 38.2 (%)
   pickRate: number; // e.g. 30.9 (%)
   presenceRate: number; // e.g. 69.1 (%)
+  presence?: number;
   blueWins?: number;
   blueLosses?: number;
   redWins?: number;
@@ -15,7 +17,7 @@ export interface HeroStats {
 }
 
 export interface HeroMatchup {
-  hero: string;
+  hero?: string;
   opponentHero: string;
   games: number;
   wins: number;
@@ -25,13 +27,13 @@ export interface HeroMatchup {
 }
 
 export interface HeroSynergy {
-  hero: string;
+  hero?: string;
   allyHero: string;
   games: number;
   wins: number;
   losses: number;
-  winRate: number; // e.g. 71.4 (%)
-  diff: number; // win rate difference compared to baseline, e.g. +15.5 (%)
+  winRate: number; // e.g. 70.0 (%)
+  diff?: number; // synergy boost over base win rate, e.g. +14.1%
 }
 
 export interface TournamentStatsDataset {
@@ -42,8 +44,8 @@ export interface TournamentStatsDataset {
   totalGames: number;
   lastUpdated: string;
   heroes: Record<string, HeroStats>;
-  matchups: Record<string, HeroMatchup[]>; // Played Against
-  synergies?: Record<string, HeroSynergy[]>; // Played With
+  matchups: Record<string, HeroMatchup[]>; // Played Against (เจอ)
+  playedWith?: Record<string, HeroSynergy[]>; // Played With (เล่นกับ)
 }
 
 export type StatsSourceType = 'json' | 'csv' | 'api' | 'builtin';

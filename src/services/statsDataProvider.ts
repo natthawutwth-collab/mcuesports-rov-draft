@@ -10,14 +10,34 @@ import { RPL_2026_SUMMER_DATASET } from '../data/rpl2026SummerStats';
 
 type Listener = () => void;
 
+// RoV hero alias mapping between local game client names and Liquipedia naming
+export const HERO_ALIAS_MAP: Record<string, string> = {
+  'wiro': 'Wiro Sableng',
+  'wiro sableng': 'Wiro Sableng',
+  'bolt baron': 'Sikong Zhen',
+  'bolt_baron': 'Sikong Zhen',
+  'sikong zhen': 'Sikong Zhen',
+  'mortos': 'Arthur',
+  'arthur': 'Arthur',
+};
+
 class StatsDataProviderService {
   private dataset: TournamentStatsDataset = RPL_2026_SUMMER_DATASET;
   private sourceType: StatsSourceType = 'builtin';
   private listeners: Set<Listener> = new Set();
-  private storageKey = 'mcu_rov_custom_stats_v1';
+  private storageKey = 'mcu_rov_custom_stats_v2';
 
   constructor() {
     this.initFromLocalStorage();
+  }
+
+  private resolveHeroKey(name: string): string {
+    const trimmed = name.trim();
+    const lower = trimmed.toLowerCase();
+    if (HERO_ALIAS_MAP[lower]) {
+      return HERO_ALIAS_MAP[lower];
+    }
+    return trimmed;
   }
 
   private initFromLocalStorage() {
@@ -72,13 +92,15 @@ class StatsDataProviderService {
   public getHeroStats(heroName: string): HeroStats | null {
     if (!heroName || heroName === '—') return null;
 
+    const resolved = this.resolveHeroKey(heroName);
+
     // Direct match
-    if (this.dataset.heroes[heroName]) {
-      return this.dataset.heroes[heroName];
+    if (this.dataset.heroes[resolved]) {
+      return this.dataset.heroes[resolved];
     }
 
     // Case-insensitive match
-    const lower = heroName.toLowerCase().trim();
+    const lower = resolved.toLowerCase().trim();
     for (const key of Object.keys(this.dataset.heroes)) {
       if (key.toLowerCase().trim() === lower) {
         return this.dataset.heroes[key];
@@ -99,10 +121,11 @@ class StatsDataProviderService {
   } | null {
     if (!heroName || heroName === '—') return null;
 
-    let matchups: HeroMatchup[] | undefined = this.dataset.matchups[heroName];
+    const resolved = this.resolveHeroKey(heroName);
+    let matchups: HeroMatchup[] | undefined = this.dataset.matchups[resolved];
 
     if (!matchups) {
-      const lower = heroName.toLowerCase().trim();
+      const lower = resolved.toLowerCase().trim();
       for (const key of Object.keys(this.dataset.matchups)) {
         if (key.toLowerCase().trim() === lower) {
           matchups = this.dataset.matchups[key];
@@ -141,63 +164,13 @@ class StatsDataProviderService {
     const res = this.getHeroMatchups(heroA);
     if (!res) return null;
 
+    const resolvedB = this.resolveHeroKey(heroB).toLowerCase().trim();
     const lowerB = heroB.toLowerCase().trim();
-    const found = res.all.find((m) => m.opponentHero.toLowerCase().trim() === lowerB);
+    const found = res.all.find((m) => {
+      const oppLower = m.opponentHero.toLowerCase().trim();
+      return oppLower === lowerB || oppLower === resolvedB;
+    });
     return found || null;
-  }
-
-  /**
-   * Returns Played Against (Matchup) records for a hero
-   * Same as all matchups, with strong and weak splits
-   */
-  public getHeroPlayedAgainst(heroName: string): {
-    strongAgainst: HeroMatchup[];
-    weakAgainst: HeroMatchup[];
-    all: HeroMatchup[];
-  } | null {
-    return this.getHeroMatchups(heroName);
-  }
-
-  /**
-   * Returns Played With (Synergies) records for a hero on the SAME team
-   */
-  public getHeroPlayedWith(heroName: string): {
-    bestWith: HeroSynergy[];
-    worstWith: HeroSynergy[];
-    all: HeroSynergy[];
-  } | null {
-    if (!heroName || heroName === '—') return null;
-
-    const synergiesDict = this.dataset.synergies || {};
-    let synergies: HeroSynergy[] | undefined = synergiesDict[heroName];
-
-    if (!synergies) {
-      const lower = heroName.toLowerCase().trim();
-      for (const key of Object.keys(synergiesDict)) {
-        if (key.toLowerCase().trim() === lower) {
-          synergies = synergiesDict[key];
-          break;
-        }
-      }
-    }
-
-    if (!synergies || synergies.length === 0) {
-      return null;
-    }
-
-    const bestWith = synergies
-      .filter((s) => s.diff >= 0)
-      .sort((a, b) => b.diff - a.diff);
-
-    const worstWith = synergies
-      .filter((s) => s.diff < 0)
-      .sort((a, b) => a.diff - b.diff);
-
-    return {
-      bestWith,
-      worstWith,
-      all: synergies,
-    };
   }
 
   /**
@@ -220,24 +193,35 @@ class StatsDataProviderService {
   }
 
   /**
-   * Real-time synergy cross-reference against currently picked friendly ally heroes
+   * Played With (เล่นกับ) - Hero Synergies
    */
-  public getLiveDraftSynergies(
-    heroName: string,
-    allyPicks: string[]
-  ): Array<{ allyHero: string; synergy: HeroSynergy | null }> {
-    const validAllyPicks = allyPicks.filter((h) => h && h !== '—' && h.toLowerCase() !== heroName.toLowerCase());
-    if (!heroName || validAllyPicks.length === 0) return [];
+  public getHeroPlayedWith(heroName: string): HeroSynergy[] {
+    if (!heroName || heroName === '—') return [];
 
-    const pw = this.getHeroPlayedWith(heroName);
-    return validAllyPicks.map((allyHero) => {
-      const lowerAlly = allyHero.toLowerCase().trim();
-      const synergy = pw ? pw.all.find((s) => s.allyHero.toLowerCase().trim() === lowerAlly) || null : null;
-      return {
-        allyHero,
-        synergy,
-      };
-    });
+    const resolved = this.resolveHeroKey(heroName);
+    let list: HeroSynergy[] | undefined = this.dataset.playedWith?.[resolved];
+
+    if (!list && this.dataset.playedWith) {
+      const lower = resolved.toLowerCase().trim();
+      for (const key of Object.keys(this.dataset.playedWith)) {
+        if (key.toLowerCase().trim() === lower) {
+          list = this.dataset.playedWith[key];
+          break;
+        }
+      }
+    }
+
+    if (!list) return [];
+    return [...list].sort((a, b) => b.winRate - a.winRate);
+  }
+
+  /**
+   * Played Against (เจอกับ) - All matchups list
+   */
+  public getHeroPlayedAgainst(heroName: string): HeroMatchup[] {
+    const res = this.getHeroMatchups(heroName);
+    if (!res) return [];
+    return res.all;
   }
 
   /**
@@ -261,6 +245,7 @@ class StatsDataProviderService {
         lastUpdated: parsed.lastUpdated || new Date().toISOString().split('T')[0],
         heroes: parsed.heroes,
         matchups: parsed.matchups || {},
+        playedWith: parsed.playedWith || {},
       };
 
       this.sourceType = 'json';

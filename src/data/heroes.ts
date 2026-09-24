@@ -13,6 +13,9 @@ export const HERO_IMG_MAP: Record<string, string> = {
   "Lu Bu": "Lu_Bu",
   "Wonder Woman": "Wonder_Woman",
   "Bolt Baron": "Bolt_Baron",
+  "Sikong Zhen": "Bolt_Baron",
+  "Wiro Sableng": "Wiro",
+  "Arthur": "Mortos",
   "Y'bneth": "Y_bneth"
 };
 
