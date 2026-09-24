@@ -291,6 +291,18 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                       <span>ดูรายละเอียด</span>
                     </button>
 
+                    {/* Next Game / Rematch Button */}
+                    {onStartNewDraftFromMatch && (
+                      <button
+                        onClick={() => onStartNewDraftFromMatch(rec)}
+                        className="px-2.5 py-1 rounded-lg bg-[#a82844]/30 hover:bg-[#a82844]/60 border border-[#a82844]/50 text-white text-xs font-['Barlow_Condensed'] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
+                        title="เริ่มดราฟต์เกมถัดไปโดยใช้ข้อมูลคู่แข่งนี้"
+                      >
+                        <ArrowRight size={12} className="text-[#ff7b95]" />
+                        <span>Game {rec.gameNumber + 1}</span>
+                      </button>
+                    )}
+
                     {/* Delete Button */}
                     <button
                       onClick={() => {
@@ -440,6 +452,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
         }}
         onDelete={deleteDraft}
         onInspectHero={onInspectHero}
+        onStartRematch={onStartNewDraftFromMatch}
       />
     </div>
   );

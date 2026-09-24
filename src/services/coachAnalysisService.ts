@@ -2,7 +2,7 @@ import { Hero, LaneSelectKey, PositionKey } from '../types/draft';
 import { Player, HeroPlayerBadge, PlayerPosition } from '../types/player';
 import { PickSlotState } from '../hooks/useDraconmindDraft';
 import { statsDataProvider } from './statsDataProvider';
-import { HeroMatchup } from '../types/stats';
+import { HeroMatchup, HeroSynergy } from '../types/stats';
 
 export type CompRoleKey = 'DSL' | 'Jungle' | 'Mid' | 'Support' | 'ADL';
 
@@ -155,6 +155,16 @@ export interface CoachAnalysisResult {
     strongAgainst: HeroMatchup[];
     weakAgainst: HeroMatchup[];
   };
+  inspectedSynergies: {
+    liveAllies: Array<{
+      allyHero: string;
+      synergy: HeroSynergy | null;
+      isPositive: boolean;
+      isNegative: boolean;
+    }>;
+    bestWith: HeroSynergy[];
+    worstWith: HeroSynergy[];
+  };
 
   // Team Comp
   myTeamComp: TeamCompAnalysis;
@@ -275,6 +285,28 @@ export function analyzeCoachDraft(params: {
     liveOpponents,
     strongAgainst: generalMatchups?.strongAgainst || [],
     weakAgainst: generalMatchups?.weakAgainst || [],
+  };
+
+  // 3.5 Synergy (Played With) for Inspected Hero
+  const validAllyHeroNames = myPicks
+    .map((p) => p.hero?.name || '')
+    .filter((name) => name && name.toLowerCase() !== targetHeroName.toLowerCase());
+  const liveSynergyRaw = statsDataProvider.getLiveDraftSynergies(targetHeroName, validAllyHeroNames);
+  const liveAllies = liveSynergyRaw.map((item) => {
+    const diff = item.synergy ? item.synergy.diff : 0;
+    return {
+      allyHero: item.allyHero,
+      synergy: item.synergy,
+      isPositive: diff >= 0,
+      isNegative: diff < 0,
+    };
+  });
+
+  const generalSynergies = targetHeroName ? statsDataProvider.getHeroPlayedWith(targetHeroName) : null;
+  const inspectedSynergies = {
+    liveAllies,
+    bestWith: generalSynergies?.bestWith || [],
+    worstWith: generalSynergies?.worstWith || [],
   };
 
   // 4. Draft Warnings

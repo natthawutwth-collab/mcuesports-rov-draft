@@ -1,5 +1,16 @@
-import React from 'react';
-import { X, ShieldAlert, Swords, TrendingUp, TrendingDown, Database, ExternalLink, Activity } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  X,
+  Swords,
+  TrendingUp,
+  TrendingDown,
+  Database,
+  ExternalLink,
+  Activity,
+  Users,
+  ShieldAlert,
+  Flame,
+} from 'lucide-react';
 import { useHeroStats } from '../hooks/useHeroStats';
 import { HEROES, getHeroImageUrl } from '../data/heroes';
 
@@ -8,6 +19,7 @@ interface HeroStatsSidePanelProps {
   isOpen: boolean;
   onClose: () => void;
   oppPicks?: string[];
+  allyPicks?: string[];
   onSelectHeroToInspect?: (heroName: string) => void;
   onOpenDataModal?: () => void;
 }
@@ -17,10 +29,13 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
   isOpen,
   onClose,
   oppPicks = [],
+  allyPicks = [],
   onSelectHeroToInspect,
   onOpenDataModal,
 }) => {
-  const { heroStats, heroMatchups, liveMatchups, status } = useHeroStats(heroName, oppPicks);
+  const [activeSubTab, setActiveSubTab] = useState<'all' | 'playedWith' | 'playedAgainst'>('all');
+  const { heroStats, heroMatchups, heroSynergies, liveMatchups, liveSynergies, status } =
+    useHeroStats(heroName, oppPicks, allyPicks);
 
   if (!isOpen) return null;
 
@@ -198,11 +213,105 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
           </div>
         )}
 
-        {/* REAL-TIME MATCHUPS VS OPPONENT PICKS (DRAFT CONTEXT) */}
-        {heroName && oppPicks.length > 0 && (
+        {/* SUB-TABS: ALL / PLAYED WITH / PLAYED AGAINST */}
+        {heroName && (
+          <div className="flex items-center gap-1 p-1 bg-black/50 border border-white/10 rounded-xl">
+            <button
+              onClick={() => setActiveSubTab('all')}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-['Barlow_Condensed'] font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1 ${
+                activeSubTab === 'all'
+                  ? 'bg-[#a82844] text-white shadow-md'
+                  : 'text-white/60 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <span>ALL STATS</span>
+            </button>
+            <button
+              onClick={() => setActiveSubTab('playedWith')}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-['Barlow_Condensed'] font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1 ${
+                activeSubTab === 'playedWith'
+                  ? 'bg-sky-600 text-white shadow-md'
+                  : 'text-white/60 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Users size={12} />
+              <span>PLAYED WITH</span>
+            </button>
+            <button
+              onClick={() => setActiveSubTab('playedAgainst')}
+              className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-['Barlow_Condensed'] font-bold tracking-wider uppercase transition-all flex items-center justify-center gap-1 ${
+                activeSubTab === 'playedAgainst'
+                  ? 'bg-amber-600 text-white shadow-md'
+                  : 'text-white/60 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Swords size={12} />
+              <span>PLAYED AGAINST</span>
+            </button>
+          </div>
+        )}
+
+        {/* REAL-TIME ALLY SYNERGY VS CURRENT ALLY PICKS (PLAYED WITH) */}
+        {heroName && (activeSubTab === 'all' || activeSubTab === 'playedWith') && allyPicks.length > 0 && (
           <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
             <div className="flex items-center justify-between">
-              <span className="font-['Orbitron'] font-bold text-[11px] tracking-wider text-sky-300 flex items-center gap-1.5">
+              <span className="font-['Orbitron'] font-bold text-[11px] tracking-wider text-sky-400 flex items-center gap-1.5">
+                <Users size={12} />
+                <span>WITH CURRENT ALLIES (REAL-TIME)</span>
+              </span>
+              <span className="text-[9px] font-['Barlow_Condensed'] text-white/40">
+                {allyPicks.length} ALLY PICKS
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-1.5 bg-black/40 p-2 rounded-xl border border-white/5">
+              {liveSynergies.map(({ allyHero, synergy }) => (
+                <div
+                  key={allyHero}
+                  className="flex items-center justify-between p-1.5 rounded-lg bg-white/[0.02] border border-white/5 hover:border-white/20 transition-all text-xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={getHeroImageUrl(allyHero)}
+                      alt={allyHero}
+                      className="w-6 h-6 rounded object-cover border border-white/10"
+                    />
+                    <span className="font-['Orbitron'] font-bold text-xs text-white">
+                      with {allyHero}
+                    </span>
+                  </div>
+
+                  {synergy ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-['Barlow_Condensed'] text-white/50">
+                        {synergy.winRate.toFixed(1)}% WR ({synergy.games}G)
+                      </span>
+                      <span
+                        className={`font-['Orbitron'] font-bold text-[11px] px-1.5 py-0.5 rounded border ${
+                          synergy.diff >= 0
+                            ? 'bg-sky-950/60 border-sky-500/50 text-sky-300'
+                            : 'bg-red-950/60 border-red-500/50 text-red-300'
+                        }`}
+                      >
+                        {synergy.diff > 0 ? `+${synergy.diff.toFixed(1)}%` : `${synergy.diff.toFixed(1)}%`}
+                      </span>
+                    </div>
+                  ) : (
+                    <span className="text-[10px] font-['Orbitron'] text-white/30 italic">
+                      No Data
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* REAL-TIME MATCHUPS VS OPPONENT PICKS (PLAYED AGAINST) */}
+        {heroName && (activeSubTab === 'all' || activeSubTab === 'playedAgainst') && oppPicks.length > 0 && (
+          <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
+            <div className="flex items-center justify-between">
+              <span className="font-['Orbitron'] font-bold text-[11px] tracking-wider text-amber-300 flex items-center gap-1.5">
                 <Swords size={12} />
                 <span>VS OPPONENT PICKS (REAL-TIME)</span>
               </span>
@@ -254,119 +363,224 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
           </div>
         )}
 
-        {/* STRONG AGAINST SECTION */}
-        {heroName && (
-          <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
+        {/* ============================================================ */}
+        {/* PLAYED WITH (HERO SYNERGIES ON SAME TEAM) SECTION */}
+        {/* ============================================================ */}
+        {heroName && (activeSubTab === 'all' || activeSubTab === 'playedWith') && (
+          <div className="flex flex-col gap-3 pt-2 border-t border-white/10">
             <div className="flex items-center justify-between">
-              <span className="font-['Orbitron'] font-bold text-[11px] tracking-wider text-emerald-400 flex items-center gap-1.5">
-                <TrendingUp size={13} />
-                <span>STRONG AGAINST (ได้เปรียบ)</span>
+              <span className="font-['Orbitron'] font-bold text-[11px] tracking-wider text-sky-400 flex items-center gap-1.5">
+                <Users size={13} />
+                <span>PLAYED WITH (คอมโบในทีมเดียวกัน)</span>
               </span>
-              {heroMatchups && heroMatchups.strongAgainst.length > 0 && (
-                <span className="text-[9.5px] font-['Barlow_Condensed'] text-emerald-400/80 font-bold">
-                  {heroMatchups.strongAgainst.length} HEROES
+              {heroSynergies && (
+                <span className="text-[9.5px] font-['Barlow_Condensed'] text-sky-400/80 font-bold">
+                  {heroSynergies.all.length} SYNERGIES
                 </span>
               )}
             </div>
 
-            {!heroMatchups || heroMatchups.strongAgainst.length === 0 ? (
+            {!heroSynergies || heroSynergies.all.length === 0 ? (
               <div className="p-3 rounded-lg bg-black/20 border border-white/5 text-center">
                 <span className="text-[11px] font-['Orbitron'] text-white/40 font-bold">
                   NO DATA
                 </span>
                 <p className="text-[10.5px] font-['Kanit'] text-white/30 mt-0.5">
-                  ไม่มีข้อมูลสถิติฮีโร่ที่ได้เปรียบในทัวร์นาเมนต์นี้
+                  ไม่มีข้อมูลสถิติการเล่นร่วมกับฮีโร่ตัวอื่นในทัวร์นาเมนต์นี้
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col gap-1.5">
-                {heroMatchups.strongAgainst.map((m) => (
-                  <div
-                    key={m.opponentHero}
-                    onClick={() => onSelectHeroToInspect && onSelectHeroToInspect(m.opponentHero)}
-                    className="flex items-center justify-between p-2 rounded-lg bg-emerald-950/20 border border-emerald-500/30 hover:border-emerald-400 hover:bg-emerald-950/40 transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={getHeroImageUrl(m.opponentHero)}
-                        alt={m.opponentHero}
-                        className="w-7 h-7 rounded object-cover border border-emerald-500/30 group-hover:scale-105 transition-transform"
-                      />
-                      <div className="flex flex-col">
-                        <span className="font-['Orbitron'] font-bold text-xs text-white group-hover:text-emerald-300 transition-colors">
-                          {m.opponentHero}
-                        </span>
-                        <span className="text-[9.5px] font-['Barlow_Condensed'] text-white/50">
-                          {m.winRate.toFixed(1)}% WR ({m.games} Games: {m.wins}W - {m.losses}L)
-                        </span>
-                      </div>
-                    </div>
+              <div className="flex flex-col gap-3">
+                {/* Best Synergy With */}
+                {heroSynergies.bestWith.length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-['Orbitron'] font-bold text-emerald-400 tracking-wider flex items-center gap-1">
+                      <Flame size={11} /> BEST SYNERGY WITH (คอมโบชนะทางสูง)
+                    </span>
+                    {heroSynergies.bestWith.map((s) => (
+                      <div
+                        key={s.allyHero}
+                        onClick={() => onSelectHeroToInspect && onSelectHeroToInspect(s.allyHero)}
+                        className="flex items-center justify-between p-2 rounded-lg bg-sky-950/20 border border-sky-500/30 hover:border-sky-400 hover:bg-sky-950/40 transition-all cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={getHeroImageUrl(s.allyHero)}
+                            alt={s.allyHero}
+                            className="w-7 h-7 rounded object-cover border border-sky-500/30 group-hover:scale-105 transition-transform"
+                          />
+                          <div className="flex flex-col">
+                            <span className="font-['Orbitron'] font-bold text-xs text-white group-hover:text-sky-300 transition-colors">
+                              + {s.allyHero}
+                            </span>
+                            <span className="text-[9.5px] font-['Barlow_Condensed'] text-white/50">
+                              {s.winRate.toFixed(1)}% WR ({s.games} Games: {s.wins}W - {s.losses}L)
+                            </span>
+                          </div>
+                        </div>
 
-                    <div className="flex items-center gap-1 font-['Orbitron'] font-black text-xs text-emerald-300 bg-emerald-950/60 px-2 py-1 rounded border border-emerald-500/40 shadow-sm">
-                      <span>+{m.diff.toFixed(1)}%</span>
-                    </div>
+                        <div className="flex items-center gap-1 font-['Orbitron'] font-black text-xs text-emerald-300 bg-emerald-950/60 px-2 py-1 rounded border border-emerald-500/40 shadow-sm">
+                          <span>+{s.diff.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+
+                {/* Worst Synergy With */}
+                {heroSynergies.worstWith.length > 0 && (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-['Orbitron'] font-bold text-red-400 tracking-wider flex items-center gap-1">
+                      <TrendingDown size={11} /> LOW SYNERGY WITH (เล่นด้วยกันแล้ว Win Rate ลดลง)
+                    </span>
+                    {heroSynergies.worstWith.map((s) => (
+                      <div
+                        key={s.allyHero}
+                        onClick={() => onSelectHeroToInspect && onSelectHeroToInspect(s.allyHero)}
+                        className="flex items-center justify-between p-2 rounded-lg bg-red-950/20 border border-red-500/30 hover:border-red-400 hover:bg-red-950/40 transition-all cursor-pointer group"
+                      >
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={getHeroImageUrl(s.allyHero)}
+                            alt={s.allyHero}
+                            className="w-7 h-7 rounded object-cover border border-red-500/30 group-hover:scale-105 transition-transform"
+                          />
+                          <div className="flex flex-col">
+                            <span className="font-['Orbitron'] font-bold text-xs text-white group-hover:text-red-300 transition-colors">
+                              + {s.allyHero}
+                            </span>
+                            <span className="text-[9.5px] font-['Barlow_Condensed'] text-white/50">
+                              {s.winRate.toFixed(1)}% WR ({s.games} Games: {s.wins}W - {s.losses}L)
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 font-['Orbitron'] font-black text-xs text-red-300 bg-red-950/60 px-2 py-1 rounded border border-red-500/40 shadow-sm">
+                          <span>{s.diff.toFixed(1)}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* WEAK AGAINST SECTION */}
-        {heroName && (
-          <div className="flex flex-col gap-2 pt-2 border-t border-white/10">
+        {/* ============================================================ */}
+        {/* PLAYED AGAINST (HERO MATCHUPS) SECTION */}
+        {/* ============================================================ */}
+        {heroName && (activeSubTab === 'all' || activeSubTab === 'playedAgainst') && (
+          <div className="flex flex-col gap-3 pt-2 border-t border-white/10">
             <div className="flex items-center justify-between">
-              <span className="font-['Orbitron'] font-bold text-[11px] tracking-wider text-red-400 flex items-center gap-1.5">
-                <TrendingDown size={13} />
-                <span>WEAK AGAINST (เสียเปรียบ)</span>
+              <span className="font-['Orbitron'] font-bold text-[11px] tracking-wider text-amber-400 flex items-center gap-1.5">
+                <Swords size={13} />
+                <span>PLAYED AGAINST (สถิติการเจอกัน)</span>
               </span>
-              {heroMatchups && heroMatchups.weakAgainst.length > 0 && (
-                <span className="text-[9.5px] font-['Barlow_Condensed'] text-red-400/80 font-bold">
-                  {heroMatchups.weakAgainst.length} HEROES
+              {heroMatchups && (
+                <span className="text-[9.5px] font-['Barlow_Condensed'] text-amber-400/80 font-bold">
+                  {heroMatchups.all.length} MATCHUPS
                 </span>
               )}
             </div>
 
-            {!heroMatchups || heroMatchups.weakAgainst.length === 0 ? (
-              <div className="p-3 rounded-lg bg-black/20 border border-white/5 text-center">
-                <span className="text-[11px] font-['Orbitron'] text-white/40 font-bold">
-                  NO DATA
-                </span>
-                <p className="text-[10.5px] font-['Kanit'] text-white/30 mt-0.5">
-                  ไม่มีข้อมูลสถิติฮีโร่ที่เสียเปรียบในทัวร์นาเมนต์นี้
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-1.5">
-                {heroMatchups.weakAgainst.map((m) => (
-                  <div
-                    key={m.opponentHero}
-                    onClick={() => onSelectHeroToInspect && onSelectHeroToInspect(m.opponentHero)}
-                    className="flex items-center justify-between p-2 rounded-lg bg-red-950/20 border border-red-500/30 hover:border-red-400 hover:bg-red-950/40 transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <img
-                        src={getHeroImageUrl(m.opponentHero)}
-                        alt={m.opponentHero}
-                        className="w-7 h-7 rounded object-cover border border-red-500/30 group-hover:scale-105 transition-transform"
-                      />
-                      <div className="flex flex-col">
-                        <span className="font-['Orbitron'] font-bold text-xs text-white group-hover:text-red-300 transition-colors">
-                          {m.opponentHero}
-                        </span>
-                        <span className="text-[9.5px] font-['Barlow_Condensed'] text-white/50">
-                          {m.winRate.toFixed(1)}% WR ({m.games} Games: {m.wins}W - {m.losses}L)
-                        </span>
+            {/* STRONG AGAINST SECTION */}
+            <div className="flex flex-col gap-2">
+              <span className="font-['Orbitron'] font-bold text-[10.5px] tracking-wider text-emerald-400 flex items-center gap-1.5">
+                <TrendingUp size={12} />
+                <span>STRONG AGAINST (ได้เปรียบ / ชนะทาง)</span>
+              </span>
+
+              {!heroMatchups || heroMatchups.strongAgainst.length === 0 ? (
+                <div className="p-3 rounded-lg bg-black/20 border border-white/5 text-center">
+                  <span className="text-[11px] font-['Orbitron'] text-white/40 font-bold">
+                    NO DATA
+                  </span>
+                  <p className="text-[10.5px] font-['Kanit'] text-white/30 mt-0.5">
+                    ไม่มีข้อมูลสถิติฮีโร่ที่ได้เปรียบในทัวร์นาเมนต์นี้
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  {heroMatchups.strongAgainst.map((m) => (
+                    <div
+                      key={m.opponentHero}
+                      onClick={() => onSelectHeroToInspect && onSelectHeroToInspect(m.opponentHero)}
+                      className="flex items-center justify-between p-2 rounded-lg bg-emerald-950/20 border border-emerald-500/30 hover:border-emerald-400 hover:bg-emerald-950/40 transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={getHeroImageUrl(m.opponentHero)}
+                          alt={m.opponentHero}
+                          className="w-7 h-7 rounded object-cover border border-emerald-500/30 group-hover:scale-105 transition-transform"
+                        />
+                        <div className="flex flex-col">
+                          <span className="font-['Orbitron'] font-bold text-xs text-white group-hover:text-emerald-300 transition-colors">
+                            {m.opponentHero}
+                          </span>
+                          <span className="text-[9.5px] font-['Barlow_Condensed'] text-white/50">
+                            {m.winRate.toFixed(1)}% WR ({m.games} Games: {m.wins}W - {m.losses}L)
+                          </span>
+                        </div>
+                      </div>
+
+                        <div className="flex items-center gap-1 font-['Orbitron'] font-black text-xs text-emerald-300 bg-emerald-950/60 px-2 py-1 rounded border border-emerald-500/40 shadow-sm">
+                        <span>+{m.diff.toFixed(1)}%</span>
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-                    <div className="flex items-center gap-1 font-['Orbitron'] font-black text-xs text-red-300 bg-red-950/60 px-2 py-1 rounded border border-red-500/40 shadow-sm">
-                      <span>{m.diff.toFixed(1)}%</span>
+            {/* WEAK AGAINST SECTION */}
+            <div className="flex flex-col gap-2 pt-2 border-t border-white/5">
+              <span className="font-['Orbitron'] font-bold text-[10.5px] tracking-wider text-red-400 flex items-center gap-1.5">
+                <TrendingDown size={12} />
+                <span>WEAK AGAINST (เสียเปรียบ / แพ้ทาง)</span>
+              </span>
+
+              {!heroMatchups || heroMatchups.weakAgainst.length === 0 ? (
+                <div className="p-3 rounded-lg bg-black/20 border border-white/5 text-center">
+                  <span className="text-[11px] font-['Orbitron'] text-white/40 font-bold">
+                    NO DATA
+                  </span>
+                  <p className="text-[10.5px] font-['Kanit'] text-white/30 mt-0.5">
+                    ไม่มีข้อมูลสถิติฮีโร่ที่เสียเปรียบในทัวร์นาเมนต์นี้
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  {heroMatchups.weakAgainst.map((m) => (
+                    <div
+                      key={m.opponentHero}
+                      onClick={() => onSelectHeroToInspect && onSelectHeroToInspect(m.opponentHero)}
+                      className="flex items-center justify-between p-2 rounded-lg bg-red-950/20 border border-red-500/30 hover:border-red-400 hover:bg-red-950/40 transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={getHeroImageUrl(m.opponentHero)}
+                          alt={m.opponentHero}
+                          className="w-7 h-7 rounded object-cover border border-red-500/30 group-hover:scale-105 transition-transform"
+                        />
+                        <div className="flex flex-col">
+                          <span className="font-['Orbitron'] font-bold text-xs text-white group-hover:text-red-300 transition-colors">
+                            {m.opponentHero}
+                          </span>
+                          <span className="text-[9.5px] font-['Barlow_Condensed'] text-white/50">
+                            {m.winRate.toFixed(1)}% WR ({m.games} Games: {m.wins}W - {m.losses}L)
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 font-['Orbitron'] font-black text-xs text-red-300 bg-red-950/60 px-2 py-1 rounded border border-red-500/40 shadow-sm">
+                        <span>{m.diff.toFixed(1)}%</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

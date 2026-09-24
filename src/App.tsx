@@ -331,6 +331,23 @@ export default function App() {
             setCurrentView('draft');
             setIsPreDraftModalOpen(true);
           }}
+          onStartNewDraftFromMatch={(rec) => {
+            // Swap sides for game N+1 or keep same sides
+            const nextGameNum = rec.gameNumber + 1;
+            setMatchMetadata({
+              tournament: rec.tournament,
+              match: rec.match,
+              gameNumber: nextGameNum,
+              blueTeam: rec.redTeam.teamName, // Standard RoV side swap for next game
+              redTeam: rec.blueTeam.teamName,
+              patch: rec.patch,
+            });
+            setBlueTeamName(rec.redTeam.teamName);
+            setRedTeamName(rec.blueTeam.teamName);
+            setCurrentView('draft');
+            startNewDraft();
+            showToast(`⚔️ เริ่ม Game ${nextGameNum}: ${rec.redTeam.teamName} (Blue) vs ${rec.blueTeam.teamName} (Red)`);
+          }}
         />
       ) : (
         <>

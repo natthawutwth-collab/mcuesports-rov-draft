@@ -1,6 +1,7 @@
 import {
   HeroStats,
   HeroMatchup,
+  HeroSynergy,
   TournamentStatsDataset,
   StatsSourceType,
   DataSourceStatus,
@@ -146,6 +147,60 @@ class StatsDataProviderService {
   }
 
   /**
+   * Returns Played Against (Matchup) records for a hero
+   * Same as all matchups, with strong and weak splits
+   */
+  public getHeroPlayedAgainst(heroName: string): {
+    strongAgainst: HeroMatchup[];
+    weakAgainst: HeroMatchup[];
+    all: HeroMatchup[];
+  } | null {
+    return this.getHeroMatchups(heroName);
+  }
+
+  /**
+   * Returns Played With (Synergies) records for a hero on the SAME team
+   */
+  public getHeroPlayedWith(heroName: string): {
+    bestWith: HeroSynergy[];
+    worstWith: HeroSynergy[];
+    all: HeroSynergy[];
+  } | null {
+    if (!heroName || heroName === '—') return null;
+
+    const synergiesDict = this.dataset.synergies || {};
+    let synergies: HeroSynergy[] | undefined = synergiesDict[heroName];
+
+    if (!synergies) {
+      const lower = heroName.toLowerCase().trim();
+      for (const key of Object.keys(synergiesDict)) {
+        if (key.toLowerCase().trim() === lower) {
+          synergies = synergiesDict[key];
+          break;
+        }
+      }
+    }
+
+    if (!synergies || synergies.length === 0) {
+      return null;
+    }
+
+    const bestWith = synergies
+      .filter((s) => s.diff >= 0)
+      .sort((a, b) => b.diff - a.diff);
+
+    const worstWith = synergies
+      .filter((s) => s.diff < 0)
+      .sort((a, b) => a.diff - b.diff);
+
+    return {
+      bestWith,
+      worstWith,
+      all: synergies,
+    };
+  }
+
+  /**
    * Real-time matchup cross-reference against currently picked enemy heroes
    */
   public getLiveDraftMatchups(
@@ -160,6 +215,27 @@ class StatsDataProviderService {
       return {
         oppHero,
         matchup,
+      };
+    });
+  }
+
+  /**
+   * Real-time synergy cross-reference against currently picked friendly ally heroes
+   */
+  public getLiveDraftSynergies(
+    heroName: string,
+    allyPicks: string[]
+  ): Array<{ allyHero: string; synergy: HeroSynergy | null }> {
+    const validAllyPicks = allyPicks.filter((h) => h && h !== '—' && h.toLowerCase() !== heroName.toLowerCase());
+    if (!heroName || validAllyPicks.length === 0) return [];
+
+    const pw = this.getHeroPlayedWith(heroName);
+    return validAllyPicks.map((allyHero) => {
+      const lowerAlly = allyHero.toLowerCase().trim();
+      const synergy = pw ? pw.all.find((s) => s.allyHero.toLowerCase().trim() === lowerAlly) || null : null;
+      return {
+        allyHero,
+        synergy,
       };
     });
   }

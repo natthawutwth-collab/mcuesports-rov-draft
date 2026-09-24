@@ -9,6 +9,7 @@ interface DraftDetailModalProps {
   onClose: () => void;
   onDelete?: (id: string) => void;
   onInspectHero?: (heroName: string) => void;
+  onStartRematch?: (record: DraftHistoryRecord) => void;
 }
 
 export const DraftDetailModal: React.FC<DraftDetailModalProps> = ({
@@ -17,6 +18,7 @@ export const DraftDetailModal: React.FC<DraftDetailModalProps> = ({
   onClose,
   onDelete,
   onInspectHero,
+  onStartRematch,
 }) => {
   if (!isOpen || !record) return null;
 
@@ -301,12 +303,27 @@ export const DraftDetailModal: React.FC<DraftDetailModalProps> = ({
         {/* Modal Footer */}
         <div className="p-3 border-t border-white/10 bg-black/60 flex items-center justify-between text-xs flex-shrink-0">
           <span className="text-white/50 text-[11px]">Draft ID: {record.id}</span>
-          <button
-            onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-['Barlow_Condensed'] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-          >
-            ปิดหน้าต่าง
-          </button>
+          <div className="flex items-center gap-2">
+            {onStartRematch && (
+              <button
+                onClick={() => {
+                  onStartRematch(record);
+                  onClose();
+                }}
+                className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-[#a82844] to-[#ff476e] hover:brightness-110 text-white font-['Orbitron'] font-bold text-[11px] tracking-wider flex items-center gap-1.5 shadow-[0_0_12px_rgba(168,40,68,0.4)] transition-all cursor-pointer"
+                title="เริ่มดราฟต์เกมถัดไปโดยใช้ข้อมูลคู่แข่งนี้"
+              >
+                <span>⚔️</span>
+                <span>START NEXT GAME (GAME {record.gameNumber + 1})</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="px-4 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-['Barlow_Condensed'] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              ปิดหน้าต่าง
+            </button>
+          </div>
         </div>
       </div>
     </div>

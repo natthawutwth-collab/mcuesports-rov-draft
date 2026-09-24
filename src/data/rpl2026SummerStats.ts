@@ -1,4 +1,4 @@
-import { TournamentStatsDataset, HeroStats, HeroMatchup } from '../types/stats';
+import { TournamentStatsDataset, HeroStats, HeroMatchup, HeroSynergy } from '../types/stats';
 
 /**
  * RoV Pro League 2026 Summer Tournament Statistics
@@ -692,6 +692,150 @@ const MATCHUPS_DATA: Record<string, HeroMatchup[]> = {
   ],
 };
 
+/**
+ * RPL 2026 Summer Hero Synergies ("Played With")
+ * Statistics of heroes on the SAME team: Games, Wins, Losses, Synergy Win Rate, Win Rate Diff vs Baseline
+ */
+const SYNERGIES_DATA: Record<string, HeroSynergy[]> = {
+  'Nakroth': [
+    { hero: 'Nakroth', allyHero: 'Aya', games: 18, wins: 14, losses: 4, winRate: 77.8, diff: 21.9 },
+    { hero: 'Nakroth', allyHero: 'Liliana', games: 16, wins: 11, losses: 5, winRate: 68.8, diff: 12.9 },
+    { hero: 'Nakroth', allyHero: 'Yena', games: 14, wins: 9, losses: 5, winRate: 64.3, diff: 8.4 },
+    { hero: 'Nakroth', allyHero: 'Thane', games: 12, wins: 7, losses: 5, winRate: 58.3, diff: 2.4 },
+    { hero: 'Nakroth', allyHero: 'Helen', games: 10, wins: 4, losses: 6, winRate: 40.0, diff: -15.9 },
+    { hero: 'Nakroth', allyHero: 'Hayate', games: 11, wins: 4, losses: 7, winRate: 36.4, diff: -19.5 },
+  ],
+  'Aoi': [
+    { hero: 'Aoi', allyHero: 'Krizzix', games: 15, wins: 12, losses: 3, winRate: 80.0, diff: 18.1 },
+    { hero: 'Aoi', allyHero: 'Iggy', games: 18, wins: 13, losses: 5, winRate: 72.2, diff: 10.3 },
+    { hero: 'Aoi', allyHero: 'Florentino', games: 12, wins: 8, losses: 4, winRate: 66.7, diff: 4.8 },
+    { hero: 'Aoi', allyHero: 'Capheny', games: 14, wins: 9, losses: 5, winRate: 64.3, diff: 2.4 },
+    { hero: 'Aoi', allyHero: 'Aya', games: 9, wins: 4, losses: 5, winRate: 44.4, diff: -17.5 },
+  ],
+  'Keera': [
+    { hero: 'Keera', allyHero: 'Lumburr', games: 20, wins: 15, losses: 5, winRate: 75.0, diff: 12.5 },
+    { hero: 'Keera', allyHero: 'Raz', games: 17, wins: 12, losses: 5, winRate: 70.6, diff: 8.1 },
+    { hero: 'Keera', allyHero: 'Elsu', games: 16, wins: 11, losses: 5, winRate: 68.8, diff: 6.3 },
+    { hero: 'Keera', allyHero: 'Omen', games: 14, wins: 9, losses: 5, winRate: 64.3, diff: 1.8 },
+    { hero: 'Keera', allyHero: 'TeeMee', games: 11, wins: 5, losses: 6, winRate: 45.5, diff: -17.0 },
+  ],
+  'Hayate': [
+    { hero: 'Hayate', allyHero: 'Thane', games: 19, wins: 14, losses: 5, winRate: 73.7, diff: 13.7 },
+    { hero: 'Hayate', allyHero: 'Liliana', games: 18, wins: 12, losses: 6, winRate: 66.7, diff: 6.7 },
+    { hero: 'Hayate', allyHero: 'Maloch', games: 15, wins: 10, losses: 5, winRate: 66.7, diff: 6.7 },
+    { hero: 'Hayate', allyHero: 'Yena', games: 14, wins: 9, losses: 5, winRate: 64.3, diff: 4.3 },
+    { hero: 'Hayate', allyHero: 'Aya', games: 10, wins: 4, losses: 6, winRate: 40.0, diff: -20.0 },
+  ],
+  'Elsu': [
+    { hero: 'Elsu', allyHero: 'Krizzix', games: 18, wins: 14, losses: 4, winRate: 77.8, diff: 20.9 },
+    { hero: 'Elsu', allyHero: 'Iggy', games: 16, wins: 12, losses: 4, winRate: 75.0, diff: 18.1 },
+    { hero: 'Elsu', allyHero: 'Omen', games: 15, wins: 10, losses: 5, winRate: 66.7, diff: 9.8 },
+    { hero: 'Elsu', allyHero: 'Keera', games: 16, wins: 10, losses: 6, winRate: 62.5, diff: 5.6 },
+    { hero: 'Elsu', allyHero: 'Helen', games: 11, wins: 4, losses: 7, winRate: 36.4, diff: -20.5 },
+  ],
+  'Florentino': [
+    { hero: 'Florentino', allyHero: 'Aoi', games: 12, wins: 9, losses: 3, winRate: 75.0, diff: 17.1 },
+    { hero: 'Florentino', allyHero: 'Krizzix', games: 14, wins: 10, losses: 4, winRate: 71.4, diff: 13.5 },
+    { hero: 'Florentino', allyHero: 'Raz', games: 13, wins: 9, losses: 4, winRate: 69.2, diff: 11.3 },
+    { hero: 'Florentino', allyHero: 'Hayate', games: 12, wins: 7, losses: 5, winRate: 58.3, diff: 0.4 },
+    { hero: 'Florentino', allyHero: 'Helen', games: 10, wins: 3, losses: 7, winRate: 30.0, diff: -27.9 },
+  ],
+  'Yena': [
+    { hero: 'Yena', allyHero: 'Liliana', games: 17, wins: 12, losses: 5, winRate: 70.6, diff: 15.6 },
+    { hero: 'Yena', allyHero: 'Nakroth', games: 14, wins: 9, losses: 5, winRate: 64.3, diff: 9.3 },
+    { hero: 'Yena', allyHero: 'Thane', games: 15, wins: 9, losses: 6, winRate: 60.0, diff: 5.0 },
+    { hero: 'Yena', allyHero: 'Capheny', games: 11, wins: 5, losses: 6, winRate: 45.5, diff: -9.5 },
+  ],
+  'Aya': [
+    { hero: 'Aya', allyHero: 'Nakroth', games: 18, wins: 14, losses: 4, winRate: 77.8, diff: 16.0 },
+    { hero: 'Aya', allyHero: 'Tachi', games: 14, wins: 10, losses: 4, winRate: 71.4, diff: 9.6 },
+    { hero: 'Aya', allyHero: 'Maloch', games: 12, wins: 8, losses: 4, winRate: 66.7, diff: 4.9 },
+    { hero: 'Aya', allyHero: 'Billow', games: 10, wins: 7, losses: 3, winRate: 70.0, diff: 8.2 },
+    { hero: 'Aya', allyHero: 'Hayate', games: 10, wins: 4, losses: 6, winRate: 40.0, diff: -21.8 },
+  ],
+  'Krizzix': [
+    { hero: 'Krizzix', allyHero: 'Elsu', games: 18, wins: 14, losses: 4, winRate: 77.8, diff: 14.5 },
+    { hero: 'Krizzix', allyHero: 'Aoi', games: 15, wins: 12, losses: 3, winRate: 80.0, diff: 16.7 },
+    { hero: 'Krizzix', allyHero: 'Raz', games: 16, wins: 11, losses: 5, winRate: 68.8, diff: 5.5 },
+    { hero: 'Krizzix', allyHero: 'Florentino', games: 14, wins: 10, losses: 4, winRate: 71.4, diff: 8.1 },
+    { hero: 'Krizzix', allyHero: 'Laville', games: 9, wins: 4, losses: 5, winRate: 44.4, diff: -18.9 },
+  ],
+  'Liliana': [
+    { hero: 'Liliana', allyHero: 'Nakroth', games: 16, wins: 11, losses: 5, winRate: 68.8, diff: 16.2 },
+    { hero: 'Liliana', allyHero: 'Yena', games: 17, wins: 12, losses: 5, winRate: 70.6, diff: 18.0 },
+    { hero: 'Liliana', allyHero: 'Hayate', games: 18, wins: 12, losses: 6, winRate: 66.7, diff: 14.1 },
+    { hero: 'Liliana', allyHero: 'Lumburr', games: 13, wins: 8, losses: 5, winRate: 61.5, diff: 8.9 },
+    { hero: 'Liliana', allyHero: 'TeeMee', games: 11, wins: 4, losses: 7, winRate: 36.4, diff: -16.2 },
+  ],
+  'Raz': [
+    { hero: 'Raz', allyHero: 'Keera', games: 17, wins: 12, losses: 5, winRate: 70.6, diff: 14.5 },
+    { hero: 'Raz', allyHero: 'Krizzix', games: 16, wins: 11, losses: 5, winRate: 68.8, diff: 12.7 },
+    { hero: 'Raz', allyHero: 'Florentino', games: 13, wins: 9, losses: 4, winRate: 69.2, diff: 13.1 },
+    { hero: 'Raz', allyHero: 'Elsu', games: 14, wins: 8, losses: 6, winRate: 57.1, diff: 1.0 },
+    { hero: 'Raz', allyHero: 'Aya', games: 8, wins: 3, losses: 5, winRate: 37.5, diff: -18.6 },
+  ],
+  'Iggy': [
+    { hero: 'Iggy', allyHero: 'Aoi', games: 18, wins: 13, losses: 5, winRate: 72.2, diff: 18.3 },
+    { hero: 'Iggy', allyHero: 'Elsu', games: 16, wins: 12, losses: 4, winRate: 75.0, diff: 21.1 },
+    { hero: 'Iggy', allyHero: 'Thane', games: 14, wins: 9, losses: 5, winRate: 64.3, diff: 10.4 },
+    { hero: 'Iggy', allyHero: 'Helen', games: 11, wins: 4, losses: 7, winRate: 36.4, diff: -17.5 },
+  ],
+  'Thane': [
+    { hero: 'Thane', allyHero: 'Hayate', games: 19, wins: 14, losses: 5, winRate: 73.7, diff: 19.8 },
+    { hero: 'Thane', allyHero: 'Liliana', games: 15, wins: 10, losses: 5, winRate: 66.7, diff: 12.8 },
+    { hero: 'Thane', allyHero: 'Yena', games: 15, wins: 9, losses: 6, winRate: 60.0, diff: 6.1 },
+    { hero: 'Thane', allyHero: 'Nakroth', games: 12, wins: 7, losses: 5, winRate: 58.3, diff: 4.4 },
+    { hero: 'Thane', allyHero: 'Valhein', games: 9, wins: 3, losses: 6, winRate: 33.3, diff: -20.6 },
+  ],
+  'Lumburr': [
+    { hero: 'Lumburr', allyHero: 'Keera', games: 20, wins: 15, losses: 5, winRate: 75.0, diff: 20.7 },
+    { hero: 'Lumburr', allyHero: 'Capheny', games: 14, wins: 10, losses: 4, winRate: 71.4, diff: 17.1 },
+    { hero: 'Lumburr', allyHero: 'Liliana', games: 13, wins: 8, losses: 5, winRate: 61.5, diff: 7.2 },
+    { hero: 'Lumburr', allyHero: 'Stuart', games: 10, wins: 4, losses: 6, winRate: 40.0, diff: -14.3 },
+  ],
+  'Capheny': [
+    { hero: 'Capheny', allyHero: 'Lumburr', games: 14, wins: 10, losses: 4, winRate: 71.4, diff: 13.1 },
+    { hero: 'Capheny', allyHero: 'Helen', games: 15, wins: 10, losses: 5, winRate: 66.7, diff: 8.4 },
+    { hero: 'Capheny', allyHero: 'Aoi', games: 14, wins: 9, losses: 5, winRate: 64.3, diff: 6.0 },
+    { hero: 'Capheny', allyHero: 'TeeMee', games: 12, wins: 8, losses: 4, winRate: 66.7, diff: 8.4 },
+    { hero: 'Capheny', allyHero: 'Aya', games: 9, wins: 3, losses: 6, winRate: 33.3, diff: -25.0 },
+  ],
+  'Billow': [
+    { hero: 'Billow', allyHero: 'Aya', games: 10, wins: 7, losses: 3, winRate: 70.0, diff: 12.3 },
+    { hero: 'Billow', allyHero: 'Liliana', games: 11, wins: 7, losses: 4, winRate: 63.6, diff: 5.9 },
+    { hero: 'Billow', allyHero: 'Maloch', games: 8, wins: 5, losses: 3, winRate: 62.5, diff: 4.8 },
+    { hero: 'Billow', allyHero: 'Helen', games: 7, wins: 2, losses: 5, winRate: 28.6, diff: -29.1 },
+  ],
+  'Omen': [
+    { hero: 'Omen', allyHero: 'Elsu', games: 15, wins: 10, losses: 5, winRate: 66.7, diff: 15.6 },
+    { hero: 'Omen', allyHero: 'Keera', games: 14, wins: 9, losses: 5, winRate: 64.3, diff: 13.2 },
+    { hero: 'Omen', allyHero: 'Krizzix', games: 12, wins: 7, losses: 5, winRate: 58.3, diff: 7.2 },
+    { hero: 'Omen', allyHero: 'Helen', games: 9, wins: 3, losses: 6, winRate: 33.3, diff: -17.8 },
+  ],
+  'Stuart': [
+    { hero: 'Stuart', allyHero: 'Thane', games: 14, wins: 9, losses: 5, winRate: 64.3, diff: 9.8 },
+    { hero: 'Stuart', allyHero: 'Raz', games: 12, wins: 8, losses: 4, winRate: 66.7, diff: 12.2 },
+    { hero: 'Stuart', allyHero: 'Krizzix', games: 11, wins: 7, losses: 4, winRate: 63.6, diff: 9.1 },
+    { hero: 'Stuart', allyHero: 'Aya', games: 8, wins: 2, losses: 6, winRate: 25.0, diff: -29.5 },
+  ],
+  'Maloch': [
+    { hero: 'Maloch', allyHero: 'Aya', games: 12, wins: 8, losses: 4, winRate: 66.7, diff: 14.8 },
+    { hero: 'Maloch', allyHero: 'Hayate', games: 15, wins: 10, losses: 5, winRate: 66.7, diff: 14.8 },
+    { hero: 'Maloch', allyHero: 'Liliana', games: 11, wins: 7, losses: 4, winRate: 63.6, diff: 11.7 },
+    { hero: 'Maloch', allyHero: 'Helen', games: 8, wins: 2, losses: 6, winRate: 25.0, diff: -26.9 },
+  ],
+  'Charlotte': [
+    { hero: 'Charlotte', allyHero: 'Aoi', games: 11, wins: 8, losses: 3, winRate: 72.7, diff: 18.5 },
+    { hero: 'Charlotte', allyHero: 'Thane', games: 10, wins: 6, losses: 4, winRate: 60.0, diff: 5.8 },
+    { hero: 'Charlotte', allyHero: 'Helen', games: 8, wins: 3, losses: 5, winRate: 37.5, diff: -16.7 },
+  ],
+  'Ryoma': [
+    { hero: 'Ryoma', allyHero: 'Krizzix', games: 12, wins: 8, losses: 4, winRate: 66.7, diff: 14.8 },
+    { hero: 'Ryoma', allyHero: 'Elsu', games: 11, wins: 7, losses: 4, winRate: 63.6, diff: 11.7 },
+    { hero: 'Ryoma', allyHero: 'Aoi', games: 10, wins: 6, losses: 4, winRate: 60.0, diff: 8.1 },
+  ],
+};
+
 export const RPL_2026_SUMMER_DATASET: TournamentStatsDataset = {
   tournamentName: 'RoV Pro League 2026 Summer',
   season: '2026 Summer',
@@ -701,4 +845,5 @@ export const RPL_2026_SUMMER_DATASET: TournamentStatsDataset = {
   lastUpdated: '2026-03-24',
   heroes: HEROES_DATA,
   matchups: MATCHUPS_DATA,
+  synergies: SYNERGIES_DATA,
 };

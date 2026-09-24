@@ -1,8 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { statsDataProvider } from '../services/statsDataProvider';
-import { HeroStats, HeroMatchup, DataSourceStatus } from '../types/stats';
+import { HeroStats, HeroMatchup, HeroSynergy, DataSourceStatus } from '../types/stats';
 
-export function useHeroStats(selectedHeroName: string | null = null, oppPicks: string[] = []) {
+export function useHeroStats(
+  selectedHeroName: string | null = null,
+  oppPicks: string[] = [],
+  allyPicks: string[] = []
+) {
   const [status, setStatus] = useState<DataSourceStatus>(() => statsDataProvider.getStatus());
 
   // Listen to dataset changes (e.g. when JSON/CSV/API is loaded or reset)
@@ -19,17 +23,29 @@ export function useHeroStats(selectedHeroName: string | null = null, oppPicks: s
     return statsDataProvider.getHeroStats(selectedHeroName);
   }, [selectedHeroName, status]);
 
-  // Hero Matchups (Strong Against / Weak Against, or null for "No Data")
+  // Hero Matchups - Played Against (Strong Against / Weak Against, or null for "No Data")
   const heroMatchups = useMemo(() => {
     if (!selectedHeroName) return null;
     return statsDataProvider.getHeroMatchups(selectedHeroName);
   }, [selectedHeroName, status]);
 
-  // Real-time Matchups vs Current Opponent Picks
+  // Hero Synergies - Played With (Best Synergy / Worst Synergy, or null for "No Data")
+  const heroSynergies = useMemo(() => {
+    if (!selectedHeroName) return null;
+    return statsDataProvider.getHeroPlayedWith(selectedHeroName);
+  }, [selectedHeroName, status]);
+
+  // Real-time Matchups vs Current Opponent Picks (Played Against live)
   const liveMatchups = useMemo(() => {
     if (!selectedHeroName || oppPicks.length === 0) return [];
     return statsDataProvider.getLiveDraftMatchups(selectedHeroName, oppPicks);
   }, [selectedHeroName, oppPicks, status]);
+
+  // Real-time Synergies vs Current Ally Picks (Played With live)
+  const liveSynergies = useMemo(() => {
+    if (!selectedHeroName || allyPicks.length === 0) return [];
+    return statsDataProvider.getLiveDraftSynergies(selectedHeroName, allyPicks);
+  }, [selectedHeroName, allyPicks, status]);
 
   const loadFromJson = useCallback((json: string) => {
     return statsDataProvider.loadFromJson(json);
@@ -51,11 +67,15 @@ export function useHeroStats(selectedHeroName: string | null = null, oppPicks: s
     status,
     heroStats,
     heroMatchups,
+    heroSynergies,
     liveMatchups,
+    liveSynergies,
     loadFromJson,
     loadFromCsv,
     loadFromApi,
     resetToDefault,
     getHeadToHead: statsDataProvider.getHeadToHead.bind(statsDataProvider),
+    getHeroPlayedWith: statsDataProvider.getHeroPlayedWith.bind(statsDataProvider),
+    getHeroPlayedAgainst: statsDataProvider.getHeroPlayedAgainst.bind(statsDataProvider),
   };
 }
