@@ -562,6 +562,47 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* Live Synergies with Picked Allies */}
+              {analysis.inspectedSynergies?.liveAllies && analysis.inspectedSynergies.liveAllies.length > 0 && (
+                <div className="bg-sky-950/20 border border-sky-500/30 rounded-lg p-2 space-y-1.5">
+                  <div className="font-['Barlow_Condensed'] text-[10px] font-bold text-sky-400 uppercase tracking-wider flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <span>🤝</span>
+                      <span>SYNERGY กับเพื่อนร่วมทีม ({analysis.inspectedSynergies.liveAllies.length} ตัว)</span>
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {analysis.inspectedSynergies.liveAllies.map((live) => {
+                      const synergy = live.synergy;
+                      const diff = synergy?.diff ?? 0;
+                      const isPos = diff >= 0;
+                      return (
+                        <div
+                          key={live.allyHero}
+                          className="flex items-center justify-between text-[10.5px] bg-black/40 rounded px-1.5 py-0.5 border border-white/5"
+                        >
+                          <span className="font-medium text-white">{live.allyHero}</span>
+                          {synergy ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-white/50">{synergy.winRate.toFixed(1)}% WR ({synergy.games}G)</span>
+                              <span
+                                className={`font-['Barlow_Condensed'] font-bold text-[11px] ${
+                                  isPos ? 'text-emerald-400' : 'text-amber-400'
+                                }`}
+                              >
+                                {diff > 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-[9.5px] text-white/40 italic">ไม่มีข้อมูลคู่หู</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </section>
         ) : (

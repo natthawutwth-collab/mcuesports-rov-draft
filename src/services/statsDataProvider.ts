@@ -193,6 +193,61 @@ class StatsDataProviderService {
   }
 
   /**
+   * Synergy between heroA and heroB played together on the same team
+   */
+  public getHeroSynergyPair(heroA: string, heroB: string): HeroSynergy | null {
+    if (!heroA || !heroB || heroA === '—' || heroB === '—') return null;
+
+    const resolvedA = this.resolveHeroKey(heroA).toLowerCase().trim();
+    const lowerA = heroA.toLowerCase().trim();
+    const resolvedB = this.resolveHeroKey(heroB).toLowerCase().trim();
+    const lowerB = heroB.toLowerCase().trim();
+
+    // 1. Check heroA's playedWith list for heroB
+    const listA = this.getHeroPlayedWith(heroA);
+    const foundA = listA.find((s) => {
+      const allyLower = s.allyHero.toLowerCase().trim();
+      return allyLower === lowerB || allyLower === resolvedB;
+    });
+    if (foundA) return foundA;
+
+    // 2. Reciprocal check: heroB's playedWith list for heroA
+    const listB = this.getHeroPlayedWith(heroB);
+    const foundB = listB.find((s) => {
+      const allyLower = s.allyHero.toLowerCase().trim();
+      return allyLower === lowerA || allyLower === resolvedA;
+    });
+    if (foundB) {
+      return {
+        ...foundB,
+        hero: heroA,
+        allyHero: heroB,
+      };
+    }
+
+    return null;
+  }
+
+  /**
+   * Real-time synergy cross-reference against currently picked allied heroes
+   */
+  public getLiveDraftSynergies(
+    heroName: string,
+    allyPicks: string[]
+  ): Array<{ allyHero: string; synergy: HeroSynergy | null }> {
+    const validAllyPicks = allyPicks.filter((h) => h && h !== '—');
+    if (!heroName || validAllyPicks.length === 0) return [];
+
+    return validAllyPicks.map((allyHero) => {
+      const synergy = this.getHeroSynergyPair(heroName, allyHero);
+      return {
+        allyHero,
+        synergy,
+      };
+    });
+  }
+
+  /**
    * Played With (เล่นกับ) - Hero Synergies
    */
   public getHeroPlayedWith(heroName: string): HeroSynergy[] {
@@ -213,6 +268,33 @@ class StatsDataProviderService {
 
     if (!list) return [];
     return [...list].sort((a, b) => b.winRate - a.winRate);
+  }
+
+  /**
+   * Hero synergies categorized by best / worst synergy boost
+   */
+  public getHeroSynergies(heroName: string): {
+    bestWith: HeroSynergy[];
+    worstWith: HeroSynergy[];
+    all: HeroSynergy[];
+  } | null {
+    if (!heroName || heroName === '—') return null;
+    const list = this.getHeroPlayedWith(heroName);
+    if (!list || list.length === 0) return null;
+
+    const bestWith = list
+      .filter((s) => (s.diff !== undefined ? s.diff > 0 : s.winRate >= 50))
+      .sort((a, b) => (b.diff !== undefined && a.diff !== undefined ? b.diff - a.diff : b.winRate - a.winRate));
+
+    const worstWith = list
+      .filter((s) => (s.diff !== undefined ? s.diff < 0 : s.winRate < 50))
+      .sort((a, b) => (a.diff !== undefined && b.diff !== undefined ? a.diff - b.diff : a.winRate - b.winRate));
+
+    return {
+      bestWith,
+      worstWith,
+      all: list,
+    };
   }
 
   /**

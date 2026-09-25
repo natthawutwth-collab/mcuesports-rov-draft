@@ -71,5 +71,8 @@ export function useHeroStats(selectedHeroName: string | null = null, oppPicks: s
     loadFromApi,
     resetToDefault,
     getHeadToHead: statsDataProvider.getHeadToHead.bind(statsDataProvider),
+    getLiveDraftSynergies: statsDataProvider.getLiveDraftSynergies.bind(statsDataProvider),
+    getHeroSynergyPair: statsDataProvider.getHeroSynergyPair.bind(statsDataProvider),
+    getHeroSynergies: statsDataProvider.getHeroSynergies.bind(statsDataProvider),
   };
 }

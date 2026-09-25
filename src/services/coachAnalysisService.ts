@@ -291,9 +291,12 @@ export function analyzeCoachDraft(params: {
   const validAllyHeroNames = myPicks
     .map((p) => p.hero?.name || '')
     .filter((name) => name && name.toLowerCase() !== targetHeroName.toLowerCase());
-  const liveSynergyRaw = statsDataProvider.getLiveDraftSynergies(targetHeroName, validAllyHeroNames);
+  const liveSynergyRaw =
+    typeof statsDataProvider.getLiveDraftSynergies === 'function'
+      ? statsDataProvider.getLiveDraftSynergies(targetHeroName, validAllyHeroNames)
+      : [];
   const liveAllies = liveSynergyRaw.map((item) => {
-    const diff = item.synergy ? item.synergy.diff : 0;
+    const diff = item.synergy ? (item.synergy.diff ?? 0) : 0;
     return {
       allyHero: item.allyHero,
       synergy: item.synergy,
@@ -302,7 +305,11 @@ export function analyzeCoachDraft(params: {
     };
   });
 
-  const generalSynergies = targetHeroName ? statsDataProvider.getHeroPlayedWith(targetHeroName) : null;
+  const generalSynergies = targetHeroName
+    ? typeof statsDataProvider.getHeroSynergies === 'function'
+      ? statsDataProvider.getHeroSynergies(targetHeroName)
+      : null
+    : null;
   const inspectedSynergies = {
     liveAllies,
     bestWith: generalSynergies?.bestWith || [],
@@ -515,6 +522,7 @@ export function analyzeCoachDraft(params: {
     inspectedHero,
     playerFit,
     inspectedMatchups,
+    inspectedSynergies,
     myTeamComp,
     oppTeamComp,
     warnings,
