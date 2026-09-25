@@ -196,14 +196,20 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <button
-            onClick={onResetToDefault}
-            title="รีเซ็ตกลับเป็นไลน์อัปตัวอย่าง 5 ตำแหน่ง"
-            className="px-3 py-2 rounded-lg font-['Barlow_Condensed'] font-bold text-xs tracking-wider bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 transition-colors flex items-center gap-1.5"
-          >
-            <RotateCcw size={13} />
-            <span className="hidden sm:inline">รีเซ็ตไลน์อัป</span>
-          </button>
+          {players.length > 0 && (
+            <button
+              onClick={() => {
+                if (window.confirm('คุณต้องการลบรายชื่อนักแข่งทั้งหมดในทีมใช่หรือไม่? ข้อมูลทั้งหมดรวมถึงบน Cloud จะถูกล้าง')) {
+                  onResetToDefault();
+                }
+              }}
+              title="ลบรายชื่อนักแข่งทั้งหมด"
+              className="px-3 py-2 rounded-lg font-['Barlow_Condensed'] font-bold text-xs tracking-wider bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-red-100 border border-red-500/30 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <Trash2 size={13} />
+              <span className="hidden sm:inline">ลบนักแข่งทั้งหมด</span>
+            </button>
+          )}
 
           <button
             onClick={handleAddNew}

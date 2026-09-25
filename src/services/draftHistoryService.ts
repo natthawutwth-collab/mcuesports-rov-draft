@@ -5,15 +5,32 @@ import {
 } from '../types/draftHistory';
 
 const STORAGE_KEY = 'mcu_rov_draft_history_v1';
+const DRAFT_PURGE_KEY = 'mcu_rov_draft_history_purge_v3';
+
+const SAMPLE_DRAFT_IDS = new Set([
+  'draft_rpl2026_bac_talon_g1',
+  'draft_rpl2026_hydra_earena_g2',
+]);
 
 export class LocalStorageDraftRepository implements DraftRepository {
+  constructor() {
+    try {
+      if (!localStorage.getItem(DRAFT_PURGE_KEY)) {
+        localStorage.setItem(STORAGE_KEY, '[]');
+        localStorage.setItem(DRAFT_PURGE_KEY, 'done');
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   private getRecordsFromStorage(): DraftHistoryRecord[] {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        return parsed;
+        return parsed.filter((r) => r && !SAMPLE_DRAFT_IDS.has(r.id));
       }
       return [];
     } catch (e) {
@@ -157,82 +174,7 @@ export class LocalStorageDraftRepository implements DraftRepository {
 
   // Seed sample tournament drafts if empty for demonstration
   seedSampleIfEmpty(): void {
-    const current = this.getRecordsFromStorage();
-    if (current.length > 0) return;
-
-    const sample1: DraftHistoryRecord = {
-      id: 'draft_rpl2026_bac_talon_g1',
-      createdAt: new Date(Date.now() - 3600 * 1000 * 24 * 2).toISOString(),
-      updatedAt: new Date(Date.now() - 3600 * 1000 * 24 * 2).toISOString(),
-      tournament: 'RoV Pro League 2026 Summer',
-      match: 'Bacon Time vs Talon Esports (Week 5)',
-      gameNumber: 1,
-      patch: 'Patch 1.56 (Summer 2026)',
-      winner: 'blue',
-      notes: 'Bacon Time เล่นแผนสปีดเร็วด้วย Nakroth + Aya คุม Dark Slayer ทั้งหมด Talon ตั้งรับไม่ทัน',
-      blueTeam: {
-        teamName: 'Bacon Time',
-        side: 'blue',
-        bans: ['Florentino', 'Zip', 'Rourke', 'Wonder Woman'],
-        picks: [
-          { heroName: 'Yena', position: 'DSL', pickOrder: 1 },
-          { heroName: 'Nakroth', position: 'JG', pickOrder: 4 },
-          { heroName: 'Liliana', position: 'MID', pickOrder: 5 },
-          { heroName: 'Aya', position: 'ROAM', pickOrder: 8 },
-          { heroName: 'Hayate', position: 'ADL', pickOrder: 9 },
-        ],
-      },
-      redTeam: {
-        teamName: 'Talon Esports',
-        side: 'red',
-        bans: ['Elsu', 'Helen', 'Kaine', 'Stuart'],
-        picks: [
-          { heroName: 'Maloch', position: 'DSL', pickOrder: 2 },
-          { heroName: 'Aoi', position: 'JG', pickOrder: 3 },
-          { heroName: 'Iggy', position: 'MID', pickOrder: 6 },
-          { heroName: 'Thane', position: 'ROAM', pickOrder: 7 },
-          { heroName: 'Capheny', position: 'ADL', pickOrder: 10 },
-        ],
-      },
-    };
-
-    const sample2: DraftHistoryRecord = {
-      id: 'draft_rpl2026_hydra_earena_g2',
-      createdAt: new Date(Date.now() - 3600 * 1000 * 12).toISOString(),
-      updatedAt: new Date(Date.now() - 3600 * 1000 * 12).toISOString(),
-      tournament: 'RoV Pro League 2026 Summer',
-      match: 'Hydra Esports vs eArena (Week 6)',
-      gameNumber: 2,
-      patch: 'Patch 1.56 (Summer 2026)',
-      winner: 'red',
-      notes: 'eArena แก้ทางด้วย Krizzix + Elsu ส่องวิชั่นกดดันหน้าเลน และไฟต์วงแคบได้เปรียบมาก',
-      blueTeam: {
-        teamName: 'Hydra Esports',
-        side: 'blue',
-        bans: ['Aoi', 'Zip', 'Tachi', 'Veera'],
-        picks: [
-          { heroName: 'Omen', position: 'DSL', pickOrder: 1 },
-          { heroName: 'Keera', position: 'JG', pickOrder: 4 },
-          { heroName: 'Krixi', position: 'MID', pickOrder: 5 },
-          { heroName: 'Lumburr', position: 'ROAM', pickOrder: 8 },
-          { heroName: 'Violet', position: 'ADL', pickOrder: 9 },
-        ],
-      },
-      redTeam: {
-        teamName: 'eArena',
-        side: 'red',
-        bans: ['Florentino', 'Nakroth', 'Rourke', 'Aya'],
-        picks: [
-          { heroName: 'Ryoma', position: 'DSL', pickOrder: 2 },
-          { heroName: 'Yan', position: 'JG', pickOrder: 3 },
-          { heroName: 'Raz', position: 'MID', pickOrder: 6 },
-          { heroName: 'Krizzix', position: 'ROAM', pickOrder: 7 },
-          { heroName: 'Elsu', position: 'ADL', pickOrder: 10 },
-        ],
-      },
-    };
-
-    this.saveRecordsToStorage([sample1, sample2]);
+    // No-op: user requested removal of all sample drafts
   }
 }
 

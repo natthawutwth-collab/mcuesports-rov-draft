@@ -147,6 +147,21 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
             <span>IMPORT JSON</span>
             <input type="file" accept=".json" onChange={handleImport} className="hidden" />
           </label>
+
+          {records.length > 0 && (
+            <button
+              onClick={() => {
+                if (window.confirm('คุณต้องการลบประวัติดราฟต์ทั้งหมดใช่หรือไม่? ข้อมูลทั้งหมดบนคลาวด์จะถูกลบอย่างถาวร')) {
+                  clearAllDrafts();
+                }
+              }}
+              className="px-3 py-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-300 hover:text-red-100 font-['Barlow_Condensed'] text-xs font-bold tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer"
+              title="ลบประวัติดราฟต์ทั้งหมด"
+            >
+              <Trash2 size={13} />
+              <span>ล้างทั้งหมด</span>
+            </button>
+          )}
         </div>
       </div>
 

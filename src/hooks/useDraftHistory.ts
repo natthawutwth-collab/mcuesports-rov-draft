@@ -21,10 +21,6 @@ export function useDraftHistory() {
   const loadRecords = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Seed samples on first load if empty
-      if ('seedSampleIfEmpty' in draftRepository && typeof (draftRepository as any).seedSampleIfEmpty === 'function') {
-        (draftRepository as any).seedSampleIfEmpty();
-      }
       const data = await draftRepository.getAll();
       setRecords(data);
     } catch (e) {

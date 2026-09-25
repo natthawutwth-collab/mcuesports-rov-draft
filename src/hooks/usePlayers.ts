@@ -1,12 +1,29 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Player, PlayerPosition, HeroPlayerBadge, PlayerHeroPoolItem } from '../types/player';
-import { INITIAL_PLAYERS } from '../data/initialPlayers';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { db, ensureAuth } from '../services/firebase';
 
 const STORAGE_KEY = 'mcu_rov_players_v1';
 const TEAM_STORAGE_KEY = 'mcu_rov_team_id_v1';
 const DEFAULT_TEAM_ID = 'main_team';
+const PURGE_KEY = 'mcu_rov_players_purge_v3';
+
+// Sample mock nicknames to filter out if previously seeded
+const SAMPLE_NICKNAMES = new Set(['MOON', 'ALEX', 'ZEPHYR', 'KAIROS', 'VORTEX']);
+
+function sanitizePlayers(list: any[]): Player[] {
+  if (!Array.isArray(list)) return [];
+  return list.filter(
+    (p) =>
+      p &&
+      !SAMPLE_NICKNAMES.has(p.nickname) &&
+      p.id !== 'player_1' &&
+      p.id !== 'player_2' &&
+      p.id !== 'player_3' &&
+      p.id !== 'player_4' &&
+      p.id !== 'player_5'
+  );
+}
 
 export function usePlayers() {
   // 1. Team ID (default to main_team for cross-device shared roster)
@@ -19,20 +36,27 @@ export function usePlayers() {
     }
   });
 
-  // 2. Players State
+  // 2. Players State (starts empty, without seed players)
   const [players, setPlayers] = useState<Player[]>(() => {
     try {
+      if (!localStorage.getItem(PURGE_KEY)) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+        localStorage.setItem(PURGE_KEY, 'done');
+        return [];
+      }
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+        if (Array.isArray(parsed)) {
+          const sanitized = sanitizePlayers(parsed);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+          return sanitized;
         }
       }
     } catch (e) {
       console.error('Failed to load players from localStorage', e);
     }
-    return INITIAL_PLAYERS;
+    return [];
   });
 
   // Sync statuses
@@ -66,28 +90,41 @@ export function usePlayers() {
 
             if (docSnap.exists()) {
               const data = docSnap.data();
-              if (data && Array.isArray(data.players) && data.players.length > 0) {
-                setPlayers(data.players);
-                playersRef.current = data.players;
+              if (data && Array.isArray(data.players)) {
+                const sanitized = sanitizePlayers(data.players);
+
+                // If Firestore still contained sample players, update Firestore immediately to purge them
+                if (sanitized.length !== data.players.length) {
+                  setDoc(
+                    docRef,
+                    {
+                      players: sanitized,
+                      updatedAt: new Date().toISOString(),
+                    },
+                    { merge: true }
+                  ).catch(() => {});
+                }
+
+                setPlayers(sanitized);
+                playersRef.current = sanitized;
                 setIsCloudConnected(true);
                 setSyncError(null);
                 setLastSyncedAt(data.updatedAt || new Date().toISOString());
 
                 try {
-                  localStorage.setItem(STORAGE_KEY, JSON.stringify(data.players));
+                  localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
                 } catch {
-                  // ignore quota error
+                  // ignore
                 }
               }
             } else {
-              // Document does not exist in Cloud yet: initialize it with current players
-              const toUpload = playersRef.current.length > 0 ? playersRef.current : INITIAL_PLAYERS;
+              // Empty initial cloud roster
               setDoc(
                 docRef,
                 {
                   id: teamId,
                   teamName: 'MCU Esports',
-                  players: toUpload,
+                  players: playersRef.current,
                   updatedAt: new Date().toISOString(),
                 },
                 { merge: true }
@@ -130,11 +167,13 @@ export function usePlayers() {
   // Save to both localStorage & Cloud Firestore
   const persistPlayers = useCallback(
     async (newPlayers: Player[]) => {
+      const sanitized = sanitizePlayers(newPlayers);
+
       // 1. Immediately update React state and local storage
-      setPlayers(newPlayers);
-      playersRef.current = newPlayers;
+      setPlayers(sanitized);
+      playersRef.current = sanitized;
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(newPlayers));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
       } catch (e) {
         console.error('Failed to save players to localStorage', e);
       }
@@ -150,7 +189,7 @@ export function usePlayers() {
           {
             id: teamId,
             teamName: 'MCU Esports',
-            players: newPlayers,
+            players: sanitized,
             updatedAt: nowIso,
           },
           { merge: true }
@@ -173,12 +212,13 @@ export function usePlayers() {
     try {
       const docRef = doc(db, 'team_rosters', teamId);
       const nowIso = new Date().toISOString();
+      const sanitized = sanitizePlayers(playersRef.current);
       await setDoc(
         docRef,
         {
           id: teamId,
           teamName: 'MCU Esports',
-          players: playersRef.current,
+          players: sanitized,
           updatedAt: nowIso,
         },
         { merge: true }
@@ -205,9 +245,10 @@ export function usePlayers() {
       if (snap.exists()) {
         const data = snap.data();
         if (data && Array.isArray(data.players)) {
-          setPlayers(data.players);
-          playersRef.current = data.players;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data.players));
+          const sanitized = sanitizePlayers(data.players);
+          setPlayers(sanitized);
+          playersRef.current = sanitized;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
           setIsCloudConnected(true);
           setLastSyncedAt(data.updatedAt || new Date().toISOString());
           setSyncError(null);
@@ -274,9 +315,13 @@ export function usePlayers() {
     [persistPlayers]
   );
 
-  // Reset to default seed players
+  // Reset / Clear all players
   const resetToDefaultPlayers = useCallback(() => {
-    persistPlayers(INITIAL_PLAYERS);
+    persistPlayers([]);
+  }, [persistPlayers]);
+
+  const clearAllPlayers = useCallback(() => {
+    persistPlayers([]);
   }, [persistPlayers]);
 
   // Compute map of heroName -> HeroPlayerBadge[] for O(1) hero card badge lookup
@@ -325,6 +370,7 @@ export function usePlayers() {
     updatePlayer,
     deletePlayer,
     resetToDefaultPlayers,
+    clearAllPlayers,
     heroToPlayersMap,
   };
 }

@@ -16,6 +16,11 @@ import {
 } from '../types/draftHistory';
 
 const LOCAL_STORAGE_BACKUP_KEY = 'mcu_rov_draft_history_v1';
+const DRAFT_PURGE_KEY = 'mcu_rov_draft_history_purge_v3';
+const SAMPLE_DRAFT_IDS = new Set([
+  'draft_rpl2026_bac_talon_g1',
+  'draft_rpl2026_hydra_earena_g2',
+]);
 
 export class FirebaseDraftRepository implements DraftRepository {
   private listeners: Set<() => void> = new Set();
@@ -23,6 +28,16 @@ export class FirebaseDraftRepository implements DraftRepository {
   private cachedRecords: DraftHistoryRecord[] = [];
 
   constructor() {
+    try {
+      if (!localStorage.getItem(DRAFT_PURGE_KEY)) {
+        localStorage.setItem(LOCAL_STORAGE_BACKUP_KEY, '[]');
+        localStorage.setItem(DRAFT_PURGE_KEY, 'done');
+        this.cachedRecords = [];
+        this.clearAll().catch(() => {});
+      }
+    } catch {
+      // ignore
+    }
     this.initRealtimeSync();
   }
 
@@ -47,6 +62,12 @@ export class FirebaseDraftRepository implements DraftRepository {
           const cloudRecords: DraftHistoryRecord[] = [];
           snapshot.forEach((docSnap) => {
             const data = docSnap.data();
+            const id = data?.id || docSnap.id;
+            // Purge the old mock/sample drafts if found in Firestore
+            if (SAMPLE_DRAFT_IDS.has(id)) {
+              deleteDoc(docSnap.ref).catch(() => {});
+              return;
+            }
             cloudRecords.push(data as DraftHistoryRecord);
           });
 
@@ -74,8 +95,11 @@ export class FirebaseDraftRepository implements DraftRepository {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_BACKUP_KEY);
       if (raw) {
-        this.cachedRecords = JSON.parse(raw);
-        this.notifyListeners();
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          this.cachedRecords = list.filter((r) => r && !SAMPLE_DRAFT_IDS.has(r.id));
+          this.notifyListeners();
+        }
       }
     } catch {
       // ignore
@@ -237,10 +261,19 @@ export class FirebaseDraftRepository implements DraftRepository {
     this.notifyListeners();
 
     try {
+      // 1. Delete all records from shared_drafts
+      const sharedCol = collection(db, 'shared_drafts');
+      const sharedSnap = await getDocs(sharedCol);
+      for (const docSnap of sharedSnap.docs) {
+        await deleteDoc(docSnap.ref).catch(() => {});
+      }
+
+      // 2. Also delete from users/${uid}/drafts
       const uid = await this.getUserId();
-      for (const item of toDelete) {
-        const docRef = doc(db, 'users', uid, 'drafts', item.id);
-        await deleteDoc(docRef);
+      const userCol = collection(db, 'users', uid, 'drafts');
+      const userSnap = await getDocs(userCol);
+      for (const docSnap of userSnap.docs) {
+        await deleteDoc(docSnap.ref).catch(() => {});
       }
     } catch (e) {
       console.warn('Clear all cloud error:', e);
@@ -269,58 +302,6 @@ export class FirebaseDraftRepository implements DraftRepository {
   }
 
   seedSampleIfEmpty(): void {
-    if (this.cachedRecords.length > 0) return;
-
-    // Check localStorage
-    try {
-      const raw = localStorage.getItem(LOCAL_STORAGE_BACKUP_KEY);
-      if (raw) {
-        const list = JSON.parse(raw);
-        if (Array.isArray(list) && list.length > 0) {
-          this.cachedRecords = list;
-          return;
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    const sample1: DraftHistoryRecord = {
-      id: 'draft_rpl2026_bac_talon_g1',
-      createdAt: new Date(Date.now() - 3600 * 1000 * 24 * 2).toISOString(),
-      updatedAt: new Date(Date.now() - 3600 * 1000 * 24 * 2).toISOString(),
-      tournament: 'RoV Pro League 2026 Summer',
-      match: 'Bacon Time vs Talon Esports',
-      gameNumber: 1,
-      patch: 'Patch 1.56 (Summer 2026)',
-      winner: 'blue',
-      notes: 'Bacon Time เล่นแผน Front-to-Back คุม Dragon Lane ได้สมบูรณ์แบบ',
-      blueTeam: {
-        teamName: 'Bacon Time',
-        side: 'blue',
-        bans: ['Aoi', 'Billow', 'Stuart', 'Rouie'],
-        picks: [
-          { heroName: 'Toro', position: 'ROAM', pickOrder: 1 },
-          { heroName: 'Marja', position: 'MID', pickOrder: 4 },
-          { heroName: 'Hayate', position: 'ADL', pickOrder: 5 },
-          { heroName: 'Tachi', position: 'DSL', pickOrder: 8 },
-          { heroName: "Eland'orr", position: 'JG', pickOrder: 9 },
-        ],
-      },
-      redTeam: {
-        teamName: 'Talon Esports',
-        side: 'red',
-        bans: ['Florentino', 'Nakroth', 'Dolia', 'Fennik'],
-        picks: [
-          { heroName: 'Capheny', position: 'ADL', pickOrder: 2 },
-          { heroName: 'Iggy', position: 'MID', pickOrder: 3 },
-          { heroName: 'Maloch', position: 'DSL', pickOrder: 6 },
-          { heroName: 'Keeva', position: 'JG', pickOrder: 7 },
-          { heroName: 'Helen', position: 'ROAM', pickOrder: 10 },
-        ],
-      },
-    };
-
-    this.save(sample1);
+    // No-op: Do not auto-seed sample drafts
   }
 }
