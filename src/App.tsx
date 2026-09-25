@@ -61,6 +61,13 @@ export default function App() {
   // Player Management & Hero Pool hook
   const {
     players,
+    teamId,
+    changeTeamId,
+    isSyncing: isPlayersSyncing,
+    isCloudConnected: isPlayersCloudConnected,
+    lastSyncedAt: playersLastSyncedAt,
+    forceSyncToCloud: forceSyncPlayersToCloud,
+    reloadFromCloud: reloadPlayersFromCloud,
     addPlayer,
     updatePlayer,
     deletePlayer,
@@ -318,11 +325,29 @@ export default function App() {
       {currentView === 'players' ? (
         <PlayersPage
           players={players}
+          teamId={teamId}
+          isSyncing={isPlayersSyncing}
+          isCloudConnected={isPlayersCloudConnected}
+          lastSyncedAt={playersLastSyncedAt}
           onAddPlayer={handleAddPlayer}
           onUpdatePlayer={handleUpdatePlayer}
           onDeletePlayer={handleDeletePlayer}
           onResetToDefault={handleResetPlayers}
           onSwitchToDraft={() => setCurrentView('draft')}
+          onChangeTeamId={(newId) => {
+            changeTeamId(newId);
+            showToast(`🔑 สลับไปใช้รหัสทีม "${newId}" เรียบร้อยแล้ว`);
+          }}
+          onForceSync={async () => {
+            const ok = await forceSyncPlayersToCloud();
+            if (ok) showToast('☁️ บันทึกรายชื่อนักแข่งขึ้น Cloud สำเร็จแล้ว ข้อมูลจะซิงค์ไปทุกเครื่อง');
+            return ok;
+          }}
+          onReloadCloud={async () => {
+            const ok = await reloadPlayersFromCloud();
+            if (ok) showToast('🔄 ดึงข้อมูลนักแข่งล่าสุดจาก Cloud สำเร็จ');
+            return ok;
+          }}
         />
       ) : currentView === 'history' ? (
         <DraftHistoryPage

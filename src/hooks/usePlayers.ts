@@ -1,12 +1,25 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Player, PlayerPosition, HeroPlayerBadge, PlayerHeroPoolItem } from '../types/player';
 import { INITIAL_PLAYERS } from '../data/initialPlayers';
 import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
-import { db, ensureAuth, getCurrentUser } from '../services/firebase';
+import { db, ensureAuth } from '../services/firebase';
 
 const STORAGE_KEY = 'mcu_rov_players_v1';
+const TEAM_STORAGE_KEY = 'mcu_rov_team_id_v1';
+const DEFAULT_TEAM_ID = 'main_team';
 
 export function usePlayers() {
+  // 1. Team ID (default to main_team for cross-device shared roster)
+  const [teamId, setTeamIdState] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem(TEAM_STORAGE_KEY);
+      return saved && saved.trim() ? saved.trim() : DEFAULT_TEAM_ID;
+    } catch {
+      return DEFAULT_TEAM_ID;
+    }
+  });
+
+  // 2. Players State
   const [players, setPlayers] = useState<Player[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -22,96 +35,244 @@ export function usePlayers() {
     return INITIAL_PLAYERS;
   });
 
-  // Cloud Firestore Sync (Cross-device persistence)
+  // Sync statuses
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
+
+  // Keep ref of latest players to avoid stale closure during auto-initialization
+  const playersRef = useRef<Player[]>(players);
+  useEffect(() => {
+    playersRef.current = players;
+  }, [players]);
+
+  // Cloud Firestore Sync (Cross-device real-time sync)
   useEffect(() => {
     let unsubscribe: (() => void) | null = null;
+    let isSubscribed = true;
 
-    async function initCloudSync() {
+    // Trigger anonymous auth in background if needed
+    ensureAuth().catch(() => {});
+
+    async function initRealtimeCloudSync() {
       try {
-        const user = await ensureAuth();
-        const uid = user.uid || getCurrentUser()?.uid;
-        if (!uid) return;
+        const docRef = doc(db, 'team_rosters', teamId);
 
-        const docRef = doc(db, 'users', uid, 'settings', 'players_pool');
-        
-        // Listen to cloud updates
-        unsubscribe = onSnapshot(docRef, (docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (data && Array.isArray(data.players) && data.players.length > 0) {
-              setPlayers(data.players);
-              try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data.players));
-              } catch {
-                // ignore
+        unsubscribe = onSnapshot(
+          docRef,
+          (docSnap) => {
+            if (!isSubscribed) return;
+
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              if (data && Array.isArray(data.players) && data.players.length > 0) {
+                setPlayers(data.players);
+                playersRef.current = data.players;
+                setIsCloudConnected(true);
+                setSyncError(null);
+                setLastSyncedAt(data.updatedAt || new Date().toISOString());
+
+                try {
+                  localStorage.setItem(STORAGE_KEY, JSON.stringify(data.players));
+                } catch {
+                  // ignore quota error
+                }
               }
+            } else {
+              // Document does not exist in Cloud yet: initialize it with current players
+              const toUpload = playersRef.current.length > 0 ? playersRef.current : INITIAL_PLAYERS;
+              setDoc(
+                docRef,
+                {
+                  id: teamId,
+                  teamName: 'MCU Esports',
+                  players: toUpload,
+                  updatedAt: new Date().toISOString(),
+                },
+                { merge: true }
+              )
+                .then(() => {
+                  if (isSubscribed) {
+                    setIsCloudConnected(true);
+                    setLastSyncedAt(new Date().toISOString());
+                  }
+                })
+                .catch((err) => {
+                  console.warn('Initial cloud roster upload failed:', err);
+                });
             }
-          } else {
-            // First time: save default/current players to Cloud
-            setDoc(docRef, { players, updatedAt: new Date().toISOString() }, { merge: true }).catch(() => {});
+          },
+          (err) => {
+            console.warn('Firestore onSnapshot error on team_rosters:', err);
+            if (isSubscribed) {
+              setIsCloudConnected(false);
+              setSyncError('กำลังใช้งานโหมดออฟไลน์ (เชื่อมต่อ Cloud ไม่สำเร็จ)');
+            }
           }
-        });
+        );
       } catch (err) {
-        console.warn('Player cloud sync offline fallback:', err);
+        console.warn('Failed to attach Firestore snapshot:', err);
+        if (isSubscribed) {
+          setIsCloudConnected(false);
+        }
       }
     }
 
-    initCloudSync();
+    initRealtimeCloudSync();
 
     return () => {
+      isSubscribed = false;
       if (unsubscribe) unsubscribe();
     };
-  }, []);
+  }, [teamId]);
 
-  // Save to localStorage & Cloud
-  const persistPlayers = useCallback(async (newPlayers: Player[]) => {
-    setPlayers(newPlayers);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newPlayers));
-    } catch (e) {
-      console.error('Failed to save players to localStorage', e);
-    }
-
-    try {
-      const user = await ensureAuth();
-      const uid = user.uid || getCurrentUser()?.uid;
-      if (uid) {
-        const docRef = doc(db, 'users', uid, 'settings', 'players_pool');
-        await setDoc(docRef, { players: newPlayers, updatedAt: new Date().toISOString() }, { merge: true });
+  // Save to both localStorage & Cloud Firestore
+  const persistPlayers = useCallback(
+    async (newPlayers: Player[]) => {
+      // 1. Immediately update React state and local storage
+      setPlayers(newPlayers);
+      playersRef.current = newPlayers;
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(newPlayers));
+      } catch (e) {
+        console.error('Failed to save players to localStorage', e);
       }
-    } catch (err) {
-      console.warn('Failed to sync players to Cloud:', err);
+
+      // 2. Persist to Cloud Firestore across all devices
+      setIsSyncing(true);
+      setSyncError(null);
+      try {
+        const docRef = doc(db, 'team_rosters', teamId);
+        const nowIso = new Date().toISOString();
+        await setDoc(
+          docRef,
+          {
+            id: teamId,
+            teamName: 'MCU Esports',
+            players: newPlayers,
+            updatedAt: nowIso,
+          },
+          { merge: true }
+        );
+        setIsCloudConnected(true);
+        setLastSyncedAt(nowIso);
+      } catch (err: any) {
+        console.error('Failed to sync players to Cloud:', err);
+        setSyncError(err?.message || 'บันทึกขึ้น Cloud ไม่สำเร็จ');
+      } finally {
+        setIsSyncing(false);
+      }
+    },
+    [teamId]
+  );
+
+  // Manual Force Sync to Cloud
+  const forceSyncToCloud = useCallback(async (): Promise<boolean> => {
+    setIsSyncing(true);
+    try {
+      const docRef = doc(db, 'team_rosters', teamId);
+      const nowIso = new Date().toISOString();
+      await setDoc(
+        docRef,
+        {
+          id: teamId,
+          teamName: 'MCU Esports',
+          players: playersRef.current,
+          updatedAt: nowIso,
+        },
+        { merge: true }
+      );
+      setIsCloudConnected(true);
+      setLastSyncedAt(nowIso);
+      setSyncError(null);
+      return true;
+    } catch (err: any) {
+      console.error('Force sync to cloud failed:', err);
+      setSyncError(err?.message || 'เชื่อมต่อ Cloud ล้มเหลว');
+      return false;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [teamId]);
+
+  // Manual Reload from Cloud
+  const reloadFromCloud = useCallback(async (): Promise<boolean> => {
+    setIsSyncing(true);
+    try {
+      const docRef = doc(db, 'team_rosters', teamId);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data && Array.isArray(data.players)) {
+          setPlayers(data.players);
+          playersRef.current = data.players;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data.players));
+          setIsCloudConnected(true);
+          setLastSyncedAt(data.updatedAt || new Date().toISOString());
+          setSyncError(null);
+          return true;
+        }
+      }
+      return false;
+    } catch (err: any) {
+      console.error('Reload from cloud failed:', err);
+      setSyncError(err?.message || 'โหลดข้อมูลจาก Cloud ไม่สำเร็จ');
+      return false;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [teamId]);
+
+  // Change Team Workspace ID
+  const changeTeamId = useCallback((newTeamId: string) => {
+    const clean = newTeamId.trim();
+    if (!clean) return;
+    setTeamIdState(clean);
+    try {
+      localStorage.setItem(TEAM_STORAGE_KEY, clean);
+    } catch {
+      // ignore
     }
   }, []);
 
   // Add player
-  const addPlayer = useCallback((newPlayerData: {
-    name: string;
-    nickname: string;
-    position: PlayerPosition;
-    avatarUrl: string;
-    heroPool: PlayerHeroPoolItem[];
-  }) => {
-    const newPlayer: Player = {
-      ...newPlayerData,
-      id: 'player_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-      createdAt: Date.now(),
-    };
-    persistPlayers([newPlayer, ...players]);
-    return newPlayer;
-  }, [players, persistPlayers]);
+  const addPlayer = useCallback(
+    (newPlayerData: {
+      name: string;
+      nickname: string;
+      position: PlayerPosition;
+      avatarUrl: string;
+      heroPool: PlayerHeroPoolItem[];
+    }) => {
+      const newPlayer: Player = {
+        ...newPlayerData,
+        id: 'player_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        createdAt: Date.now(),
+      };
+      persistPlayers([newPlayer, ...playersRef.current]);
+      return newPlayer;
+    },
+    [persistPlayers]
+  );
 
   // Update player
-  const updatePlayer = useCallback((id: string, updates: Partial<Omit<Player, 'id' | 'createdAt'>>) => {
-    const updated = players.map((p) => (p.id === id ? { ...p, ...updates } : p));
-    persistPlayers(updated);
-  }, [players, persistPlayers]);
+  const updatePlayer = useCallback(
+    (id: string, updates: Partial<Omit<Player, 'id' | 'createdAt'>>) => {
+      const updated = playersRef.current.map((p) => (p.id === id ? { ...p, ...updates } : p));
+      persistPlayers(updated);
+    },
+    [persistPlayers]
+  );
 
   // Delete player
-  const deletePlayer = useCallback((id: string) => {
-    const remaining = players.filter((p) => p.id !== id);
-    persistPlayers(remaining);
-  }, [players, persistPlayers]);
+  const deletePlayer = useCallback(
+    (id: string) => {
+      const remaining = playersRef.current.filter((p) => p.id !== id);
+      persistPlayers(remaining);
+    },
+    [persistPlayers]
+  );
 
   // Reset to default seed players
   const resetToDefaultPlayers = useCallback(() => {
@@ -152,6 +313,14 @@ export function usePlayers() {
 
   return {
     players,
+    teamId,
+    changeTeamId,
+    isSyncing,
+    isCloudConnected,
+    lastSyncedAt,
+    syncError,
+    forceSyncToCloud,
+    reloadFromCloud,
     addPlayer,
     updatePlayer,
     deletePlayer,

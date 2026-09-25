@@ -38,8 +38,7 @@ export class FirebaseDraftRepository implements DraftRepository {
 
   private async initRealtimeSync() {
     try {
-      const uid = await this.getUserId();
-      const colRef = collection(db, 'users', uid, 'drafts');
+      const colRef = collection(db, 'shared_drafts');
       const q = query(colRef, orderBy('createdAt', 'desc'));
 
       this.unsubscribeFirestore = onSnapshot(
@@ -102,8 +101,7 @@ export class FirebaseDraftRepository implements DraftRepository {
 
   async getAll(): Promise<DraftHistoryRecord[]> {
     try {
-      const uid = await this.getUserId();
-      const colRef = collection(db, 'users', uid, 'drafts');
+      const colRef = collection(db, 'shared_drafts');
       const q = query(colRef, orderBy('createdAt', 'desc'));
       const snapshot = await getDocs(q);
 
@@ -147,8 +145,7 @@ export class FirebaseDraftRepository implements DraftRepository {
 
   async getById(id: string): Promise<DraftHistoryRecord | null> {
     try {
-      const uid = await this.getUserId();
-      const docRef = doc(db, 'users', uid, 'drafts', id);
+      const docRef = doc(db, 'shared_drafts', id);
       const snap = await getDoc(docRef);
       if (snap.exists()) {
         return snap.data() as DraftHistoryRecord;

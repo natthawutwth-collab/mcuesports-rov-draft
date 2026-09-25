@@ -102,6 +102,30 @@
         }
       },
       "required": ["userId", "updatedAt"]
+    },
+    "TeamRoster": {
+      "title": "TeamRoster",
+      "description": "Shared team roster and hero pool proficiencies cross-device",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique team or roster identifier, e.g. main_team"
+        },
+        "teamName": {
+          "type": "string",
+          "description": "Name of the team"
+        },
+        "players": {
+          "type": "array",
+          "description": "List of player objects with position and hero pool"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last roster update"
+        }
+      },
+      "required": ["id", "players", "updatedAt"]
     }
   },
   "firestore": {
@@ -116,6 +140,10 @@
     "/shared_drafts/{draftId}": {
       "schema": "SavedDraft",
       "description": "Publicly shared drafts accessible across devices via share link or ID"
+    },
+    "/team_rosters/{teamId}": {
+      "schema": "TeamRoster",
+      "description": "Shared team roster accessible cross-device for coaches and teams"
     }
   }
 }
