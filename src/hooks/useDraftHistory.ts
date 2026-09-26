@@ -33,7 +33,7 @@ export function useDraftHistory() {
   useEffect(() => {
     loadRecords();
 
-    // Subscribe to repository updates (Firebase or LocalStorage)
+    // Subscribe to repository updates (Supabase or LocalStorage)
     if ('subscribe' in draftRepository && typeof (draftRepository as any).subscribe === 'function') {
       return (draftRepository as any).subscribe(() => {
         loadRecords();
