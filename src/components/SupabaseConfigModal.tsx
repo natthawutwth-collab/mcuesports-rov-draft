@@ -6,6 +6,7 @@ import {
   testSupabaseConnection,
   isSupabaseConfigured,
   SUPABASE_URL,
+  SUPABASE_ANON_KEY,
 } from '../services/supabase';
 import { Database, CheckCircle2, AlertCircle, Copy, Check, ExternalLink, X, RefreshCw } from 'lucide-react';
 
@@ -59,7 +60,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
 }) => {
   const currentCreds = getCustomSupabaseCredentials();
   const [urlInput, setUrlInput] = useState(currentCreds.url || SUPABASE_URL);
-  const [keyInput, setKeyInput] = useState(currentCreds.key);
+  const [keyInput, setKeyInput] = useState(currentCreds.key || SUPABASE_ANON_KEY);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [copiedSql, setCopiedSql] = useState(false);

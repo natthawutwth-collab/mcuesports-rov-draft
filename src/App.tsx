@@ -67,6 +67,7 @@ export default function App() {
     isCloudConnected: isPlayersCloudConnected,
     activeProvider: playersActiveProvider,
     lastSyncedAt: playersLastSyncedAt,
+    syncError: playersSyncError,
     forceSyncToCloud: forceSyncPlayersToCloud,
     reloadFromCloud: reloadPlayersFromCloud,
     addPlayer,
@@ -331,6 +332,7 @@ export default function App() {
           isCloudConnected={isPlayersCloudConnected}
           activeProvider={playersActiveProvider}
           lastSyncedAt={playersLastSyncedAt}
+          syncError={playersSyncError}
           onAddPlayer={handleAddPlayer}
           onUpdatePlayer={handleUpdatePlayer}
           onDeletePlayer={handleDeletePlayer}

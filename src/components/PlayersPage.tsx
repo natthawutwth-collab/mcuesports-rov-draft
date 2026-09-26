@@ -17,6 +17,7 @@ import {
   Check,
   Share2,
   Database,
+  AlertCircle,
 } from 'lucide-react';
 
 interface PlayersPageProps {
@@ -26,6 +27,7 @@ interface PlayersPageProps {
   isCloudConnected?: boolean;
   activeProvider?: 'supabase' | 'local';
   lastSyncedAt?: string | null;
+  syncError?: string | null;
   onAddPlayer: (data: Parameters<typeof PlayerModal>[0]['onSave'] extends (data: infer T) => void ? T : never) => void;
   onUpdatePlayer: (id: string, updates: Partial<Player>) => void;
   onDeletePlayer: (id: string) => void;
@@ -57,6 +59,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
   isCloudConnected = true,
   activeProvider = 'supabase',
   lastSyncedAt = null,
+  syncError = null,
   onAddPlayer,
   onUpdatePlayer,
   onDeletePlayer,
@@ -318,6 +321,22 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Sync / Table notice banner */}
+      {syncError && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-amber-950/40 border border-amber-500/40 rounded-xl text-amber-200 text-xs animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <AlertCircle size={15} className="text-amber-400 flex-shrink-0" />
+            <span>{syncError}</span>
+          </div>
+          <button
+            onClick={() => setIsConfigModalOpen(true)}
+            className="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/40 font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider cursor-pointer whitespace-nowrap transition-colors"
+          >
+            ดูคำสั่ง SQL
+          </button>
+        </div>
+      )}
 
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-black/40 border border-white/10 rounded-xl backdrop-blur-sm">

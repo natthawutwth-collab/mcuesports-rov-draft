@@ -100,7 +100,12 @@ export function usePlayers() {
 
           if (!isSubscribed) return;
 
-          if (!error && data && Array.isArray(data.players)) {
+          if (error) {
+            if (error.code === '42P01' || error.code === 'PGRST205') {
+              setSyncError('ยังไม่พบตาราง team_rosters ใน Supabase กรุณารัน SQL เพื่อเริ่มซิงค์');
+              setIsCloudConnected(false);
+            }
+          } else if (data && Array.isArray(data.players)) {
             const sanitized = sanitizePlayers(data.players);
             setPlayers(sanitized);
             playersRef.current = sanitized;
@@ -113,7 +118,7 @@ export function usePlayers() {
             } catch {
               // ignore
             }
-          } else if (!error && !data) {
+          } else if (!data) {
             // First time team record - initialize in Supabase
             const nowIso = new Date().toISOString();
             await supabase.from('team_rosters').insert({
