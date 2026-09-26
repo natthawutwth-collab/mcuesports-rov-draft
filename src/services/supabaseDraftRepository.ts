@@ -2,7 +2,17 @@ import {
   DraftHistoryRecord,
   DraftRepository,
 } from '../types/draftHistory';
-import { supabase, isSupabaseConfigured } from './supabase';
+import { supabase, isSupabaseConfigured, subscribeSupabaseConfigChange } from './supabase';
+import { db } from './firebase';
+import {
+  collection,
+  doc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  orderBy,
+} from 'firebase/firestore';
 
 const LOCAL_STORAGE_BACKUP_KEY = 'mcu_rov_draft_history_v1';
 const DRAFT_PURGE_KEY = 'mcu_rov_draft_history_purge_v3';
@@ -60,58 +70,94 @@ export class SupabaseDraftRepository implements DraftRepository {
     this.initRealtimeSync();
   }
 
+  private unsubscribeFirestore: (() => void) | null = null;
+
   private initRealtimeSync() {
-    if (!supabase || !isSupabaseConfigured) {
-      this.loadFromLocalBackup();
-      return;
+    if (this.unsubscribeFirestore) {
+      this.unsubscribeFirestore();
+      this.unsubscribeFirestore = null;
+    }
+    if (this.realtimeChannel && supabase) {
+      supabase.removeChannel(this.realtimeChannel).catch(() => {});
+      this.realtimeChannel = null;
     }
 
-    try {
-      this.realtimeChannel = supabase
-        .channel('public:shared_drafts')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'shared_drafts' },
-          (payload) => {
-            if (payload.eventType === 'INSERT' && payload.new) {
-              const rec = rowToRecord(payload.new);
-              if (!SAMPLE_DRAFT_IDS.has(rec.id)) {
+    if (supabase && isSupabaseConfigured) {
+      try {
+        this.realtimeChannel = supabase
+          .channel('public:shared_drafts')
+          .on(
+            'postgres_changes',
+            { event: '*', schema: 'public', table: 'shared_drafts' },
+            (payload) => {
+              if (payload.eventType === 'INSERT' && payload.new) {
+                const rec = rowToRecord(payload.new);
+                if (!SAMPLE_DRAFT_IDS.has(rec.id)) {
+                  const idx = this.cachedRecords.findIndex((r) => r.id === rec.id);
+                  if (idx === -1) {
+                    this.cachedRecords.unshift(rec);
+                  } else {
+                    this.cachedRecords[idx] = rec;
+                  }
+                  this.persistLocalCache();
+                  this.notifyListeners();
+                }
+              } else if (payload.eventType === 'UPDATE' && payload.new) {
+                const rec = rowToRecord(payload.new);
                 const idx = this.cachedRecords.findIndex((r) => r.id === rec.id);
-                if (idx === -1) {
-                  this.cachedRecords.unshift(rec);
-                } else {
+                if (idx !== -1) {
                   this.cachedRecords[idx] = rec;
+                } else {
+                  this.cachedRecords.unshift(rec);
                 }
                 this.persistLocalCache();
                 this.notifyListeners();
-              }
-            } else if (payload.eventType === 'UPDATE' && payload.new) {
-              const rec = rowToRecord(payload.new);
-              const idx = this.cachedRecords.findIndex((r) => r.id === rec.id);
-              if (idx !== -1) {
-                this.cachedRecords[idx] = rec;
-              } else {
-                this.cachedRecords.unshift(rec);
-              }
-              this.persistLocalCache();
-              this.notifyListeners();
-            } else if (payload.eventType === 'DELETE' && payload.old) {
-              const oldId = (payload.old as any).id;
-              if (oldId) {
-                this.cachedRecords = this.cachedRecords.filter((r) => r.id !== oldId);
-                this.persistLocalCache();
-                this.notifyListeners();
+              } else if (payload.eventType === 'DELETE' && payload.old) {
+                const oldId = (payload.old as any).id;
+                if (oldId) {
+                  this.cachedRecords = this.cachedRecords.filter((r) => r.id !== oldId);
+                  this.persistLocalCache();
+                  this.notifyListeners();
+                }
               }
             }
-          }
-        )
-        .subscribe((status) => {
-          if (status === 'SUBSCRIBED') {
-            this.getAll().catch(() => {});
-          }
-        });
-    } catch (e) {
-      console.warn('Supabase Realtime subscription error, using local fallback:', e);
+          )
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              this.getAll().catch(() => {});
+            }
+          });
+        return;
+      } catch (e) {
+        console.warn('Supabase Realtime subscription error, using Firestore/local fallback:', e);
+      }
+    }
+
+    // Default to Firebase Firestore
+    try {
+      const colRef = collection(db, 'shared_drafts');
+      const q = query(colRef, orderBy('createdAt', 'desc'));
+      this.unsubscribeFirestore = onSnapshot(
+        q,
+        (snapshot) => {
+          const list: DraftHistoryRecord[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data();
+            if (data && !SAMPLE_DRAFT_IDS.has(d.id)) {
+              list.push(data as DraftHistoryRecord);
+            }
+          });
+          this.cachedRecords = list;
+          this.persistLocalCache();
+          this.notifyListeners();
+        },
+        (err) => {
+          console.warn('Firestore realtime error, using local storage fallback:', err);
+          this.loadFromLocalBackup();
+        }
+      );
+    } catch (err) {
+      console.warn('Firestore realtime setup error:', err);
       this.loadFromLocalBackup();
     }
   }
@@ -258,6 +304,13 @@ export class SupabaseDraftRepository implements DraftRepository {
       }
     }
 
+    // 3. Persist to Firestore (always active fallback/primary)
+    try {
+      await setDoc(doc(db, 'shared_drafts', record.id), record, { merge: true });
+    } catch (e) {
+      console.warn('Firestore draft save warning:', e);
+    }
+
     return record;
   }
 
@@ -274,6 +327,13 @@ export class SupabaseDraftRepository implements DraftRepository {
       } catch (e) {
         console.warn('Failed to delete draft from Supabase:', e);
       }
+    }
+
+    // 3. Delete from Firestore
+    try {
+      await deleteDoc(doc(db, 'shared_drafts', id));
+    } catch (e) {
+      console.warn('Firestore draft delete warning:', e);
     }
 
     return true;

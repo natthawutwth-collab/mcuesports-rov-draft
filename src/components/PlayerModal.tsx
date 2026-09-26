@@ -96,12 +96,23 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
     );
   };
 
+  const [nicknameError, setNicknameError] = useState<string | null>(null);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!nickname.trim()) return;
+    const cleanNick = nickname.trim();
+    const cleanName = name.trim();
+    const effectiveNick = cleanNick || cleanName.split(' ')[0] || '';
+
+    if (!effectiveNick) {
+      setNicknameError('กรุณากรอก In-game Nickname หรือชื่อนักแข่งอย่างน้อย 1 อย่าง');
+      return;
+    }
+
+    setNicknameError(null);
     onSave({
-      name: name.trim() || nickname.trim(),
-      nickname: nickname.trim().toUpperCase(),
+      name: cleanName || effectiveNick,
+      nickname: effectiveNick.toUpperCase(),
       position,
       avatarUrl: avatarUrl.trim() || PRESET_AVATARS[0],
       heroPool,
@@ -140,11 +151,16 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
               </label>
               <input
                 type="text"
-                required
+                autoFocus
                 value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
+                onChange={(e) => {
+                  setNickname(e.target.value);
+                  if (nicknameError) setNicknameError(null);
+                }}
                 placeholder="เช่น MOON, ALEX, 007x"
-                className="w-full bg-[rgba(20,20,26,0.8)] border border-white/15 focus:border-[#a82844] rounded-lg px-3 py-2 text-white font-['Orbitron'] font-bold text-sm tracking-wider outline-none transition-colors"
+                className={`w-full bg-[rgba(20,20,26,0.8)] border rounded-lg px-3 py-2 text-white font-['Orbitron'] font-bold text-sm tracking-wider outline-none transition-colors ${
+                  nicknameError ? 'border-red-500 ring-1 ring-red-500' : 'border-white/15 focus:border-[#a82844]'
+                }`}
               />
             </div>
             <div>
@@ -154,12 +170,22 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (nicknameError) setNicknameError(null);
+                }}
                 placeholder="เช่น ธนากรณ์ ใจดี"
                 className="w-full bg-[rgba(20,20,26,0.8)] border border-white/15 focus:border-[#a82844] rounded-lg px-3 py-2 text-white text-sm font-['Kanit'] outline-none transition-colors"
               />
             </div>
           </div>
+
+          {nicknameError && (
+            <div className="px-3 py-2 rounded-lg bg-red-950/60 border border-red-500/50 text-red-200 text-xs font-['Kanit'] flex items-center gap-1.5 animate-in fade-in">
+              <span>⚠️</span>
+              <span>{nicknameError}</span>
+            </div>
+          )}
 
           {/* Row 2: Position */}
           <div>
@@ -202,7 +228,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                 }}
               />
               <input
-                type="url"
+                type="text"
                 value={avatarUrl}
                 onChange={(e) => setAvatarUrl(e.target.value)}
                 placeholder="ระบุ URL รูปโปรไฟล์ หรือเลือกจากรายการด้านล่าง..."

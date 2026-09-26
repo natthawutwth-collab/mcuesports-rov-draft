@@ -65,6 +65,7 @@ export default function App() {
     changeTeamId,
     isSyncing: isPlayersSyncing,
     isCloudConnected: isPlayersCloudConnected,
+    activeProvider: playersActiveProvider,
     lastSyncedAt: playersLastSyncedAt,
     forceSyncToCloud: forceSyncPlayersToCloud,
     reloadFromCloud: reloadPlayersFromCloud,
@@ -328,6 +329,7 @@ export default function App() {
           teamId={teamId}
           isSyncing={isPlayersSyncing}
           isCloudConnected={isPlayersCloudConnected}
+          activeProvider={playersActiveProvider}
           lastSyncedAt={playersLastSyncedAt}
           onAddPlayer={handleAddPlayer}
           onUpdatePlayer={handleUpdatePlayer}

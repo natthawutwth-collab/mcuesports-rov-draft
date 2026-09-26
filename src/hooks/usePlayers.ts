@@ -1,26 +1,28 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Player, PlayerPosition, HeroPlayerBadge, PlayerHeroPoolItem } from '../types/player';
-import { supabase, isSupabaseConfigured } from '../services/supabase';
+import {
+  supabase,
+  isSupabaseConfigured,
+  subscribeSupabaseConfigChange,
+} from '../services/supabase';
+import { db } from '../services/firebase';
+import { doc, setDoc, onSnapshot, getDoc } from 'firebase/firestore';
 
 const STORAGE_KEY = 'mcu_rov_players_v1';
 const TEAM_STORAGE_KEY = 'mcu_rov_team_id_v1';
 const DEFAULT_TEAM_ID = 'main_team';
 const PURGE_KEY = 'mcu_rov_players_purge_v3';
 
-// Sample mock nicknames to filter out if previously seeded
-const SAMPLE_NICKNAMES = new Set(['MOON', 'ALEX', 'ZEPHYR', 'KAIROS', 'VORTEX']);
-
+// Validate player structure, ensuring user players (regardless of nickname) are preserved
 function sanitizePlayers(list: any[]): Player[] {
   if (!Array.isArray(list)) return [];
   return list.filter(
     (p) =>
       p &&
-      !SAMPLE_NICKNAMES.has(p.nickname) &&
-      p.id !== 'player_1' &&
-      p.id !== 'player_2' &&
-      p.id !== 'player_3' &&
-      p.id !== 'player_4' &&
-      p.id !== 'player_5'
+      typeof p === 'object' &&
+      typeof p.nickname === 'string' &&
+      p.nickname.trim().length > 0 &&
+      p.id !== 'legacy_mock_seed_1'
   );
 }
 
@@ -35,7 +37,7 @@ export function usePlayers() {
     }
   });
 
-  // 2. Players State (starts empty, without seed players)
+  // 2. Players State (loaded from localStorage first for instant responsiveness)
   const [players, setPlayers] = useState<Player[]>(() => {
     try {
       if (!localStorage.getItem(PURGE_KEY)) {
@@ -60,150 +62,205 @@ export function usePlayers() {
 
   // Sync statuses
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(() => isSupabaseConfigured);
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(true);
+  const [activeProvider, setActiveProvider] = useState<'supabase' | 'firebase' | 'local'>('firebase');
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
 
-  // Keep ref of latest players to avoid stale closure during auto-initialization
+  // Keep ref of latest players to avoid stale closure
   const playersRef = useRef<Player[]>(players);
   useEffect(() => {
     playersRef.current = players;
   }, [players]);
 
-  // Supabase Sync (Cross-device real-time sync via Postgres Realtime)
+  // Re-sync whenever teamId changes or Supabase credentials change
+  const [supabaseActive, setSupabaseActive] = useState<boolean>(() => isSupabaseConfigured);
+
+  useEffect(() => {
+    return subscribeSupabaseConfigChange((configured) => {
+      setSupabaseActive(configured);
+    });
+  }, []);
+
+  // Cross-device real-time sync (Supabase if configured, otherwise Firebase Firestore)
   useEffect(() => {
     let isSubscribed = true;
-    let channel: any = null;
+    let cleanupFn: (() => void) | null = null;
 
-    async function initSupabaseSync() {
-      if (!supabase || !isSupabaseConfigured) {
-        if (isSubscribed) {
-          setIsCloudConnected(false);
+    async function initSync() {
+      // PATH A: Supabase is configured
+      if (supabaseActive && supabase) {
+        setActiveProvider('supabase');
+        try {
+          // 1. Fetch from Supabase
+          const { data, error } = await supabase
+            .from('team_rosters')
+            .select('*')
+            .eq('id', teamId)
+            .maybeSingle();
+
+          if (!isSubscribed) return;
+
+          if (!error && data && Array.isArray(data.players)) {
+            const sanitized = sanitizePlayers(data.players);
+            setPlayers(sanitized);
+            playersRef.current = sanitized;
+            setIsCloudConnected(true);
+            setSyncError(null);
+            setLastSyncedAt(data.updated_at || new Date().toISOString());
+
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+            } catch {
+              // ignore
+            }
+          } else if (!error && !data) {
+            // First time team record
+            const nowIso = new Date().toISOString();
+            await supabase.from('team_rosters').insert({
+              id: teamId,
+              team_name: 'MCU Esports',
+              players: playersRef.current,
+              updated_at: nowIso,
+            });
+
+            if (isSubscribed) {
+              setIsCloudConnected(true);
+              setLastSyncedAt(nowIso);
+            }
+          }
+
+          // 2. Realtime channel on Supabase
+          const channel = supabase
+            .channel(`public:team_rosters:${teamId}`)
+            .on(
+              'postgres_changes',
+              {
+                event: '*',
+                schema: 'public',
+                table: 'team_rosters',
+                filter: `id=eq.${teamId}`,
+              },
+              (payload) => {
+                if (!isSubscribed) return;
+                if (payload.new && Array.isArray((payload.new as any).players)) {
+                  const incoming = sanitizePlayers((payload.new as any).players);
+                  setPlayers(incoming);
+                  playersRef.current = incoming;
+                  setIsCloudConnected(true);
+                  setSyncError(null);
+                  setLastSyncedAt((payload.new as any).updated_at || new Date().toISOString());
+
+                  try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(incoming));
+                  } catch {
+                    // ignore
+                  }
+                }
+              }
+            )
+            .subscribe((status) => {
+              if (isSubscribed) {
+                if (status === 'SUBSCRIBED') {
+                  setIsCloudConnected(true);
+                  setSyncError(null);
+                } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+                  // Fall back gracefully
+                  setIsCloudConnected(true);
+                }
+              }
+            });
+
+          cleanupFn = () => {
+            supabase?.removeChannel(channel).catch(() => {});
+          };
+          return;
+        } catch (err) {
+          console.warn('Supabase sync init failed, falling back to Firestore:', err);
         }
-        return;
       }
 
+      // PATH B: Firebase Firestore (Active default in AI Studio)
+      setActiveProvider('firebase');
       try {
-        // 1. Fetch initial cloud roster
-        const { data, error } = await supabase
-          .from('team_rosters')
-          .select('*')
-          .eq('id', teamId)
-          .maybeSingle();
+        const rosterDocRef = doc(db, 'team_rosters', teamId);
 
-        if (!isSubscribed) return;
-
-        if (!error && data && Array.isArray(data.players)) {
-          const sanitized = sanitizePlayers(data.players);
-
-          // If Supabase still contained sample players, clean them up
-          if (sanitized.length !== data.players.length) {
-            supabase
-              .from('team_rosters')
-              .update({
-                players: sanitized,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', teamId)
-              .then(() => {});
-          }
-
-          setPlayers(sanitized);
-          playersRef.current = sanitized;
-          setIsCloudConnected(true);
-          setSyncError(null);
-          setLastSyncedAt(data.updated_at || new Date().toISOString());
-
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
-          } catch {
-            // ignore
-          }
-        } else if (!error && !data) {
-          // Initialize empty record for teamId
-          const nowIso = new Date().toISOString();
-          await supabase.from('team_rosters').insert({
-            id: teamId,
-            team_name: 'MCU Esports',
-            players: playersRef.current,
-            updated_at: nowIso,
-          });
-
-          if (isSubscribed) {
-            setIsCloudConnected(true);
-            setLastSyncedAt(nowIso);
-          }
-        } else if (error) {
-          console.warn('Supabase fetch team_rosters warning:', error.message);
-          if (isSubscribed) {
-            setIsCloudConnected(false);
-            setSyncError('กำลังใช้งานโหมดออฟไลน์ (เชื่อมต่อ Supabase ไม่สำเร็จ)');
-          }
-        }
-
-        // 2. Realtime subscription for cross-device live updates
-        channel = supabase
-          .channel(`public:team_rosters:${teamId}`)
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'team_rosters',
-              filter: `id=eq.${teamId}`,
-            },
-            (payload) => {
-              if (!isSubscribed) return;
-              if (payload.new && Array.isArray((payload.new as any).players)) {
-                const incomingPlayers = sanitizePlayers((payload.new as any).players);
-                setPlayers(incomingPlayers);
-                playersRef.current = incomingPlayers;
+        // Realtime Firestore subscription
+        const unsub = onSnapshot(
+          rosterDocRef,
+          (docSnap) => {
+            if (!isSubscribed) return;
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              if (Array.isArray(data?.players)) {
+                const incoming = sanitizePlayers(data.players);
+                setPlayers(incoming);
+                playersRef.current = incoming;
                 setIsCloudConnected(true);
                 setSyncError(null);
-                setLastSyncedAt((payload.new as any).updated_at || new Date().toISOString());
+                setLastSyncedAt(data?.updated_at || new Date().toISOString());
 
                 try {
-                  localStorage.setItem(STORAGE_KEY, JSON.stringify(incomingPlayers));
+                  localStorage.setItem(STORAGE_KEY, JSON.stringify(incoming));
                 } catch {
                   // ignore
                 }
               }
+            } else {
+              // Doc doesn't exist yet, save current local players to Firestore
+              const nowIso = new Date().toISOString();
+              setDoc(
+                rosterDocRef,
+                {
+                  id: teamId,
+                  team_name: 'MCU Esports',
+                  players: playersRef.current,
+                  updated_at: nowIso,
+                },
+                { merge: true }
+              ).catch((e) => console.warn('Init roster in firestore error:', e));
+
+              setIsCloudConnected(true);
+              setLastSyncedAt(nowIso);
             }
-          )
-          .subscribe((status) => {
+          },
+          (err) => {
+            console.warn('Firestore snapshot error, falling back to local storage:', err);
             if (isSubscribed) {
-              if (status === 'SUBSCRIBED') {
-                setIsCloudConnected(true);
-                setSyncError(null);
-              } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-                setIsCloudConnected(false);
-              }
+              setActiveProvider('local');
+              setIsCloudConnected(false);
             }
-          });
+          }
+        );
+
+        cleanupFn = () => {
+          unsub();
+        };
       } catch (err) {
-        console.warn('Failed to initialize Supabase sync:', err);
+        console.warn('Failed to initialize Firestore sync:', err);
         if (isSubscribed) {
+          setActiveProvider('local');
           setIsCloudConnected(false);
         }
       }
     }
 
-    initSupabaseSync();
+    initSync();
 
     return () => {
       isSubscribed = false;
-      if (channel && supabase) {
-        supabase.removeChannel(channel).catch(() => {});
+      if (cleanupFn) {
+        cleanupFn();
       }
     };
-  }, [teamId]);
+  }, [teamId, supabaseActive]);
 
-  // Save to both localStorage & Supabase
+  // Persist players to LocalStorage AND Cloud (Supabase and/or Firestore)
   const persistPlayers = useCallback(
     async (newPlayers: Player[]) => {
       const sanitized = sanitizePlayers(newPlayers);
 
-      // 1. Immediately update React state and local storage
+      // 1. Immediately update React state and local storage for 0ms lag
       setPlayers(sanitized);
       playersRef.current = sanitized;
       try {
@@ -212,102 +269,167 @@ export function usePlayers() {
         console.error('Failed to save players to localStorage', e);
       }
 
-      // 2. Persist to Supabase across all devices
-      if (supabase && isSupabaseConfigured) {
-        setIsSyncing(true);
-        setSyncError(null);
+      setIsSyncing(true);
+      setSyncError(null);
+      const nowIso = new Date().toISOString();
+
+      try {
+        let syncedCloud = false;
+
+        // 2. Persist to Supabase if configured
+        if (supabaseActive && supabase) {
+          try {
+            const { error } = await supabase.from('team_rosters').upsert({
+              id: teamId,
+              team_name: 'MCU Esports',
+              players: sanitized,
+              updated_at: nowIso,
+            });
+            if (!error) {
+              syncedCloud = true;
+            } else {
+              console.warn('Supabase upsert failed:', error.message);
+            }
+          } catch (err) {
+            console.warn('Supabase upsert exception:', err);
+          }
+        }
+
+        // 3. Persist to Firestore (always kept in sync as reliable fallback/primary)
         try {
-          const nowIso = new Date().toISOString();
-          const { error } = await supabase.from('team_rosters').upsert({
+          const rosterDocRef = doc(db, 'team_rosters', teamId);
+          await setDoc(
+            rosterDocRef,
+            {
+              id: teamId,
+              team_name: 'MCU Esports',
+              players: sanitized,
+              updated_at: nowIso,
+            },
+            { merge: true }
+          );
+          syncedCloud = true;
+        } catch (err) {
+          console.warn('Firestore setDoc warning:', err);
+        }
+
+        if (syncedCloud) {
+          setIsCloudConnected(true);
+          setLastSyncedAt(nowIso);
+        }
+      } catch (err: any) {
+        console.error('Failed to persist players to cloud:', err);
+        setSyncError(err?.message || 'บันทึกขึ้น Cloud ไม่สำเร็จ');
+      } finally {
+        setIsSyncing(false);
+      }
+    },
+    [teamId, supabaseActive]
+  );
+
+  // Manual Force Sync to Cloud
+  const forceSyncToCloud = useCallback(async (): Promise<boolean> => {
+    setIsSyncing(true);
+    setSyncError(null);
+    const nowIso = new Date().toISOString();
+    const sanitized = sanitizePlayers(playersRef.current);
+    let success = false;
+
+    try {
+      // Try Supabase if configured
+      if (supabaseActive && supabase) {
+        const { error } = await supabase.from('team_rosters').upsert({
+          id: teamId,
+          team_name: 'MCU Esports',
+          players: sanitized,
+          updated_at: nowIso,
+        });
+        if (!error) success = true;
+      }
+
+      // Also sync to Firestore
+      try {
+        const rosterDocRef = doc(db, 'team_rosters', teamId);
+        await setDoc(
+          rosterDocRef,
+          {
             id: teamId,
             team_name: 'MCU Esports',
             players: sanitized,
             updated_at: nowIso,
-          });
-
-          if (error) throw error;
-          setIsCloudConnected(true);
-          setLastSyncedAt(nowIso);
-        } catch (err: any) {
-          console.error('Failed to sync players to Supabase:', err);
-          setSyncError(err?.message || 'บันทึกขึ้น Supabase ไม่สำเร็จ');
-        } finally {
-          setIsSyncing(false);
-        }
+          },
+          { merge: true }
+        );
+        success = true;
+      } catch (e) {
+        console.warn('Firestore force sync warning:', e);
       }
-    },
-    [teamId]
-  );
 
-  // Manual Force Sync to Supabase
-  const forceSyncToCloud = useCallback(async (): Promise<boolean> => {
-    if (!supabase || !isSupabaseConfigured) {
-      setSyncError('Supabase ยังไม่ได้กำหนดค่า');
-      return false;
-    }
-
-    setIsSyncing(true);
-    try {
-      const nowIso = new Date().toISOString();
-      const sanitized = sanitizePlayers(playersRef.current);
-      const { error } = await supabase.from('team_rosters').upsert({
-        id: teamId,
-        team_name: 'MCU Esports',
-        players: sanitized,
-        updated_at: nowIso,
-      });
-
-      if (error) throw error;
-
-      setIsCloudConnected(true);
-      setLastSyncedAt(nowIso);
-      setSyncError(null);
-      return true;
+      if (success) {
+        setIsCloudConnected(true);
+        setLastSyncedAt(nowIso);
+        setSyncError(null);
+        return true;
+      } else {
+        setSyncError('ไม่สามารถซิงค์ขึ้น Cloud ได้');
+        return false;
+      }
     } catch (err: any) {
-      console.error('Force sync to Supabase failed:', err);
-      setSyncError(err?.message || 'เชื่อมต่อ Supabase ล้มเหลว');
+      console.error('Force sync failed:', err);
+      setSyncError(err?.message || 'การเชื่อมต่อขัดข้อง');
       return false;
     } finally {
       setIsSyncing(false);
     }
-  }, [teamId]);
+  }, [teamId, supabaseActive]);
 
-  // Manual Reload from Supabase
+  // Manual Reload from Cloud
   const reloadFromCloud = useCallback(async (): Promise<boolean> => {
-    if (!supabase || !isSupabaseConfigured) {
-      setSyncError('Supabase ยังไม่ได้กำหนดค่า');
-      return false;
-    }
-
     setIsSyncing(true);
     try {
-      const { data, error } = await supabase
-        .from('team_rosters')
-        .select('*')
-        .eq('id', teamId)
-        .maybeSingle();
+      // 1. Try Supabase
+      if (supabaseActive && supabase) {
+        const { data, error } = await supabase
+          .from('team_rosters')
+          .select('*')
+          .eq('id', teamId)
+          .maybeSingle();
 
-      if (error) throw error;
+        if (!error && data && Array.isArray(data.players)) {
+          const sanitized = sanitizePlayers(data.players);
+          setPlayers(sanitized);
+          playersRef.current = sanitized;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+          setIsCloudConnected(true);
+          setLastSyncedAt(data.updated_at || new Date().toISOString());
+          setSyncError(null);
+          return true;
+        }
+      }
 
-      if (data && Array.isArray(data.players)) {
-        const sanitized = sanitizePlayers(data.players);
+      // 2. Try Firestore
+      const rosterDocRef = doc(db, 'team_rosters', teamId);
+      const docSnap = await getDoc(rosterDocRef);
+      if (docSnap.exists() && Array.isArray(docSnap.data()?.players)) {
+        const sanitized = sanitizePlayers(docSnap.data().players);
         setPlayers(sanitized);
         playersRef.current = sanitized;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
         setIsCloudConnected(true);
-        setLastSyncedAt(data.updated_at || new Date().toISOString());
+        setLastSyncedAt(docSnap.data()?.updated_at || new Date().toISOString());
         setSyncError(null);
         return true;
       }
+
       return false;
     } catch (err: any) {
-      console.error('Reload from Supabase failed:', err);
-      setSyncError(err?.message || 'โหลดข้อมูลจาก Supabase ไม่สำเร็จ');
+      console.error('Reload from Cloud failed:', err);
+      setSyncError(err?.message || 'โหลดข้อมูลจาก Cloud ไม่สำเร็จ');
       return false;
     } finally {
       setIsSyncing(false);
     }
-  }, [teamId]);
+  }, [teamId, supabaseActive]);
 
   // Change Team Workspace ID
   const changeTeamId = useCallback((newTeamId: string) => {
@@ -406,6 +528,7 @@ export function usePlayers() {
     changeTeamId,
     isSyncing,
     isCloudConnected,
+    activeProvider,
     lastSyncedAt,
     syncError,
     forceSyncToCloud,

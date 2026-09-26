@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Player, PlayerPosition } from '../types/player';
 import { PlayerModal } from './PlayerModal';
+import { SupabaseConfigModal } from './SupabaseConfigModal';
 import { HERO_IMG_MAP, HERO_IMG_OVERRIDE } from '../data/heroes';
 import {
   Search,
@@ -15,6 +16,7 @@ import {
   Copy,
   Check,
   Share2,
+  Database,
 } from 'lucide-react';
 
 interface PlayersPageProps {
@@ -22,6 +24,7 @@ interface PlayersPageProps {
   teamId?: string;
   isSyncing?: boolean;
   isCloudConnected?: boolean;
+  activeProvider?: 'supabase' | 'firebase' | 'local';
   lastSyncedAt?: string | null;
   onAddPlayer: (data: Parameters<typeof PlayerModal>[0]['onSave'] extends (data: infer T) => void ? T : never) => void;
   onUpdatePlayer: (id: string, updates: Partial<Player>) => void;
@@ -52,6 +55,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
   teamId = 'main_team',
   isSyncing = false,
   isCloudConnected = true,
+  activeProvider = 'firebase',
   lastSyncedAt = null,
   onAddPlayer,
   onUpdatePlayer,
@@ -68,6 +72,9 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+
+  // Backend / Supabase Config Modal
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
   // Team ID Management Modal
   const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
@@ -236,7 +243,19 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
 
           <span className="text-white/40">|</span>
 
-          <div className="flex items-center gap-1 text-[11px] text-white/70">
+          <div className="flex items-center gap-2 text-[11px] text-white/70 flex-wrap">
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                activeProvider === 'supabase'
+                  ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
+                  : activeProvider === 'firebase'
+                  ? 'bg-sky-950/80 text-sky-300 border border-sky-500/40'
+                  : 'bg-amber-950/80 text-amber-300 border border-amber-500/40'
+              }`}
+            >
+              {activeProvider === 'supabase' ? '⚡ Supabase' : activeProvider === 'firebase' ? '🔥 Firebase Cloud' : '💾 Local'}
+            </span>
+
             {isSyncing ? (
               <span className="text-amber-300 flex items-center gap-1">
                 <RefreshCw size={11} className="animate-spin" /> กำลังบันทึกลง Cloud...
@@ -244,10 +263,10 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
             ) : isCloudConnected ? (
               <span className="text-emerald-400 flex items-center gap-1 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                ออนไลน์ ซิงค์ข้ามเครื่องสำเร็จ (ล่าสุด: {formatLastSync(lastSyncedAt)})
+                ออนไลน์ ซิงค์ข้ามเครื่องสำเร็จ ({formatLastSync(lastSyncedAt)})
               </span>
             ) : (
-              <span className="text-red-300">ออฟไลน์ (จะบันทึกทันทีเมื่อต่อเน็ต)</span>
+              <span className="text-amber-300">ใช้งานโหมด Local Storage (พร้อมซิงค์)</span>
             )}
           </div>
         </div>
@@ -260,10 +279,19 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
           )}
 
           <button
+            onClick={() => setIsConfigModalOpen(true)}
+            title="ตั้งค่า Supabase URL และ Anon Key เพื่อเชื่อมต่อโปรเจกต์ของคุณ"
+            className="px-2.5 py-1 rounded-md bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/40 font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer"
+          >
+            <Database size={11} />
+            <span>ตั้งค่า Supabase</span>
+          </button>
+
+          <button
             onClick={handleManualForceSync}
             disabled={manualSyncLoading}
             title="บันทึกข้อมูลนักแข่งและฮีโร่พูลขึ้น Cloud ทันที เพื่อให้เครื่องอื่นเห็นได้เลย"
-            className="px-2.5 py-1 rounded-md bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-500/40 font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 disabled:opacity-50"
+            className="px-2.5 py-1 rounded-md bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-500/40 font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 disabled:opacity-50 cursor-pointer"
           >
             <Cloud size={12} />
             <span>บันทึกลง Cloud ทันที</span>
@@ -273,7 +301,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
             onClick={handleManualReload}
             disabled={manualSyncLoading}
             title="ดึงข้อมูลนักแข่งล่าสุดจาก Cloud"
-            className="px-2.5 py-1 rounded-md bg-white/5 hover:bg-white/10 text-white/80 border border-white/15 font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 disabled:opacity-50"
+            className="px-2.5 py-1 rounded-md bg-white/5 hover:bg-white/10 text-white/80 border border-white/15 font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 disabled:opacity-50 cursor-pointer"
           >
             <RefreshCw size={11} className={manualSyncLoading ? 'animate-spin' : ''} />
             <span>โหลดจาก Cloud</span>
@@ -285,7 +313,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
               setIsTeamModalOpen(true);
             }}
             title="จัดการรหัสทีม / เปลี่ยนทีม เพื่อแชร์ไปยังเครื่องอื่น"
-            className="px-2.5 py-1 rounded-md bg-[#d4a857]/20 hover:bg-[#d4a857]/30 text-[#d4a857] border border-[#d4a857]/40 font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1"
+            className="px-2.5 py-1 rounded-md bg-[#d4a857]/20 hover:bg-[#d4a857]/30 text-[#d4a857] border border-[#d4a857]/40 font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-1 cursor-pointer"
           >
             <Key size={11} />
             <span>รหัสทีม</span>
@@ -500,10 +528,20 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
               onUpdatePlayer(editingPlayer.id, data);
             } else {
               onAddPlayer(data);
+              // Ensure newly added player is immediately visible
+              setSearchQuery('');
+              setPosFilter('ALL');
             }
           }}
         />
       )}
+
+      {/* Supabase / Backend Config Modal */}
+      <SupabaseConfigModal
+        isOpen={isConfigModalOpen}
+        onClose={() => setIsConfigModalOpen(false)}
+        activeProvider={activeProvider}
+      />
 
       {/* Team ID / Workspace Modal */}
       {isTeamModalOpen && (
