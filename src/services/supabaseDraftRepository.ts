@@ -3,16 +3,6 @@ import {
   DraftRepository,
 } from '../types/draftHistory';
 import { supabase, isSupabaseConfigured, subscribeSupabaseConfigChange } from './supabase';
-import { db } from './firebase';
-import {
-  collection,
-  doc,
-  setDoc,
-  deleteDoc,
-  onSnapshot,
-  query,
-  orderBy,
-} from 'firebase/firestore';
 
 const LOCAL_STORAGE_BACKUP_KEY = 'mcu_rov_draft_history_v1';
 const DRAFT_PURGE_KEY = 'mcu_rov_draft_history_purge_v3';
@@ -68,15 +58,14 @@ export class SupabaseDraftRepository implements DraftRepository {
     }
 
     this.initRealtimeSync();
+
+    // Listen for runtime Supabase credential updates
+    subscribeSupabaseConfigChange(() => {
+      this.initRealtimeSync();
+    });
   }
 
-  private unsubscribeFirestore: (() => void) | null = null;
-
   private initRealtimeSync() {
-    if (this.unsubscribeFirestore) {
-      this.unsubscribeFirestore();
-      this.unsubscribeFirestore = null;
-    }
     if (this.realtimeChannel && supabase) {
       supabase.removeChannel(this.realtimeChannel).catch(() => {});
       this.realtimeChannel = null;
@@ -127,39 +116,17 @@ export class SupabaseDraftRepository implements DraftRepository {
               this.getAll().catch(() => {});
             }
           });
+
+        // Initial fetch from Supabase
+        this.getAll().catch(() => {});
         return;
       } catch (e) {
-        console.warn('Supabase Realtime subscription error, using Firestore/local fallback:', e);
+        console.warn('Supabase Realtime subscription error, using local fallback:', e);
       }
     }
 
-    // Default to Firebase Firestore
-    try {
-      const colRef = collection(db, 'shared_drafts');
-      const q = query(colRef, orderBy('createdAt', 'desc'));
-      this.unsubscribeFirestore = onSnapshot(
-        q,
-        (snapshot) => {
-          const list: DraftHistoryRecord[] = [];
-          snapshot.forEach((d) => {
-            const data = d.data();
-            if (data && !SAMPLE_DRAFT_IDS.has(d.id)) {
-              list.push(data as DraftHistoryRecord);
-            }
-          });
-          this.cachedRecords = list;
-          this.persistLocalCache();
-          this.notifyListeners();
-        },
-        (err) => {
-          console.warn('Firestore realtime error, using local storage fallback:', err);
-          this.loadFromLocalBackup();
-        }
-      );
-    } catch (err) {
-      console.warn('Firestore realtime setup error:', err);
-      this.loadFromLocalBackup();
-    }
+    // Default to Local Storage
+    this.loadFromLocalBackup();
   }
 
   private loadFromLocalBackup() {
@@ -210,25 +177,22 @@ export class SupabaseDraftRepository implements DraftRepository {
           .order('created_at', { ascending: false });
 
         if (!error && Array.isArray(data)) {
-          const records: DraftHistoryRecord[] = data
-            .map(rowToRecord)
+          const mapped = data
+            .map((row) => rowToRecord(row))
             .filter((r) => !SAMPLE_DRAFT_IDS.has(r.id));
 
-          this.cachedRecords = records;
+          this.cachedRecords = mapped;
           this.persistLocalCache();
-          return records;
+          this.notifyListeners();
+          return mapped;
         }
       } catch (err) {
-        console.warn('getAll from Supabase failed, reading from local cache:', err);
+        console.warn('Failed to fetch drafts from Supabase, using local cache:', err);
       }
     }
 
-    if (this.cachedRecords.length > 0) {
-      return this.cachedRecords;
-    }
-
     this.loadFromLocalBackup();
-    return this.cachedRecords;
+    return [...this.cachedRecords];
   }
 
   async getById(id: string): Promise<DraftHistoryRecord | null> {
@@ -238,13 +202,13 @@ export class SupabaseDraftRepository implements DraftRepository {
           .from('shared_drafts')
           .select('*')
           .eq('id', id)
-          .single();
+          .maybeSingle();
 
         if (!error && data) {
           return rowToRecord(data);
         }
       } catch (err) {
-        console.warn('getById from Supabase failed, searching local cache:', err);
+        console.warn('Supabase getById error:', err);
       }
     }
 
@@ -264,7 +228,7 @@ export class SupabaseDraftRepository implements DraftRepository {
       updatedAt: now,
     };
 
-    // 1. Immediately update local cache & broadcast
+    // 1. Immediately update local cache & broadcast for 0ms latency
     const existingIndex = this.cachedRecords.findIndex((r) => r.id === id);
     if (existingIndex !== -1) {
       this.cachedRecords[existingIndex] = record;
@@ -275,7 +239,7 @@ export class SupabaseDraftRepository implements DraftRepository {
     this.persistLocalCache();
     this.notifyListeners();
 
-    // 2. Persist to Supabase
+    // 2. Persist to Supabase if configured
     if (supabase && isSupabaseConfigured) {
       try {
         const payload = {
@@ -297,18 +261,11 @@ export class SupabaseDraftRepository implements DraftRepository {
 
         const { error } = await supabase.from('shared_drafts').upsert(payload);
         if (error) {
-          console.warn('Supabase save error (will stay saved in local storage):', error.message);
+          console.warn('Supabase save error (remains saved locally):', error.message);
         }
       } catch (e) {
-        console.warn('Failed to save draft to Supabase (will remain in local storage):', e);
+        console.warn('Failed to save draft to Supabase (remains saved locally):', e);
       }
-    }
-
-    // 3. Persist to Firestore (always active fallback/primary)
-    try {
-      await setDoc(doc(db, 'shared_drafts', record.id), record, { merge: true });
-    } catch (e) {
-      console.warn('Firestore draft save warning:', e);
     }
 
     return record;
@@ -320,20 +277,13 @@ export class SupabaseDraftRepository implements DraftRepository {
     this.persistLocalCache();
     this.notifyListeners();
 
-    // 2. Delete from Supabase
+    // 2. Delete from Supabase if configured
     if (supabase && isSupabaseConfigured) {
       try {
         await supabase.from('shared_drafts').delete().eq('id', id);
       } catch (e) {
         console.warn('Failed to delete draft from Supabase:', e);
       }
-    }
-
-    // 3. Delete from Firestore
-    try {
-      await deleteDoc(doc(db, 'shared_drafts', id));
-    } catch (e) {
-      console.warn('Firestore draft delete warning:', e);
     }
 
     return true;

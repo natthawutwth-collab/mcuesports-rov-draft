@@ -12,7 +12,7 @@ import { Database, CheckCircle2, AlertCircle, Copy, Check, ExternalLink, X, Refr
 interface SupabaseConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
-  activeProvider: 'supabase' | 'firebase' | 'local';
+  activeProvider: 'supabase' | 'local';
 }
 
 const SQL_SCHEMA_SNIPPET = `-- Run this in your Supabase SQL Editor:
@@ -98,7 +98,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
     setKeyInput('');
     setTestResult({
       success: true,
-      message: 'ล้างการตั้งค่าแล้ว ระบบจะสลับไปใช้ Firebase Cloud หรือ LocalStorage อัตโนมัติ',
+      message: 'ล้างการตั้งค่าแล้ว ระบบจะทำงานในโหมด Local Storage',
     });
   };
 
@@ -116,7 +116,7 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
           <div className="flex items-center gap-2">
             <Database size={20} className="text-emerald-400" />
             <h3 className="font-['Orbitron'] font-bold text-base tracking-wider text-white">
-              ตั้งค่า Backend & Supabase
+              ตั้งค่า Backend (Supabase)
             </h3>
           </div>
           <button
@@ -135,23 +135,18 @@ export const SupabaseConfigModal: React.FC<SupabaseConfigModalProps> = ({
             {activeProvider === 'supabase' && isSupabaseConfigured ? (
               <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-500/50 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Supabase (Realtime Sync)
-              </span>
-            ) : activeProvider === 'firebase' ? (
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-sky-950/80 text-sky-300 border border-sky-500/50 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-                Firebase Cloud (Firestore Live)
+                ⚡ Supabase (Realtime Sync เชื่อมต่อแล้ว)
               </span>
             ) : (
               <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-950/80 text-amber-300 border border-amber-500/50">
-                LocalStorage (Offline Mode)
+                💾 LocalStorage (ออฟไลน์)
               </span>
             )}
           </div>
         </div>
 
         <p className="text-xs text-white/75 leading-relaxed">
-          คุณสามารถกรอก <strong>Project URL</strong> และ <strong>anon public key</strong> ของโปรเจกต์ Supabase ของคุณด้านล่าง เพื่อบันทึกและซิงค์ข้อมูลผู้เล่นและประวัติดราฟขึ้น Supabase ของคุณได้ทันที (หากเว้นว่างไว้ ระบบจะซิงค์ผ่าน Cloud อัตโนมัติโดยข้อมูลไม่สูญหาย)
+          กรอก <strong>Project URL</strong> และ <strong>anon public key</strong> จาก Supabase Dashboard เพื่อเปิดใช้งานการซิงค์ข้อมูลผู้เล่นและประวัติดราฟแบบเรียลไทม์ข้ามทุกอุปกรณ์ (หากยังไม่ได้กรอก ข้อมูลทั้งหมดจะบันทึกใน LocalStorage อย่างปลอดภัย)
         </p>
 
         {/* Form Inputs */}

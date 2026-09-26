@@ -126,9 +126,24 @@
         }
       },
       "required": ["id", "players", "updatedAt"]
+    },
+    "TestConnection": {
+      "title": "TestConnection",
+      "description": "Firestore connection health check document",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "Status string"
+        }
+      }
     }
   },
   "firestore": {
+    "/test/{docId}": {
+      "schema": "TestConnection",
+      "description": "Endpoint for testing client connection to Firestore"
+    },
     "/users/{userId}/drafts/{draftId}": {
       "schema": "SavedDraft",
       "description": "Individual draft session created and owned by a user"

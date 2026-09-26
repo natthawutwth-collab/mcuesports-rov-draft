@@ -21,6 +21,10 @@ service cloud.firestore {
         && (data.redTeamName == null || (data.redTeamName is string && data.redTeamName.size() <= 50));
     }
 
+    match /test/{docId} {
+      allow read: if true;
+    }
+
     match /users/{userId}/drafts/{draftId} {
       allow read, write: if (isSignedIn() && request.auth.uid == userId) || (!isSignedIn());
     }

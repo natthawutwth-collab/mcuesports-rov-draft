@@ -24,7 +24,7 @@ interface PlayersPageProps {
   teamId?: string;
   isSyncing?: boolean;
   isCloudConnected?: boolean;
-  activeProvider?: 'supabase' | 'firebase' | 'local';
+  activeProvider?: 'supabase' | 'local';
   lastSyncedAt?: string | null;
   onAddPlayer: (data: Parameters<typeof PlayerModal>[0]['onSave'] extends (data: infer T) => void ? T : never) => void;
   onUpdatePlayer: (id: string, updates: Partial<Player>) => void;
@@ -55,7 +55,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
   teamId = 'main_team',
   isSyncing = false,
   isCloudConnected = true,
-  activeProvider = 'firebase',
+  activeProvider = 'supabase',
   lastSyncedAt = null,
   onAddPlayer,
   onUpdatePlayer,
@@ -248,25 +248,23 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
               className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                 activeProvider === 'supabase'
                   ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/40'
-                  : activeProvider === 'firebase'
-                  ? 'bg-sky-950/80 text-sky-300 border border-sky-500/40'
                   : 'bg-amber-950/80 text-amber-300 border border-amber-500/40'
               }`}
             >
-              {activeProvider === 'supabase' ? '⚡ Supabase' : activeProvider === 'firebase' ? '🔥 Firebase Cloud' : '💾 Local'}
+              {activeProvider === 'supabase' ? '⚡ Supabase' : '💾 Local Storage'}
             </span>
 
             {isSyncing ? (
               <span className="text-amber-300 flex items-center gap-1">
-                <RefreshCw size={11} className="animate-spin" /> กำลังบันทึกลง Cloud...
+                <RefreshCw size={11} className="animate-spin" /> กำลังบันทึกข้อมูล...
               </span>
             ) : isCloudConnected ? (
               <span className="text-emerald-400 flex items-center gap-1 font-medium">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                ออนไลน์ ซิงค์ข้ามเครื่องสำเร็จ ({formatLastSync(lastSyncedAt)})
+                ออนไลน์ ซิงค์ Supabase สำเร็จ ({formatLastSync(lastSyncedAt)})
               </span>
             ) : (
-              <span className="text-amber-300">ใช้งานโหมด Local Storage (พร้อมซิงค์)</span>
+              <span className="text-amber-300">โหมด Local Storage (กด "ตั้งค่า Supabase" เพื่อเชื่อมต่อ Cloud)</span>
             )}
           </div>
         </div>
