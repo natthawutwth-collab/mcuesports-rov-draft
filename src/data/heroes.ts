@@ -29,8 +29,12 @@ export const HERO_IMG_OVERRIDE: Record<string, string> = {
 };
 
 export function getHeroImageUrl(name: string): string {
-  if (HERO_IMG_OVERRIDE[name]) return HERO_IMG_OVERRIDE[name];
-  return `https://res.cloudinary.com/dtzdhbllb/image/upload/${HERO_IMG_MAP[name] || name}.jpg`;
+  if (!name || typeof name !== 'string' || !name.trim()) {
+    return 'https://res.cloudinary.com/dtzdhbllb/image/upload/v1775747198/Flowborn.png';
+  }
+  const clean = name.trim();
+  if (HERO_IMG_OVERRIDE[clean]) return HERO_IMG_OVERRIDE[clean];
+  return `https://res.cloudinary.com/dtzdhbllb/image/upload/${HERO_IMG_MAP[clean] || clean}.jpg`;
 }
 
 export const HEROES: Hero[] = [

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Hero, PositionKey } from '../types/draft';
-import { HEROES } from '../data/heroes';
+import { HEROES, getHeroImageUrl } from '../data/heroes';
 import { Search, X } from 'lucide-react';
 
 interface HeroPickerModalProps {
@@ -106,7 +106,14 @@ export const HeroPickerModal: React.FC<HeroPickerModalProps> = ({
                 className="group flex flex-col items-center p-1 rounded-lg border border-white/10 hover:border-[#a82844] bg-white/[0.02] hover:bg-white/[0.08] transition-all"
               >
                 <div className="w-full aspect-square rounded-md overflow-hidden bg-black/40 mb-1">
-                  <img src={hero.avatarUrl} alt={hero.name} className="w-full h-full object-cover" />
+                  <img
+                    src={hero.avatarUrl || getHeroImageUrl(hero.name)}
+                    alt={hero.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = getHeroImageUrl(hero.name);
+                    }}
+                  />
                 </div>
                 <div className="w-full truncate text-center font-['Barlow_Condensed'] font-bold text-[11px] text-white">
                   {hero.name}

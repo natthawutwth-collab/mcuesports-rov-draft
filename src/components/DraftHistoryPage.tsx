@@ -359,7 +359,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                         <span className="text-[9px] text-[#a0a0a8] uppercase font-['Barlow_Condensed']">
                           Bans:
                         </span>
-                        {rec.blueTeam.bans.slice(0, 4).map((b, i) => (
+                        {rec.blueTeam.bans.slice(0, 4).filter((b): b is string => Boolean(b && b.trim())).map((b, i) => (
                           <img
                             key={i}
                             src={getHeroImageUrl(b)}
@@ -373,7 +373,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
 
                     {/* 5 Picks Lineup */}
                     <div className="grid grid-cols-5 gap-1.5">
-                      {rec.blueTeam.picks.map((p, i) => (
+                      {rec.blueTeam.picks.filter((p) => Boolean(p && p.heroName && p.heroName.trim())).map((p, i) => (
                         <div
                           key={i}
                           onClick={() => onInspectHero?.(p.heroName)}
@@ -410,7 +410,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                         <span className="text-[9px] text-[#a0a0a8] uppercase font-['Barlow_Condensed']">
                           Bans:
                         </span>
-                        {rec.redTeam.bans.slice(0, 4).map((b, i) => (
+                        {rec.redTeam.bans.slice(0, 4).filter((b): b is string => Boolean(b && b.trim())).map((b, i) => (
                           <img
                             key={i}
                             src={getHeroImageUrl(b)}
@@ -424,7 +424,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
 
                     {/* 5 Picks Lineup */}
                     <div className="grid grid-cols-5 gap-1.5">
-                      {rec.redTeam.picks.map((p, i) => (
+                      {rec.redTeam.picks.filter((p) => Boolean(p && p.heroName && p.heroName.trim())).map((p, i) => (
                         <div
                           key={i}
                           onClick={() => onInspectHero?.(p.heroName)}

@@ -221,7 +221,7 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
                             className="w-8 h-8 rounded-lg border-2 border-rose-600/50 bg-black/60 overflow-hidden cursor-pointer flex items-center justify-center relative hover:border-rose-400 transition-all shadow-sm"
                             title={heroName ? `Ban: ${heroName}` : 'คลิกเพื่อเลือก Ban'}
                           >
-                            {img ? (
+                            {heroName && img ? (
                               <img src={img} alt={heroName} className="w-full h-full object-cover opacity-60 grayscale-[0.5]" />
                             ) : (
                               <span className="text-[9.5px] font-black text-slate-500 font-['Orbitron']">B{bIdx + 1}</span>
@@ -255,7 +255,7 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
                               {pos.label}
                             </span>
                             <div className="w-8 h-8 rounded-md overflow-hidden bg-black/80 flex items-center justify-center border border-white/10">
-                              {img ? (
+                              {heroName && img ? (
                                 <img src={img} alt={heroName} className="w-full h-full object-cover" />
                               ) : (
                                 <span className="text-[10px] text-slate-600 font-bold">—</span>
@@ -310,7 +310,7 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
                             className="w-8 h-8 rounded-lg border-2 border-rose-600/50 bg-black/60 overflow-hidden cursor-pointer flex items-center justify-center relative hover:border-rose-400 transition-all shadow-sm"
                             title={heroName ? `Ban: ${heroName}` : 'คลิกเพื่อเลือก Ban'}
                           >
-                            {img ? (
+                            {heroName && img ? (
                               <img src={img} alt={heroName} className="w-full h-full object-cover opacity-60 grayscale-[0.5]" />
                             ) : (
                               <span className="text-[9.5px] font-black text-slate-500 font-['Orbitron']">R{bIdx + 1}</span>
@@ -344,7 +344,7 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
                               {pos.label}
                             </span>
                             <div className="w-8 h-8 rounded-md overflow-hidden bg-black/80 flex items-center justify-center border border-white/10">
-                              {img ? (
+                              {heroName && img ? (
                                 <img src={img} alt={heroName} className="w-full h-full object-cover" />
                               ) : (
                                 <span className="text-[10px] text-slate-600 font-bold">—</span>

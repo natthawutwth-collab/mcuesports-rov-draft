@@ -346,7 +346,7 @@ export function usePlayers() {
       name: string;
       nickname: string;
       position: PlayerPosition;
-      avatarUrl?: string;
+      avatarUrl: string;
       heroPool: PlayerHeroPoolItem[];
     }) => {
       const newPlayer: Player = {
@@ -402,7 +402,7 @@ export function usePlayers() {
           playerNickname: player.nickname,
           position: player.position,
           tier: item.tier,
-          playerAvatar: player.avatarUrl,
+          playerAvatar: (player.avatarUrl && player.avatarUrl.trim()) ? player.avatarUrl.trim() : 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80',
         });
       });
     });

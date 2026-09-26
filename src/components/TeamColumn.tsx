@@ -1,6 +1,7 @@
 import React from 'react';
 import { Hero, LaneSelectKey, TeamSide } from '../types/draft';
 import { PickSlotState } from '../hooks/useDraconmindDraft';
+import { getHeroImageUrl } from '../data/heroes';
 import { X } from 'lucide-react';
 
 interface TeamColumnProps {
@@ -127,7 +128,7 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                 {hero ? (
                   <>
                     <img
-                      src={hero.avatarUrl}
+                      src={hero.avatarUrl || getHeroImageUrl(hero.name)}
                       alt={hero.name}
                       className="w-full h-full object-cover opacity-60 grayscale-[0.5] scale-105"
                       onError={(e) => {
@@ -261,7 +262,7 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
               >
                 {pick.hero ? (
                   <img
-                    src={pick.hero.avatarUrl}
+                    src={pick.hero.avatarUrl || getHeroImageUrl(pick.hero.name)}
                     alt={pick.hero.name}
                     className="w-full h-full object-cover"
                     onError={(e) => {

@@ -407,7 +407,7 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                       >
                         <div className="flex items-center gap-2 min-w-0">
                           <img
-                            src={p.playerAvatar}
+                            src={p.playerAvatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80'}
                             alt={p.playerNickname}
                             className="w-6 h-6 rounded-full object-cover border border-white/20 flex-shrink-0"
                             onError={(e) => {

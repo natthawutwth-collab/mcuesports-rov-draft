@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Hero, PositionKey, TeamSide, SlotType } from '../types/draft';
 import { HeroPlayerBadge } from '../types/player';
 import { DRAFT_TURNS } from '../data/draftSteps';
-import { HEROES } from '../data/heroes';
+import { HEROES, getHeroImageUrl } from '../data/heroes';
 import { DraftScoreResult } from '../data/metaData';
 import { Search, Pause, Play, Ban, Check } from 'lucide-react';
 
@@ -463,7 +463,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                     {/* Hero Portrait */}
                     <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-black/80 mb-1 border border-white/5">
                       <img
-                        src={hero.avatarUrl}
+                        src={hero.avatarUrl || getHeroImageUrl(hero.name)}
                         alt={hero.name}
                         className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-300"
                         loading="lazy"
@@ -555,7 +555,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                         {playerBadges.map((b) => (
                           <div key={b.playerId} className="flex items-center gap-2">
                             <img
-                              src={b.playerAvatar}
+                              src={b.playerAvatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80'}
                               alt={b.playerNickname}
                               className="w-6 h-6 rounded-full object-cover border border-white/20 flex-shrink-0"
                             />

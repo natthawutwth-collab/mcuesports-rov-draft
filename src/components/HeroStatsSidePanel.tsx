@@ -75,7 +75,7 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
                 alt={heroName}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = currentHero.avatarUrl;
+                  (e.target as HTMLImageElement).src = currentHero.avatarUrl || getHeroImageUrl(currentHero.name);
                 }}
               />
               <div className="absolute bottom-0 inset-x-0 bg-black/90 text-[8.5px] font-['Orbitron'] font-black text-center text-white py-0.5 uppercase border-t border-slate-700">

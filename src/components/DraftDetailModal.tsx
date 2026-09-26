@@ -150,7 +150,7 @@ export const DraftDetailModal: React.FC<DraftDetailModalProps> = ({
                   BANS ({record.blueTeam.bans.length})
                 </span>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {record.blueTeam.bans.map((heroName, idx) => (
+                  {record.blueTeam.bans.filter((b): b is string => Boolean(b && b.trim())).map((heroName, idx) => (
                     <div
                       key={idx}
                       onClick={() => onInspectHero?.(heroName)}
@@ -174,7 +174,7 @@ export const DraftDetailModal: React.FC<DraftDetailModalProps> = ({
                   PICKS (5 HEROES COMPOSITION)
                 </span>
                 <div className="space-y-1.5">
-                  {record.blueTeam.picks.map((pick, idx) => (
+                  {record.blueTeam.picks.filter((p) => Boolean(p && p.heroName && p.heroName.trim())).map((pick, idx) => (
                     <div
                       key={idx}
                       onClick={() => onInspectHero?.(pick.heroName)}
@@ -233,7 +233,7 @@ export const DraftDetailModal: React.FC<DraftDetailModalProps> = ({
                   BANS ({record.redTeam.bans.length})
                 </span>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {record.redTeam.bans.map((heroName, idx) => (
+                  {record.redTeam.bans.filter((b): b is string => Boolean(b && b.trim())).map((heroName, idx) => (
                     <div
                       key={idx}
                       onClick={() => onInspectHero?.(heroName)}
@@ -257,7 +257,7 @@ export const DraftDetailModal: React.FC<DraftDetailModalProps> = ({
                   PICKS (5 HEROES COMPOSITION)
                 </span>
                 <div className="space-y-1.5">
-                  {record.redTeam.picks.map((pick, idx) => (
+                  {record.redTeam.picks.filter((p) => Boolean(p && p.heroName && p.heroName.trim())).map((pick, idx) => (
                     <div
                       key={idx}
                       onClick={() => onInspectHero?.(pick.heroName)}
