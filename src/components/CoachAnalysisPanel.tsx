@@ -113,28 +113,28 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
 
   return (
     <aside
-      className="w-full h-full flex flex-col bg-[#121217]/95 border border-white/10 rounded-xl shadow-2xl backdrop-blur-md overflow-hidden transition-all text-white font-['Kanit'] select-none"
+      className="w-full h-full flex flex-col bg-[#0a0c14]/95 border-2 border-[#fbbf24]/50 rounded-2xl shadow-2xl backdrop-blur-md overflow-hidden transition-all text-white font-['Kanit'] select-none"
       style={{ minHeight: '680px' }}
       aria-label="Coach Analysis Panel"
     >
       {/* 1. Header & Team Perspective Switcher */}
-      <div className="p-3 border-b border-white/10 bg-gradient-to-r from-black/60 via-white/[0.02] to-black/60 flex flex-col gap-2">
+      <div className="p-3.5 border-b-2 border-slate-700/80 bg-[#07090f] flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#d4a857]/20 border border-[#d4a857]/50 flex items-center justify-center text-sm shadow-[0_0_10px_rgba(212,168,87,0.3)]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-[#fbbf24]/20 border border-[#fbbf24] flex items-center justify-center text-base shadow-[0_0_12px_rgba(251,191,36,0.3)]">
               🎯
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <h3 className="font-['Barlow_Condensed'] text-[15px] font-black tracking-wider uppercase text-white leading-none">
+              <div className="flex items-center gap-2">
+                <h3 className="font-['Barlow_Condensed'] text-[16px] font-black tracking-wider uppercase text-white leading-none">
                   COACH ANALYSIS PANEL
                 </h3>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#d4a857]/20 text-[#d4a857] border border-[#d4a857]/30">
-                  REAL-TIME
+                <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full bg-[#fbbf24] text-black shadow-sm">
+                  LIVE
                 </span>
               </div>
-              <p className="text-[10.5px] text-[#a0a0a8] leading-tight mt-0.5">
-                ระบบวิเคราะห์ดราฟ & ช่วยตัดสินใจของโค้ช
+              <p className="text-[11px] text-slate-300 leading-tight mt-0.5 font-medium">
+                ระบบวิเคราะห์ดราฟ & ช่วยโค้ชตัดสินใจแบบเรียลไทม์
               </p>
             </div>
           </div>
@@ -142,41 +142,41 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
           <button
             onClick={onClose}
             title="ปิดพาเนลโค้ช"
-            className="w-7 h-7 rounded-lg bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white flex items-center justify-center text-xs transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-lg bg-black/60 hover:bg-rose-900/60 border border-slate-700 hover:border-rose-500 text-slate-300 hover:text-white flex items-center justify-center text-xs transition-colors cursor-pointer"
           >
             ✕
           </button>
         </div>
 
         {/* Perspective Toggle: Blue Side vs Red Side */}
-        <div className="grid grid-cols-2 gap-1.5 p-1 bg-black/40 rounded-lg border border-white/10">
+        <div className="grid grid-cols-2 gap-2 p-1.5 bg-black/70 rounded-xl border border-slate-700/80 shadow-inner">
           <button
             onClick={() => setAnalyzedTeam('blue')}
-            className={`py-1 px-2 rounded font-['Barlow_Condensed'] text-xs font-black tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            className={`py-1.5 px-2.5 rounded-lg font-['Barlow_Condensed'] text-xs font-black tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
               isBlue
-                ? 'bg-[#6b8fb8] text-white shadow-[0_0_12px_rgba(107,143,184,0.4)]'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+                ? 'bg-[#0284c7] text-white shadow-[0_0_14px_rgba(56,189,248,0.5)] border border-[#38bdf8]'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
             <span>🔵</span>
             <span>BLUE SIDE</span>
             {analysis.myTeamComp.missingRoles.length > 0 && (
-              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span className="w-2 h-2 rounded-full bg-[#fbbf24] animate-pulse"></span>
             )}
           </button>
 
           <button
             onClick={() => setAnalyzedTeam('red')}
-            className={`py-1 px-2 rounded font-['Barlow_Condensed'] text-xs font-black tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+            className={`py-1.5 px-2.5 rounded-lg font-['Barlow_Condensed'] text-xs font-black tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
               !isBlue
-                ? 'bg-[#a82844] text-white shadow-[0_0_12px_rgba(168,40,68,0.4)]'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+                ? 'bg-[#e11d48] text-white shadow-[0_0_14px_rgba(244,63,94,0.5)] border border-[#f43f5e]'
+                : 'text-slate-400 hover:text-white hover:bg-white/5'
             }`}
           >
             <span>🔴</span>
             <span>RED SIDE</span>
             {analysis.oppTeamComp.missingRoles.length > 0 && (
-              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+              <span className="w-2 h-2 rounded-full bg-[#fbbf24] animate-pulse"></span>
             )}
           </button>
         </div>

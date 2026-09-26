@@ -346,7 +346,7 @@ export function usePlayers() {
       name: string;
       nickname: string;
       position: PlayerPosition;
-      avatarUrl: string;
+      avatarUrl?: string;
       heroPool: PlayerHeroPoolItem[];
     }) => {
       const newPlayer: Player = {

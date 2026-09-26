@@ -1,71 +1,91 @@
 @import "tailwindcss";
 
 :root {
-  /* Base palette — pure black */
-  --bg-0: #000000;
-  --bg-1: #08080a;
-  --bg-2: #13131a;
-  --bg-3: #1c1c25;
-  --surface-1: rgba(20, 20, 26, 0.55);
-  --surface-2: rgba(28, 28, 38, 0.72);
-  --surface-3: rgba(38, 38, 50, 0.85);
+  /* Base palette — deep obsidian black */
+  --bg-0: #040507;
+  --bg-1: #090a0f;
+  --bg-2: #10121a;
+  --bg-3: #181b26;
 
-  /* Borders */
-  --border: rgba(255, 255, 255, 0.08);
-  --border-hi: rgba(255, 255, 255, 0.20);
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --border-glow: rgba(168, 40, 68, 0.55);
+  /* Surfaces with clear contrast boundaries */
+  --surface-1: rgba(14, 16, 24, 0.88);
+  --surface-2: rgba(22, 26, 38, 0.92);
+  --surface-3: rgba(30, 35, 52, 0.95);
 
-  /* Text */
+  /* High contrast borders */
+  --border: rgba(255, 255, 255, 0.14);
+  --border-hi: rgba(255, 255, 255, 0.28);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --border-glow: rgba(244, 63, 94, 0.65);
+
+  /* Text — high contrast legible */
   --text: #ffffff;
-  --text-soft: #e5e5e8;
-  --muted: #a0a0a8;
-  --muted2: #6a6a72;
+  --text-soft: #f1f5f9;
+  --muted: #94a3b8;
+  --muted2: #64748b;
 
-  /* Caesar / Draconmind Accent */
-  --burgundy: #6D001A;
-  --burgundy-2: #8b1a30;
-  --burgundy-3: #a82844;
-  --burgundy-glow: #c93958;
+  /* Side Contrast Accents: Esports Blue vs Esports Red */
+  --blue-primary: #0284c7;
+  --blue-light: #38bdf8;
+  --blue-glow: rgba(56, 189, 248, 0.5);
+  --blue-surface: rgba(8, 22, 42, 0.92);
+  --blue-border: rgba(56, 189, 248, 0.45);
 
-  /* Color mappings */
-  --cyan: #a82844;       /* Primary Draconmind accent */
-  --cyan-2: #6D001A;
-  --sky: #6b8fb8;        /* Blue side steel blue */
-  --blue: #4a6d8f;
-  --red-2: #a82844;      /* Red side burgundy */
-  --gold: #d4a857;       /* Timer & highlights */
-  --green: #5a8a6a;      /* Pick green */
-  --violet: #9b3a55;
+  --red-primary: #e11d48;
+  --red-light: #f43f5e;
+  --red-glow: rgba(244, 63, 94, 0.5);
+  --red-surface: rgba(42, 10, 20, 0.92);
+  --red-border: rgba(244, 63, 94, 0.45);
+
+  /* Highlight Accents */
+  --gold: #fbbf24;
+  --gold-glow: rgba(251, 191, 36, 0.5);
+  --emerald: #10b981;
+  --emerald-glow: rgba(16, 185, 129, 0.5);
 
   /* Role / Position tokens */
-  --dsl: #c47842;        /* Dark Slayer Lane (warm rust) */
-  --jg: #5a8a6a;         /* Jungle (sage green) */
-  --mid: #9b6da8;        /* Mid / Mage (dusty purple) */
-  --roam: #6b8fb8;       /* Roam / Support (steel blue) */
-  --adl: #d4a857;        /* Abyssal Dragon Lane (gold) */
+  --dsl: #f97316;        /* Dark Slayer Lane (vibrant orange) */
+  --jg: #10b981;         /* Jungle (vibrant emerald) */
+  --mid: #a855f7;        /* Mid / Mage (vibrant violet) */
+  --roam: #0ea5e9;       /* Roam / Support (vibrant sky) */
+  --adl: #eab308;        /* Abyssal Dragon Lane (vibrant gold) */
+  /* Youthful Thai typography tokens */
+  --font-thai-active: 'Mitr';
 }
 
 @layer base {
   body {
-    background-color: #050507;
+    background-color: #040507;
     color: var(--text);
-    font-family: 'Kanit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-thai-active, 'Mitr'), 'Chakra Petch', 'Prompt', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     overflow-x: hidden;
   }
 }
 
-/* Background layers identical to Draconmind */
+/* Comprehensive Youthful Thai typography support */
+[class*="Kanit"], [class*="kanit"], .font-thai, .font-youth {
+  font-family: var(--font-thai-active, 'Mitr'), 'Chakra Petch', 'Prompt', 'Inter', sans-serif !important;
+}
+
+/* Ensure Barlow Condensed and Orbitron have smooth fallback to youth Thai fonts */
+[class*="Barlow_Condensed"], [class*="barlow_condensed"] {
+  font-family: 'Barlow Condensed', var(--font-thai-active, 'Mitr'), 'Chakra Petch', 'Prompt', sans-serif !important;
+}
+
+[class*="Orbitron"], [class*="orbitron"] {
+  font-family: 'Orbitron', var(--font-thai-active, 'Chakra Petch'), 'Mitr', 'Prompt', sans-serif !important;
+}
+
+/* Background layers: subtle esports arena ambience with high dark contrast */
 .bg-stage {
   position: fixed;
   inset: 0;
   z-index: -2;
   background:
-    radial-gradient(ellipse 60% 45% at 22% 18%, rgba(60, 40, 55, 0.35), transparent 65%),
-    radial-gradient(ellipse 55% 40% at 82% 55%, rgba(50, 60, 75, 0.20), transparent 70%),
-    radial-gradient(ellipse 50% 35% at 88% 92%, rgba(109, 0, 26, 0.18), transparent 60%),
-    radial-gradient(ellipse 90% 40% at 50% 0%, rgba(255, 255, 255, 0.04), transparent 70%),
-    linear-gradient(180deg, #050507 0%, #0a0a0d 50%, #050507 100%);
+    radial-gradient(ellipse 65% 50% at 15% 15%, rgba(14, 52, 92, 0.22), transparent 70%),
+    radial-gradient(ellipse 65% 50% at 85% 15%, rgba(120, 16, 38, 0.22), transparent 70%),
+    radial-gradient(ellipse 80% 40% at 50% 100%, rgba(20, 24, 38, 0.35), transparent 75%),
+    linear-gradient(180deg, #040507 0%, #07090f 50%, #040507 100%);
 }
 
 .bg-grid {
@@ -74,55 +94,41 @@
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 130% 110% at 50% 50%, transparent 35%, rgba(0, 0, 0, 0.55) 75%, rgba(0, 0, 0, 0.85) 100%),
-    radial-gradient(ellipse 45% 30% at 50% 8%, rgba(255, 255, 255, 0.025), transparent 75%);
-}
-
-.bg-grid::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(circle 280px at 0% 0%, rgba(0, 0, 0, 0.55), transparent 70%),
-    radial-gradient(circle 280px at 100% 0%, rgba(0, 0, 0, 0.55), transparent 70%),
-    radial-gradient(circle 320px at 0% 100%, rgba(0, 0, 0, 0.60), transparent 70%),
-    radial-gradient(circle 320px at 100% 100%, rgba(0, 0, 0, 0.60), transparent 70%);
-}
-
-/* Giant background numeral 02 watermark */
-.bg-numeral {
-  position: fixed;
-  left: 50%;
-  top: 46%;
-  transform: translate(-50%, -50%);
-  font-family: 'Orbitron', sans-serif;
-  font-size: 36vw;
-  font-weight: 800;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(168, 40, 68, 0.06);
-  pointer-events: none;
-  z-index: -1;
-  user-select: none;
-  letter-spacing: -2vw;
-  line-height: 0.85;
-  white-space: nowrap;
+    radial-gradient(ellipse 130% 110% at 50% 50%, transparent 40%, rgba(0, 0, 0, 0.65) 80%, rgba(0, 0, 0, 0.95) 100%);
 }
 
 /* Keyframe animations */
 @keyframes pulse-team-blue {
-  0%, 100% { border-color: rgba(56, 189, 248, 0.5); box-shadow: 0 0 14px rgba(56, 189, 248, 0.2); }
-  50% { border-color: var(--sky); box-shadow: 0 0 22px rgba(56, 189, 248, 0.45); }
+  0%, 100% {
+    border-color: rgba(56, 189, 248, 0.8);
+    box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+  }
+  50% {
+    border-color: #38bdf8;
+    box-shadow: 0 0 26px rgba(56, 189, 248, 0.65);
+  }
 }
 
 @keyframes pulse-team-red {
-  0%, 100% { border-color: rgba(248, 113, 113, 0.5); box-shadow: 0 0 14px rgba(248, 113, 113, 0.2); }
-  50% { border-color: var(--red-2); box-shadow: 0 0 22px rgba(248, 113, 113, 0.45); }
+  0%, 100% {
+    border-color: rgba(244, 63, 94, 0.8);
+    box-shadow: 0 0 16px rgba(244, 63, 94, 0.35);
+  }
+  50% {
+    border-color: #f43f5e;
+    box-shadow: 0 0 26px rgba(244, 63, 94, 0.65);
+  }
 }
 
 @keyframes pulse-glow {
-  0%, 100% { border-color: rgba(251, 191, 36, 0.5); box-shadow: 0 0 14px rgba(251, 191, 36, 0.2); }
-  50% { border-color: var(--gold); box-shadow: 0 0 20px rgba(251, 191, 36, 0.45); }
+  0%, 100% {
+    border-color: rgba(251, 191, 36, 0.8);
+    box-shadow: 0 0 14px rgba(251, 191, 36, 0.3);
+  }
+  50% {
+    border-color: var(--gold);
+    box-shadow: 0 0 24px rgba(251, 191, 36, 0.6);
+  }
 }
 
 @keyframes shimmer {
@@ -131,32 +137,32 @@
 }
 
 .anim-pulse-blue {
-  animation: pulse-team-blue 1.4s ease-in-out infinite;
+  animation: pulse-team-blue 1.3s ease-in-out infinite;
 }
 
 .anim-pulse-red {
-  animation: pulse-team-red 1.4s ease-in-out infinite;
+  animation: pulse-team-red 1.3s ease-in-out infinite;
 }
 
 .anim-shimmer {
   animation: shimmer 1.6s linear infinite;
 }
 
-/* Custom Draconmind scrollbars */
+/* High contrast custom scrollbars */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(13, 13, 18, 0.5);
+  background: rgba(10, 12, 18, 0.8);
   border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.22);
   border-radius: 4px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 .no-scrollbar::-webkit-scrollbar {

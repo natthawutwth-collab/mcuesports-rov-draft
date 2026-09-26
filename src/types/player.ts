@@ -12,7 +12,7 @@ export interface Player {
   name: string;
   nickname: string;
   position: PlayerPosition;
-  avatarUrl: string;
+  avatarUrl?: string;
   heroPool: PlayerHeroPoolItem[];
   createdAt: number;
 }
@@ -23,5 +23,5 @@ export interface HeroPlayerBadge {
   playerNickname: string;
   position: PlayerPosition;
   tier: HeroProficiency;
-  playerAvatar: string;
+  playerAvatar?: string;
 }

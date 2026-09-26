@@ -2,7 +2,7 @@ import React from 'react';
 import { Users, Swords, History } from 'lucide-react';
 
 interface BrandBarProps {
-  status: 'ready' | 'drafting' | 'complete';
+  status?: 'ready' | 'drafting' | 'complete';
   currentView: 'draft' | 'players' | 'history';
   onSelectView: (view: 'draft' | 'players' | 'history') => void;
   playersCount?: number;
@@ -10,52 +10,53 @@ interface BrandBarProps {
 }
 
 export const BrandBar: React.FC<BrandBarProps> = ({
-  status,
   currentView,
   onSelectView,
   playersCount = 5,
   draftsCount = 0,
 }) => {
   return (
-    <header className="w-full flex items-center justify-between gap-3 px-4 py-2.5 bg-[rgba(20,20,26,0.7)] border border-[rgba(255,255,255,0.08)] rounded-xl shadow-lg backdrop-blur-md">
+    <header className="w-full flex items-center justify-between gap-3 px-4 py-3 bg-[#0a0c14]/95 border border-slate-700/70 rounded-xl shadow-2xl backdrop-blur-md">
       <div className="flex items-center gap-3">
         <button
           onClick={() => onSelectView('draft')}
-          className="flex items-center font-['Orbitron'] font-bold text-lg tracking-[3px] text-[#e6f1ff] hover:opacity-90 transition-opacity cursor-pointer"
+          className="flex items-center font-['Orbitron'] font-black text-lg tracking-[3px] text-white hover:opacity-90 transition-opacity cursor-pointer group"
         >
-          MCU <span className="text-[#a82844] ml-1">ROV</span>
+          <span className="text-[#38bdf8] drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]">MCU</span>
+          <span className="text-[#f43f5e] ml-1.5 drop-shadow-[0_0_8px_rgba(244,63,94,0.5)]">ROV</span>
         </button>
-        <div className="hidden sm:block text-[10px] tracking-[2.5px] text-[#a0a0a8] font-bold border-l border-[rgba(255,255,255,0.08)] pl-3">
-          DRAFT ASSISTANT
+        <div className="hidden sm:flex items-center gap-1.5 text-[10px] tracking-[2.5px] text-slate-300 font-bold border-l border-slate-700/80 pl-3">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#fbbf24]"></span>
+          <span>DRAFT ASSISTANT</span>
         </div>
       </div>
 
       {/* Navigation tabs */}
-      <nav className="flex items-center gap-1.5 sm:border-l sm:border-[rgba(255,255,255,0.08)] sm:pl-3 sm:ml-2 overflow-x-auto py-0.5">
+      <nav className="flex items-center gap-2 overflow-x-auto py-0.5">
         <button
           onClick={() => onSelectView('draft')}
-          className={`px-3 py-1.5 text-[11px] font-['Orbitron'] font-bold tracking-[1.5px] rounded transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+          className={`px-3.5 py-1.5 text-[11px] font-['Orbitron'] font-bold tracking-[1.5px] rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
             currentView === 'draft'
-              ? 'text-white bg-[#a82844]/25 border border-[#a82844]/60 shadow-[0_0_12px_rgba(168,40,68,0.3)]'
-              : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+              ? 'text-white bg-[#0284c7]/30 border-[#38bdf8] shadow-[0_0_14px_rgba(56,189,248,0.35)]'
+              : 'text-slate-300 hover:text-white hover:bg-white/5 border-transparent'
           }`}
         >
-          <Swords size={13} className={currentView === 'draft' ? 'text-[#ff7b95]' : ''} />
+          <Swords size={13} className={currentView === 'draft' ? 'text-[#38bdf8]' : 'text-slate-400'} />
           <span>DRAFT</span>
         </button>
 
         <button
           onClick={() => onSelectView('history')}
-          className={`px-3 py-1.5 text-[11px] font-['Orbitron'] font-bold tracking-[1.5px] rounded transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+          className={`px-3.5 py-1.5 text-[11px] font-['Orbitron'] font-bold tracking-[1.5px] rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
             currentView === 'history'
-              ? 'text-white bg-[#d4a857]/25 border border-[#d4a857]/60 shadow-[0_0_12px_rgba(212,168,87,0.3)]'
-              : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+              ? 'text-white bg-[#d97706]/30 border-[#fbbf24] shadow-[0_0_14px_rgba(251,191,36,0.35)]'
+              : 'text-slate-300 hover:text-white hover:bg-white/5 border-transparent'
           }`}
         >
-          <History size={13} className={currentView === 'history' ? 'text-[#ffdd80]' : ''} />
+          <History size={13} className={currentView === 'history' ? 'text-[#fbbf24]' : 'text-slate-400'} />
           <span>DRAFT HISTORY</span>
           {draftsCount > 0 && (
-            <span className="font-['Barlow_Condensed'] text-[10px] px-1.5 py-0.2 rounded-full bg-white/10 text-white/80">
+            <span className="font-['Barlow_Condensed'] text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-400/20 text-[#fbbf24] border border-amber-400/30">
               {draftsCount}
             </span>
           )}
@@ -63,37 +64,19 @@ export const BrandBar: React.FC<BrandBarProps> = ({
 
         <button
           onClick={() => onSelectView('players')}
-          className={`px-3 py-1.5 text-[11px] font-['Orbitron'] font-bold tracking-[1.5px] rounded transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+          className={`px-3.5 py-1.5 text-[11px] font-['Orbitron'] font-bold tracking-[1.5px] rounded-lg transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
             currentView === 'players'
-              ? 'text-white bg-[#a82844]/25 border border-[#a82844]/60 shadow-[0_0_12px_rgba(168,40,68,0.3)]'
-              : 'text-white/60 hover:text-white hover:bg-white/5 border border-transparent'
+              ? 'text-white bg-[#e11d48]/30 border-[#f43f5e] shadow-[0_0_14px_rgba(244,63,94,0.35)]'
+              : 'text-slate-300 hover:text-white hover:bg-white/5 border-transparent'
           }`}
         >
-          <Users size={13} className={currentView === 'players' ? 'text-[#ff7b95]' : ''} />
+          <Users size={13} className={currentView === 'players' ? 'text-[#f43f5e]' : 'text-slate-400'} />
           <span>PLAYERS</span>
-          <span className="font-['Barlow_Condensed'] text-[10px] px-1.5 py-0.2 rounded-full bg-white/10 text-white/80">
+          <span className="font-['Barlow_Condensed'] text-[10px] font-bold px-1.5 py-0.2 rounded bg-rose-400/20 text-[#f43f5e] border border-rose-400/30">
             {playersCount}
           </span>
         </button>
       </nav>
-
-      {/* Right status badge */}
-      <div className="flex items-center gap-2">
-        <div className="font-['Orbitron'] text-[10px] tracking-[2px] font-bold px-3 py-1 rounded bg-white/5 border border-white/10 text-[#a0a0a8] flex items-center gap-1.5">
-          <span
-            className={`w-2 h-2 rounded-full ${
-              status === 'drafting'
-                ? 'bg-[#d4a857] animate-pulse'
-                : status === 'complete'
-                ? 'bg-emerald-400'
-                : 'bg-white/40'
-            }`}
-          />
-          <span className="hidden sm:inline">
-            {status === 'drafting' ? 'DRAFTING' : status === 'complete' ? 'COMPLETE' : 'READY'}
-          </span>
-        </div>
-      </div>
     </header>
   );
 };

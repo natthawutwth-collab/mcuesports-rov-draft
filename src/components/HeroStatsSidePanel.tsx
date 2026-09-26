@@ -28,22 +28,22 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
   const currentHero = heroName ? HEROES.find((h) => h.name.toLowerCase() === heroName.toLowerCase()) : null;
 
   return (
-    <aside className="w-full sm:w-80 md:w-96 bg-[#0c0c12]/95 border-l border-white/10 shadow-2xl backdrop-blur-xl flex flex-col z-40 fixed inset-y-0 right-0 sm:relative sm:inset-auto h-full max-h-screen transition-all duration-300 animate-in slide-in-from-right">
+    <aside className="w-full sm:w-80 md:w-96 bg-[#0a0c14]/95 border-l-2 border-slate-700/80 shadow-2xl backdrop-blur-xl flex flex-col z-40 fixed inset-y-0 right-0 sm:relative sm:inset-auto h-full max-h-screen transition-all duration-300 animate-in slide-in-from-right">
       {/* 1. Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/10 bg-black/40">
+      <div className="flex items-center justify-between px-4 py-3.5 border-b-2 border-slate-700/80 bg-[#07090f]">
         <div className="flex items-center gap-2">
-          <Activity size={16} className="text-[#a82844]" />
-          <span className="font-['Orbitron'] font-bold text-xs tracking-[2px] text-white uppercase">
+          <Activity size={16} className="text-[#f43f5e]" />
+          <span className="font-['Orbitron'] font-black text-xs tracking-[2px] text-white uppercase">
             MATCHUP & HERO STATS
           </span>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
           <a
             href="https://liquipedia.net/honorofkings/RoV_Pro_League/2026/Summer/Statistics"
             target="_blank"
             rel="noopener noreferrer"
             title="เปิดหน้าสถิติ Liquipedia RPL 2026 Summer"
-            className="p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+            className="p-1.5 rounded-lg bg-black/60 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-slate-700"
           >
             <ExternalLink size={14} />
           </a>
@@ -51,14 +51,14 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
             <button
               onClick={onOpenDataModal}
               title="จัดการ Data Layer (JSON / CSV / API)"
-              className="p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+              className="p-1.5 rounded-lg bg-black/60 hover:bg-white/10 text-slate-300 hover:text-white transition-colors border border-slate-700 cursor-pointer"
             >
               <Database size={14} />
             </button>
           )}
           <button
             onClick={onClose}
-            className="p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+            className="p-1.5 rounded-lg bg-black/60 hover:bg-rose-950 border border-slate-700 hover:border-rose-500 text-slate-300 hover:text-white transition-colors cursor-pointer"
           >
             <X size={16} />
           </button>
@@ -67,9 +67,9 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
 
       {/* 2. Hero Profile Banner */}
       {heroName && currentHero ? (
-        <div className="p-4 bg-gradient-to-b from-black/60 to-transparent border-b border-white/5 flex items-center justify-between gap-3">
+        <div className="p-4 bg-gradient-to-b from-[#141824] to-transparent border-b border-slate-700/80 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-[#a82844] shadow-lg flex-shrink-0 bg-black/50">
+            <div className="relative w-14 h-14 rounded-xl overflow-hidden border-2 border-[#f43f5e] shadow-[0_0_12px_rgba(244,63,94,0.4)] flex-shrink-0 bg-black/80">
               <img
                 src={getHeroImageUrl(heroName)}
                 alt={heroName}
@@ -78,7 +78,7 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
                   (e.target as HTMLImageElement).src = currentHero.avatarUrl;
                 }}
               />
-              <div className="absolute bottom-0 inset-x-0 bg-black/80 text-[8px] font-['Orbitron'] font-bold text-center text-white py-0.5 uppercase">
+              <div className="absolute bottom-0 inset-x-0 bg-black/90 text-[8.5px] font-['Orbitron'] font-black text-center text-white py-0.5 uppercase border-t border-slate-700">
                 {currentHero.primaryPos}
               </div>
             </div>
@@ -89,11 +89,12 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
                   {heroName.toUpperCase()}
                 </span>
               </div>
-              <span className="text-xs font-['Kanit'] text-[#a0a0a8]">
+              <span className="text-xs font-['Kanit'] text-slate-300 font-medium">
                 {currentHero.nameTh} • {currentHero.roles.join(', ')}
               </span>
-              <span className="text-[9.5px] font-['Barlow_Condensed'] text-[#d4a857] mt-0.5 tracking-wider">
-                🏆 {status.tournamentName}
+              <span className="text-[10px] font-['Barlow_Condensed'] font-bold text-[#fbbf24] mt-0.5 tracking-wider flex items-center gap-1">
+                <span>🏆</span>
+                <span>{status.tournamentName}</span>
               </span>
             </div>
           </div>

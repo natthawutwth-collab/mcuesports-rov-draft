@@ -408,13 +408,13 @@ export default function App() {
           />
 
           {/* Mobile Tab Switcher */}
-          <div className="flex lg:hidden items-center gap-1 p-1 bg-black/40 border border-white/10 rounded-lg overflow-x-auto">
+          <div className="flex lg:hidden items-center gap-1.5 p-1.5 bg-[#0a0c14]/95 border-2 border-slate-700/80 rounded-xl overflow-x-auto shadow-md">
             <button
               onClick={() => setMobileTab('blue')}
-              className={`flex-1 min-w-[75px] py-1.5 font-['Barlow_Condensed'] font-bold text-xs rounded transition-colors flex items-center justify-center gap-1 ${
+              className={`flex-1 min-w-[75px] py-2 font-['Barlow_Condensed'] font-black text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 border ${
                 mobileTab === 'blue'
-                  ? 'bg-[#6b8fb8]/30 border border-[#6b8fb8] text-white'
-                  : 'text-white/60'
+                  ? 'bg-[#0284c7] border-[#38bdf8] text-white shadow-[0_0_12px_rgba(56,189,248,0.5)]'
+                  : 'border-transparent text-slate-300'
               }`}
             >
               <span>🔵</span>
@@ -422,10 +422,10 @@ export default function App() {
             </button>
             <button
               onClick={() => setMobileTab('center')}
-              className={`flex-1 min-w-[75px] py-1.5 font-['Barlow_Condensed'] font-bold text-xs rounded transition-colors flex items-center justify-center gap-1 ${
+              className={`flex-1 min-w-[75px] py-2 font-['Barlow_Condensed'] font-black text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 border ${
                 mobileTab === 'center'
-                  ? 'bg-[#a82844]/30 border border-[#a82844] text-white'
-                  : 'text-white/60'
+                  ? 'bg-white text-black border-white shadow-[0_0_12px_rgba(255,255,255,0.4)]'
+                  : 'border-transparent text-slate-300'
               }`}
             >
               <span>⚔️</span>
@@ -433,10 +433,10 @@ export default function App() {
             </button>
             <button
               onClick={() => setMobileTab('red')}
-              className={`flex-1 min-w-[75px] py-1.5 font-['Barlow_Condensed'] font-bold text-xs rounded transition-colors flex items-center justify-center gap-1 ${
+              className={`flex-1 min-w-[75px] py-2 font-['Barlow_Condensed'] font-black text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 border ${
                 mobileTab === 'red'
-                  ? 'bg-[#a82844]/30 border border-[#a82844] text-white'
-                  : 'text-white/60'
+                  ? 'bg-[#e11d48] border-[#f43f5e] text-white shadow-[0_0_12px_rgba(244,63,94,0.5)]'
+                  : 'border-transparent text-slate-300'
               }`}
             >
               <span>🔴</span>
@@ -447,10 +447,10 @@ export default function App() {
                 setMobileTab('coach');
                 setIsSidePanelOpen(true);
               }}
-              className={`flex-1 min-w-[75px] py-1.5 font-['Barlow_Condensed'] font-bold text-xs rounded transition-colors flex items-center justify-center gap-1 ${
+              className={`flex-1 min-w-[75px] py-2 font-['Barlow_Condensed'] font-black text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 border ${
                 mobileTab === 'coach'
-                  ? 'bg-[#d4a857]/30 border border-[#d4a857] text-[#ffdd80]'
-                  : 'text-white/60'
+                  ? 'bg-[#fbbf24] border-[#fde047] text-black shadow-[0_0_12px_rgba(251,191,36,0.5)]'
+                  : 'border-transparent text-slate-300'
               }`}
             >
               <span>🎯</span>
@@ -533,29 +533,29 @@ export default function App() {
                   mobileTab === 'coach' ? 'block' : 'hidden lg:flex'
                 }`}
               >
-                {/* Dock Mode Switcher */}
-                <div className="flex items-center gap-1 mb-2 p-1 bg-black/60 rounded-xl border border-white/10 shadow-md">
+                {/* Dock Mode Switcher - High Contrast Segmented Buttons */}
+                <div className="flex items-center gap-1.5 mb-2.5 p-1.5 bg-[#0a0c14]/95 rounded-xl border-2 border-slate-700/80 shadow-lg">
                   <button
                     type="button"
                     onClick={() => setSidePanelTab('coach')}
-                    className={`flex-1 py-1.5 px-2 rounded-lg font-['Barlow_Condensed'] text-xs font-black tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    className={`flex-1 py-2 px-2.5 rounded-lg font-['Barlow_Condensed'] text-[11.5px] font-black tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer border ${
                       sidePanelTab === 'coach'
-                        ? 'bg-[#d4a857] text-black shadow-[0_0_12px_rgba(212,168,87,0.5)]'
-                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                        ? 'bg-[#fbbf24] border-[#fde047] text-black shadow-[0_0_14px_rgba(251,191,36,0.6)]'
+                        : 'border-transparent text-slate-300 hover:text-white hover:bg-white/5'
                     }`}
                   >
                     <span>🎯</span>
                     <span>COACH ANALYSIS</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setSidePanelTab('stats')}
-                    className={`flex-1 py-1.5 px-2 rounded-lg font-['Barlow_Condensed'] text-xs font-black tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    className={`flex-1 py-2 px-2.5 rounded-lg font-['Barlow_Condensed'] text-[11.5px] font-black tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer border ${
                       sidePanelTab === 'stats'
-                        ? 'bg-[#a82844] text-white shadow-[0_0_12px_rgba(168,40,68,0.5)]'
-                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                        ? 'bg-[#e11d48] border-[#f43f5e] text-white shadow-[0_0_14px_rgba(244,63,94,0.6)]'
+                        : 'border-transparent text-slate-300 hover:text-white hover:bg-white/5'
                     }`}
                   >
                     <span>📊</span>

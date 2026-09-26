@@ -233,15 +233,25 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3">
                       <div className="relative">
-                        <img
-                          src={player.avatarUrl}
-                          alt={player.nickname}
-                          className="w-13 h-13 rounded-full object-cover border-2 border-[#a82844] shadow-md bg-black/60"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80';
-                          }}
-                        />
+                        {player.avatarUrl ? (
+                          <img
+                            src={player.avatarUrl}
+                            alt={player.nickname}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-[#a82844] shadow-md bg-black/60"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                              const fallback = (e.target as HTMLElement).nextElementSibling as HTMLElement;
+                              if (fallback) fallback.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div
+                          className={`w-12 h-12 rounded-full border-2 border-[#a82844]/70 bg-gradient-to-br from-[#2a1318] via-[#1a1528] to-[#121217] shadow-md items-center justify-center font-['Orbitron'] font-black text-sm text-[#ff7b95] select-none ${
+                            player.avatarUrl ? 'hidden' : 'flex'
+                          }`}
+                        >
+                          {player.nickname ? player.nickname.slice(0, 2).toUpperCase() : 'ROV'}
+                        </div>
                         <span className="absolute -bottom-1 -right-1 font-['Orbitron'] text-[9px] font-black px-1.5 py-0.2 rounded bg-black border border-white/20 text-[#d4a857]">
                           {player.position}
                         </span>
