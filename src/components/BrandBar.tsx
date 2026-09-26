@@ -79,7 +79,7 @@ export const BrandBar: React.FC<BrandBarProps> = ({
 
       {/* Right status badge */}
       <div className="flex items-center gap-2">
-        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded bg-sky-950/40 border border-sky-500/30 text-sky-400 text-[10px] font-['Orbitron'] font-semibold" title="Cloud Firestore Realtime Sync Active">
+        <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded bg-sky-950/40 border border-sky-500/30 text-sky-400 text-[10px] font-['Orbitron'] font-semibold" title="Supabase Realtime Sync Active">
           <Cloud size={12} className="text-sky-300" />
           <span>CLOUD SYNC</span>
           <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
