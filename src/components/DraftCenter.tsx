@@ -97,7 +97,9 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
       ? 'bg-[#e11d48] border-[#f43f5e] text-white shadow-[0_0_14px_rgba(244,63,94,0.6)] font-black'
       : 'bg-[#10b981] border-emerald-400 text-white shadow-[0_0_14px_rgba(16,185,129,0.6)] font-black';
     activeTeamTitle = isBlue ? blueTeamName || 'BLUE SIDE' : redTeamName || 'RED SIDE';
-    phaseText = currentTurn.label;
+    phaseText = currentTurn.count > 1
+      ? `${currentTurn.label} (เลือกตัวที่ ${draftTurnSel + 1}/${currentTurn.count})`
+      : currentTurn.label;
   } else if (currentTurnSlot) {
     const isBlue = currentTurnSlot.team === 'blue';
     const isBan = currentTurnSlot.phase === 'ban';
@@ -379,19 +381,24 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
           const isDone = draftTurnIdx > idx;
           const isCur = draftTurnIdx === idx && draftActive;
           const isBan = t.phase === 'ban';
+          const isBlueTeam = t.team === 'blue';
 
           return (
             <div
               key={`seg-${idx}`}
-              title={`${t.team.toUpperCase()} ${t.label}`}
-              className={`h-2 rounded-sm flex-1 relative overflow-hidden transition-all duration-300 border ${
+              title={`Turn ${idx + 1}: ${t.team === 'blue' ? 'BLUE' : 'RED'} — ${t.label}`}
+              className={`h-2.5 rounded-sm flex-1 relative overflow-hidden transition-all duration-300 border ${
                 isCur
-                  ? 'bg-[#fbbf24] border-[#fde047] shadow-[0_0_12px_rgba(251,191,36,0.9)] ring-1 ring-[#fbbf24]'
+                  ? 'bg-[#fbbf24] border-[#fde047] shadow-[0_0_12px_rgba(251,191,36,0.9)] ring-2 ring-[#fbbf24]'
                   : isDone
                   ? isBan
                     ? 'bg-[#e11d48] border-[#f43f5e]'
-                    : 'bg-[#10b981] border-emerald-400'
-                  : 'bg-black/60 border-slate-800'
+                    : isBlueTeam
+                    ? 'bg-[#0284c7] border-[#38bdf8]'
+                    : 'bg-[#e11d48] border-[#f43f5e]'
+                  : isBlueTeam
+                  ? 'bg-[#08182b]/80 border-[#0284c7]/40'
+                  : 'bg-[#260914]/80 border-[#e11d48]/40'
               }`}
             >
               {isCur && (

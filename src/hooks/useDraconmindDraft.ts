@@ -176,17 +176,12 @@ export function useDraconmindDraft() {
       const emptyIdx = bans.findIndex((b) => b === null);
       return { team: turn.team, phase: 'ban' as const, index: emptyIdx !== -1 ? emptyIdx : 0 };
     } else {
-      // Pick phase
+      // Pick phase: Always target the first empty pick slot for this team in sequence
       const picks = turn.team === 'blue' ? bluePicks : redPicks;
-      // Depending on draftTurnSel (0 or 1), find empty slots
-      const emptyIndices: number[] = [];
-      picks.forEach((p, idx) => {
-        if (!p.hero) emptyIndices.push(idx);
-      });
-      const targetIdx = emptyIndices[draftTurnSel] ?? emptyIndices[0] ?? 0;
-      return { team: turn.team, phase: 'pick' as const, index: targetIdx };
+      const emptyIdx = picks.findIndex((p) => !p.hero);
+      return { team: turn.team, phase: 'pick' as const, index: emptyIdx !== -1 ? emptyIdx : 0 };
     }
-  }, [manualTarget, draftActive, isDraftComplete, draftTurnIdx, draftTurnSel, blueBans, redBans, bluePicks, redPicks]);
+  }, [manualTarget, draftActive, isDraftComplete, draftTurnIdx, blueBans, redBans, bluePicks, redPicks]);
 
   // Start New Draft
   const startNewDraft = useCallback(() => {
