@@ -52,7 +52,7 @@ export interface DraftHistoryFilter {
 }
 
 export interface DraftRepository {
-  getAll(): Promise<DraftHistoryRecord[]>;
+  getAll(forceRefresh?: boolean): Promise<DraftHistoryRecord[]>;
   getById(id: string): Promise<DraftHistoryRecord | null>;
   save(record: Omit<DraftHistoryRecord, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Promise<DraftHistoryRecord>;
   delete(id: string): Promise<boolean>;

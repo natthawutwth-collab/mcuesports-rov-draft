@@ -34,7 +34,11 @@ CREATE TABLE IF NOT EXISTS public.shared_drafts (
 ALTER TABLE public.team_rosters ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.shared_drafts ENABLE ROW LEVEL SECURITY;
 
--- 4. Create Policies for Public Access (Read, Insert, Update, Delete)
+-- 4. Performance Indexes (Prevents sequential table scans and reduces Log Ingestion)
+CREATE INDEX IF NOT EXISTS idx_shared_drafts_created_at ON public.shared_drafts (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_team_rosters_id ON public.team_rosters (id);
+
+-- 5. Create Policies for Public Access (Read, Insert, Update, Delete)
 DROP POLICY IF EXISTS "Public read team_rosters" ON public.team_rosters;
 CREATE POLICY "Public read team_rosters" ON public.team_rosters
   FOR SELECT USING (true);

@@ -11,6 +11,10 @@ const SAMPLE_DRAFT_IDS = new Set([
   'draft_rpl2026_hydra_earena_g2',
 ]);
 
+const DRAFT_COLUMNS =
+  'id, tournament, match, game_number, patch, blue_team, red_team, winner, notes, tags, duration_seconds, created_at, updated_at';
+const CACHE_TTL_MS = 60_000; // 60s cache TTL to prevent redundant network traffic
+
 function rowToRecord(row: any): DraftHistoryRecord {
   if (row.data && typeof row.data === 'object' && row.data.blueTeam) {
     return {
@@ -42,6 +46,8 @@ export class SupabaseDraftRepository implements DraftRepository {
   private listeners: Set<() => void> = new Set();
   private cachedRecords: DraftHistoryRecord[] = [];
   private realtimeChannel: any = null;
+  private inFlightFetch: Promise<DraftHistoryRecord[]> | null = null;
+  private lastFetchedAt: number = 0;
 
   constructor() {
     try {
@@ -88,6 +94,7 @@ export class SupabaseDraftRepository implements DraftRepository {
                   } else {
                     this.cachedRecords[idx] = rec;
                   }
+                  this.lastFetchedAt = Date.now();
                   this.persistLocalCache();
                   this.notifyListeners();
                 }
@@ -99,25 +106,23 @@ export class SupabaseDraftRepository implements DraftRepository {
                 } else {
                   this.cachedRecords.unshift(rec);
                 }
+                this.lastFetchedAt = Date.now();
                 this.persistLocalCache();
                 this.notifyListeners();
               } else if (payload.eventType === 'DELETE' && payload.old) {
                 const oldId = (payload.old as any).id;
                 if (oldId) {
                   this.cachedRecords = this.cachedRecords.filter((r) => r.id !== oldId);
+                  this.lastFetchedAt = Date.now();
                   this.persistLocalCache();
                   this.notifyListeners();
                 }
               }
             }
           )
-          .subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-              this.getAll().catch(() => {});
-            }
-          });
+          .subscribe();
 
-        // Initial fetch from Supabase
+        // Perform a single initial fetch from Supabase (deduplicated)
         this.getAll().catch(() => {});
         return;
       } catch (e) {
@@ -168,27 +173,49 @@ export class SupabaseDraftRepository implements DraftRepository {
     });
   }
 
-  async getAll(): Promise<DraftHistoryRecord[]> {
+  async getAll(forceRefresh: boolean = false): Promise<DraftHistoryRecord[]> {
+    const isCacheFresh = this.lastFetchedAt > 0 && Date.now() - this.lastFetchedAt < CACHE_TTL_MS;
+
+    // 1. If cache is fresh and not forcing refresh, return in-memory cache instantly (0 HTTP requests!)
+    if (!forceRefresh && isCacheFresh && this.cachedRecords.length > 0) {
+      return [...this.cachedRecords];
+    }
+
+    // 2. If a query is already executing, wait for it instead of sending parallel duplicate queries
+    if (this.inFlightFetch) {
+      return this.inFlightFetch;
+    }
+
     if (supabase && isSupabaseConfigured) {
-      try {
-        const { data, error } = await supabase
-          .from('shared_drafts')
-          .select('*')
-          .order('created_at', { ascending: false });
+      this.inFlightFetch = (async () => {
+        try {
+          const { data, error } = await supabase
+            .from('shared_drafts')
+            .select(DRAFT_COLUMNS)
+            .order('created_at', { ascending: false });
 
-        if (!error && Array.isArray(data)) {
-          const mapped = data
-            .map((row) => rowToRecord(row))
-            .filter((r) => !SAMPLE_DRAFT_IDS.has(r.id));
+          if (!error && Array.isArray(data)) {
+            const mapped = data
+              .map((row) => rowToRecord(row))
+              .filter((r) => !SAMPLE_DRAFT_IDS.has(r.id));
 
-          this.cachedRecords = mapped;
-          this.persistLocalCache();
-          this.notifyListeners();
-          return mapped;
+            this.cachedRecords = mapped;
+            this.lastFetchedAt = Date.now();
+            this.persistLocalCache();
+            // IMPORTANT: Never call notifyListeners() inside a read query to prevent cascading loops
+            return mapped;
+          }
+        } catch (err) {
+          console.warn('Failed to fetch drafts from Supabase, using local cache:', err);
+        } finally {
+          this.inFlightFetch = null;
         }
-      } catch (err) {
-        console.warn('Failed to fetch drafts from Supabase, using local cache:', err);
-      }
+
+        this.loadFromLocalBackup();
+        return [...this.cachedRecords];
+      })();
+
+      return this.inFlightFetch;
     }
 
     this.loadFromLocalBackup();
@@ -196,11 +223,15 @@ export class SupabaseDraftRepository implements DraftRepository {
   }
 
   async getById(id: string): Promise<DraftHistoryRecord | null> {
+    // Check in-memory cache first to avoid unnecessary network hit
+    const inMem = this.cachedRecords.find((r) => r.id === id);
+    if (inMem) return inMem;
+
     if (supabase && isSupabaseConfigured) {
       try {
         const { data, error } = await supabase
           .from('shared_drafts')
-          .select('*')
+          .select(DRAFT_COLUMNS)
           .eq('id', id)
           .maybeSingle();
 
@@ -212,7 +243,7 @@ export class SupabaseDraftRepository implements DraftRepository {
       }
     }
 
-    return this.cachedRecords.find((r) => r.id === id) || null;
+    return null;
   }
 
   async save(
@@ -228,7 +259,7 @@ export class SupabaseDraftRepository implements DraftRepository {
       updatedAt: now,
     };
 
-    // 1. Immediately update local cache & broadcast for 0ms latency
+    // 1. Immediately update local cache & broadcast for 0ms UI latency
     const existingIndex = this.cachedRecords.findIndex((r) => r.id === id);
     if (existingIndex !== -1) {
       this.cachedRecords[existingIndex] = record;
@@ -236,10 +267,11 @@ export class SupabaseDraftRepository implements DraftRepository {
       this.cachedRecords.unshift(record);
     }
 
+    this.lastFetchedAt = Date.now();
     this.persistLocalCache();
     this.notifyListeners();
 
-    // 2. Persist to Supabase if configured
+    // 2. Persist to Supabase with compact payload (no redundant duplicate JSON blobs)
     if (supabase && isSupabaseConfigured) {
       try {
         const payload = {
@@ -254,7 +286,6 @@ export class SupabaseDraftRepository implements DraftRepository {
           notes: record.notes,
           tags: record.tags || [],
           duration_seconds: record.durationSeconds || 0,
-          data: record,
           created_at: record.createdAt,
           updated_at: record.updatedAt,
         };
@@ -274,6 +305,7 @@ export class SupabaseDraftRepository implements DraftRepository {
   async delete(id: string): Promise<boolean> {
     // 1. Remove from local cache
     this.cachedRecords = this.cachedRecords.filter((r) => r.id !== id);
+    this.lastFetchedAt = Date.now();
     this.persistLocalCache();
     this.notifyListeners();
 
@@ -291,6 +323,7 @@ export class SupabaseDraftRepository implements DraftRepository {
 
   async clearAll(): Promise<void> {
     this.cachedRecords = [];
+    this.lastFetchedAt = Date.now();
     try {
       localStorage.setItem(LOCAL_STORAGE_BACKUP_KEY, '[]');
     } catch {

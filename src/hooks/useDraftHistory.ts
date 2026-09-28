@@ -18,10 +18,10 @@ export function useDraftHistory() {
     winner: undefined,
   });
 
-  const loadRecords = useCallback(async () => {
+  const loadRecords = useCallback(async (forceRefresh: boolean = false) => {
     setIsLoading(true);
     try {
-      const data = await draftRepository.getAll();
+      const data = await draftRepository.getAll(forceRefresh);
       setRecords(data);
     } catch (e) {
       console.error('Failed to load draft history', e);
@@ -31,12 +31,12 @@ export function useDraftHistory() {
   }, []);
 
   useEffect(() => {
-    loadRecords();
+    loadRecords(false);
 
     // Subscribe to repository updates (Supabase or LocalStorage)
     if ('subscribe' in draftRepository && typeof (draftRepository as any).subscribe === 'function') {
       return (draftRepository as any).subscribe(() => {
-        loadRecords();
+        loadRecords(false);
       });
     }
   }, [loadRecords]);
@@ -46,7 +46,7 @@ export function useDraftHistory() {
       record: Omit<DraftHistoryRecord, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }
     ) => {
       const saved = await draftRepository.save(record);
-      await loadRecords();
+      await loadRecords(false);
       return saved;
     },
     [loadRecords]
@@ -56,7 +56,7 @@ export function useDraftHistory() {
     async (id: string) => {
       const ok = await draftRepository.delete(id);
       if (ok) {
-        await loadRecords();
+        await loadRecords(false);
       }
       return ok;
     },
@@ -65,7 +65,7 @@ export function useDraftHistory() {
 
   const clearAllDrafts = useCallback(async () => {
     await draftRepository.clearAll();
-    await loadRecords();
+    await loadRecords(false);
   }, [loadRecords]);
 
   const exportHistoryJson = useCallback(async () => {
@@ -75,7 +75,7 @@ export function useDraftHistory() {
   const importHistoryJson = useCallback(
     async (json: string) => {
       const count = await draftRepository.importJson(json);
-      await loadRecords();
+      await loadRecords(false);
       return count;
     },
     [loadRecords]
@@ -103,7 +103,7 @@ export function useDraftHistory() {
     clearAllDrafts,
     exportHistoryJson,
     importHistoryJson,
-    refreshHistory: loadRecords,
+    refreshHistory: () => loadRecords(true),
     tournaments,
     patches,
   };

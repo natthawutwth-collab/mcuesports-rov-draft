@@ -96,7 +96,7 @@ export function usePlayers() {
           // 1. Fetch current team roster from Supabase
           const { data, error } = await supabase
             .from('team_rosters')
-            .select('*')
+            .select('id, team_name, players, updated_at')
             .eq('id', teamId)
             .maybeSingle();
 
@@ -293,7 +293,7 @@ export function usePlayers() {
       if (supabaseActive && supabase) {
         const { data, error } = await supabase
           .from('team_rosters')
-          .select('*')
+          .select('id, team_name, players, updated_at')
           .eq('id', teamId)
           .maybeSingle();
 

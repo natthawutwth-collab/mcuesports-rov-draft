@@ -68,7 +68,7 @@ export class LocalStorageDraftRepository implements DraftRepository {
     });
   }
 
-  async getAll(): Promise<DraftHistoryRecord[]> {
+  async getAll(_forceRefresh?: boolean): Promise<DraftHistoryRecord[]> {
     const records = this.getRecordsFromStorage();
     // Sort by createdAt descending
     return records.sort(
