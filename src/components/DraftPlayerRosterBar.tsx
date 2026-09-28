@@ -2,14 +2,14 @@ import React from 'react';
 import { Player, TeamCategory } from '../types/player';
 import { Hero, TeamSide } from '../types/draft';
 import { HEROES, getHeroImageUrl } from '../data/heroes';
-import { Users, ChevronDown, ChevronUp, Star, ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
+import { Star, ShieldCheck, Sparkles, UserCheck } from 'lucide-react';
 
 interface DraftPlayerRosterBarProps {
   players: Player[];
   selectedCategory: TeamCategory;
-  onChangeCategory: (cat: TeamCategory) => void;
+  onChangeCategory?: (cat: TeamCategory) => void;
   isOpen: boolean;
-  onToggleOpen: () => void;
+  onToggleOpen?: () => void;
   onInspectHero?: (heroName: string) => void;
   onSelectHeroDirectly?: (hero: Hero) => void;
   onAssignPlayerToActiveSlot?: (player: Player) => void;
@@ -20,41 +20,14 @@ interface DraftPlayerRosterBarProps {
   } | null;
 }
 
-const CATEGORIES: { key: TeamCategory; label: string; icon: string; activeClass: string }[] = [
-  {
-    key: 'male',
-    label: 'ทีมชาย',
-    icon: '👨',
-    activeClass: 'bg-gradient-to-r from-sky-600 to-blue-600 text-white font-black border-sky-400 shadow-[0_0_12px_rgba(56,189,248,0.5)]',
-  },
-  {
-    key: 'female',
-    label: 'ทีมหญิง',
-    icon: '👩',
-    activeClass: 'bg-gradient-to-r from-pink-600 to-rose-600 text-white font-black border-pink-400 shadow-[0_0_12px_rgba(244,63,94,0.5)]',
-  },
-  {
-    key: 'mixed',
-    label: 'ทีมผสม',
-    icon: '👥',
-    activeClass: 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black border-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.5)]',
-  },
-  {
-    key: 'all',
-    label: 'ทั้งหมด',
-    icon: '🌐',
-    activeClass: 'bg-white text-black font-black border-white shadow-md',
-  },
-];
-
 const POS_ORDER = ['DSL', 'Jungle', 'Mid', 'Support', 'ADL'];
 
 export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
   players,
   selectedCategory,
-  onChangeCategory,
+  onChangeCategory: _onChangeCategory,
   isOpen,
-  onToggleOpen,
+  onToggleOpen: _onToggleOpen,
   onInspectHero,
   onSelectHeroDirectly,
   onAssignPlayerToActiveSlot,
@@ -74,87 +47,28 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
     });
   }, [players, selectedCategory]);
 
-  // Counts for each category
-  const counts = React.useMemo(() => {
-    return {
-      all: players.length,
-      male: players.filter((p) => (p.category || 'male') === 'male').length,
-      female: players.filter((p) => p.category === 'female').length,
-      mixed: players.filter((p) => p.category === 'mixed').length,
-    };
-  }, [players]);
-
   const canAssign = Boolean(currentTurnSlot && currentTurnSlot.phase === 'pick');
+
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="w-full bg-[#080b12]/95 border-2 border-slate-700/80 rounded-xl sm:rounded-2xl shadow-xl backdrop-blur-md overflow-hidden transition-all">
-      {/* 1. Header Bar with Category Switcher */}
-      <div className="flex items-center justify-between gap-1.5 sm:gap-3 px-2.5 sm:px-4 py-1.5 sm:py-2 bg-[#05070d] border-b border-slate-700/80 flex-wrap">
-        {/* Left: Title & Quick Status */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-md sm:rounded-lg bg-[#fbbf24]/20 border border-[#fbbf24]/60 flex items-center justify-center text-[#fbbf24] shadow-sm flex-shrink-0">
-            <Users size={12} />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-['Orbitron'] text-[10px] sm:text-xs font-black tracking-wider text-white">
-                ROSTER POOL
-              </span>
-              <span className="text-[8.5px] sm:text-[10px] font-['Barlow_Condensed'] font-bold px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                {filteredPlayers.length}
-              </span>
-            </div>
-          </div>
+      {/* Quick Status / Assignment Tip */}
+      {canAssign && (
+        <div className="flex items-center justify-between px-3 py-1 bg-amber-950/40 border-b border-amber-600/30 text-[10.5px] font-['Kanit'] text-[#fbbf24]">
+          <span className="flex items-center gap-1 font-semibold animate-pulse">
+            🎯 คลิก "กำหนดลงช่อง" เพื่อระบุนักแข่งในช่องดราฟ ({currentTurnSlot?.team.toUpperCase()} Pick {currentTurnSlot ? currentTurnSlot.index + 1 : ''})
+          </span>
+          <span className="text-[10px] text-amber-300/80 font-['Orbitron']">
+            ROSTER POOL ({filteredPlayers.length})
+          </span>
         </div>
+      )}
 
-        {/* Center: Category Buttons */}
-        <div className="flex items-center gap-0.5 sm:gap-1 bg-black/60 p-0.5 rounded-lg sm:rounded-xl border border-slate-700/80 shadow-inner overflow-x-auto max-w-full no-scrollbar">
-          {CATEGORIES.map((cat) => {
-            const isActive = selectedCategory === cat.key;
-            const count = counts[cat.key];
-            return (
-              <button
-                key={cat.key}
-                type="button"
-                onClick={() => onChangeCategory(cat.key)}
-                className={`font-['Barlow_Condensed'] text-[9.5px] sm:text-[11px] font-black tracking-wider px-1.5 sm:px-2.5 py-0.5 rounded-md sm:rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
-                  isActive
-                    ? cat.activeClass
-                    : 'border-slate-800 bg-transparent text-slate-300 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <span>{cat.icon}</span>
-                <span>{cat.label}</span>
-                <span className={`text-[8.5px] sm:text-[9.5px] px-1 py-0.1 rounded font-normal ${isActive ? 'bg-black/30' : 'bg-slate-800 text-slate-400'}`}>
-                  {count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Right: Collapse / Expand Button */}
-        <div className="flex items-center gap-1.5 ml-auto">
-          {canAssign && (
-            <span className="hidden md:inline text-[10px] font-['Kanit'] text-[#fbbf24] bg-amber-950/40 border border-amber-600/40 px-2 py-0.5 rounded-lg animate-pulse">
-              🎯 คลิก "กำหนดลงช่อง" เพื่อระบุนักแข่งในช่องดราฟ
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={onToggleOpen}
-            title={isOpen ? 'ย่อแถบข้อมูลนักแข่ง' : 'ขยายแถบข้อมูลนักแข่ง'}
-            className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg bg-black/50 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-[9.5px] sm:text-[11px] font-['Barlow_Condensed'] font-bold cursor-pointer transition-all"
-          >
-            <span>{isOpen ? 'ซ่อน' : 'แสดงนักแข่ง'}</span>
-            {isOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
-          </button>
-        </div>
-      </div>
-
-      {/* 2. Player Roster Cards (Collapsible Body) */}
-      {isOpen && (
-        <div className="p-2 sm:p-3 bg-[#070910] overflow-x-auto custom-scrollbar">
+      {/* 2. Player Roster Cards */}
+      <div className="p-2 sm:p-3 bg-[#070910] overflow-x-auto custom-scrollbar">
           {filteredPlayers.length === 0 ? (
             <div className="text-center py-4 text-slate-400 font-['Kanit'] text-xs">
               ไม่พบนักแข่งในหมวดหมู่นี้ คุณสามารถเพิ่มนักแข่งได้ที่หน้า "จัดการนักแข่ง (Players)"
@@ -339,7 +253,6 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
             </div>
           )}
         </div>
-      )}
     </div>
   );
 };

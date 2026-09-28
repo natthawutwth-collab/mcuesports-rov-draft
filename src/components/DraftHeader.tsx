@@ -34,6 +34,12 @@ interface DraftHeaderProps {
   onOpenDataModal?: () => void;
   selectedTeamCategory?: TeamCategory;
   onChangeTeamCategory?: (cat: TeamCategory) => void;
+  playerCounts?: {
+    all: number;
+    male: number;
+    female: number;
+    mixed: number;
+  };
   isRosterBarOpen?: boolean;
   onToggleRosterBar?: () => void;
 }
@@ -64,6 +70,7 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
   onOpenDataModal,
   selectedTeamCategory = 'male',
   onChangeTeamCategory,
+  playerCounts,
   isRosterBarOpen = true,
   onToggleRosterBar,
 }) => {
@@ -298,6 +305,11 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
             >
               <span>👨</span>
               <span>ชาย</span>
+              {playerCounts !== undefined && (
+                <span className={`text-[8.5px] sm:text-[9.5px] px-1 py-0.1 rounded font-normal ${selectedTeamCategory === 'male' ? 'bg-black/30' : 'bg-slate-800 text-slate-400'}`}>
+                  {playerCounts.male}
+                </span>
+              )}
             </button>
             <button
               type="button"
@@ -310,6 +322,11 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
             >
               <span>👩</span>
               <span>หญิง</span>
+              {playerCounts !== undefined && (
+                <span className={`text-[8.5px] sm:text-[9.5px] px-1 py-0.1 rounded font-normal ${selectedTeamCategory === 'female' ? 'bg-black/30' : 'bg-slate-800 text-slate-400'}`}>
+                  {playerCounts.female}
+                </span>
+              )}
             </button>
             <button
               type="button"
@@ -322,6 +339,11 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
             >
               <span>👥</span>
               <span>ผสม</span>
+              {playerCounts !== undefined && (
+                <span className={`text-[8.5px] sm:text-[9.5px] px-1 py-0.1 rounded font-normal ${selectedTeamCategory === 'mixed' ? 'bg-black/30' : 'bg-slate-800 text-slate-400'}`}>
+                  {playerCounts.mixed}
+                </span>
+              )}
             </button>
             <button
               type="button"
@@ -334,6 +356,11 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
             >
               <span>🌐</span>
               <span>ทั้งหมด</span>
+              {playerCounts !== undefined && (
+                <span className={`text-[8.5px] sm:text-[9.5px] px-1 py-0.1 rounded font-normal ${selectedTeamCategory === 'all' ? 'bg-black/30 text-white' : 'bg-slate-800 text-slate-400'}`}>
+                  {playerCounts.all}
+                </span>
+              )}
             </button>
           </div>
         )}

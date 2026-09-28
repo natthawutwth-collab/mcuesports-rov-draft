@@ -137,6 +137,14 @@ export default function App() {
     showToast,
   } = useDraconmindDraft();
 
+  // Category player counts for DraftHeader
+  const playerCounts = useMemo(() => ({
+    all: players.length,
+    male: players.filter((p) => (p.category || 'male') === 'male').length,
+    female: players.filter((p) => p.category === 'female').length,
+    mixed: players.filter((p) => p.category === 'mixed').length,
+  }), [players]);
+
   // Screen width and mobile detection
   const [windowWidth, setWindowWidth] = useState<number>(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1200
@@ -567,6 +575,7 @@ export default function App() {
             onOpenDataModal={() => setIsDataModalOpen(true)}
             selectedTeamCategory={selectedTeamCategory}
             onChangeTeamCategory={changeTeamCategory}
+            playerCounts={playerCounts}
             isRosterBarOpen={isRosterBarOpen}
             onToggleRosterBar={() => setIsRosterBarOpen((prev) => !prev)}
           />
