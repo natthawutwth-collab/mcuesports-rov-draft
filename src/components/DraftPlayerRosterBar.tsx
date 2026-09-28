@@ -196,14 +196,20 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
                     <div>
                       <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5">
                         <div className="relative">
-                          <img
-                            src={player.avatarUrl || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80'}
-                            alt={player.nickname}
-                            className="w-8 h-8 sm:w-11 sm:h-11 rounded-full object-cover border sm:border-2 border-slate-600 shadow-md bg-black/60"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = 'none';
-                            }}
-                          />
+                          {player.avatarUrl ? (
+                            <img
+                              src={player.avatarUrl}
+                              alt={player.nickname}
+                              className="w-8 h-8 sm:w-11 sm:h-11 rounded-full object-cover border sm:border-2 border-slate-600 shadow-md bg-black/60"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full border sm:border-2 border-slate-600 shadow-md bg-gradient-to-br from-slate-800 to-black flex items-center justify-center text-white font-['Orbitron'] font-black text-[9px] sm:text-xs">
+                              {player.nickname.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
                           <span
                             className={`absolute -bottom-1 -right-1 font-['Barlow_Condensed'] font-black text-[7.5px] sm:text-[8.5px] px-1 py-0.2 rounded bg-black border ${roleColorClass}`}
                           >

@@ -406,15 +406,20 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
-                          <img
-                            src={p.playerAvatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80'}
-                            alt={p.playerNickname}
-                            className="w-6 h-6 rounded-full object-cover border border-white/20 flex-shrink-0"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                'https://res.cloudinary.com/dtzdhbllb/image/upload/v1775747198/Flowborn.png';
-                            }}
-                          />
+                          {p.playerAvatar ? (
+                            <img
+                              src={p.playerAvatar}
+                              alt={p.playerNickname}
+                              className="w-6 h-6 rounded-full object-cover border border-white/20 flex-shrink-0"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-slate-700 text-[9px] font-bold text-white flex items-center justify-center flex-shrink-0">
+                              {p.playerNickname.slice(0, 1).toUpperCase()}
+                            </div>
+                          )}
                           <div className="min-w-0">
                             <div className="font-bold text-[11.5px] text-white truncate flex items-center gap-1">
                               <span>{p.playerNickname}</span>

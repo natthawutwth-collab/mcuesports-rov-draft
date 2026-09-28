@@ -302,15 +302,20 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3">
                       <div className="relative">
-                        <img
-                          src={player.avatarUrl || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80'}
-                          alt={player.nickname}
-                          className="w-13 h-13 rounded-full object-cover border-2 border-[#a82844] shadow-md bg-black/60"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src =
-                              'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80';
-                          }}
-                        />
+                        {player.avatarUrl ? (
+                          <img
+                            src={player.avatarUrl}
+                            alt={player.nickname}
+                            className="w-13 h-13 rounded-full object-cover border-2 border-[#a82844] shadow-md bg-black/60"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-13 h-13 rounded-full border-2 border-[#a82844] shadow-md bg-gradient-to-br from-slate-800 to-black flex items-center justify-center text-white font-['Orbitron'] font-black text-sm tracking-wider">
+                            {player.nickname.slice(0, 2).toUpperCase()}
+                          </div>
+                        )}
                         <span className="absolute -bottom-1 -right-1 font-['Orbitron'] text-[9px] font-black px-1.5 py-0.2 rounded bg-black border border-white/20 text-[#d4a857]">
                           {player.position}
                         </span>

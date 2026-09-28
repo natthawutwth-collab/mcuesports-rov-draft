@@ -386,14 +386,16 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                 >
                   {pick.playerId && pick.playerNickname ? (
                     <div className="flex items-center gap-1 min-w-0 bg-black/60 px-1.5 py-0.5 rounded-md border border-slate-700/80">
-                      <img
-                        src={pick.playerAvatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80'}
-                        alt={pick.playerNickname}
-                        className="w-3.5 h-3.5 rounded-full object-cover border border-white/30 flex-shrink-0"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
+                      {pick.playerAvatar ? (
+                        <img
+                          src={pick.playerAvatar}
+                          alt={pick.playerNickname}
+                          className="w-3.5 h-3.5 rounded-full object-cover border border-white/30 flex-shrink-0"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      ) : null}
                       <span className={`font-['Orbitron'] font-black ${compact ? 'text-[8.5px] max-w-[50px]' : 'text-[9.5px] max-w-[70px]'} text-[#fbbf24] truncate`}>
                         {pick.playerNickname}
                       </span>
@@ -488,14 +490,20 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                                         : 'hover:bg-slate-800 text-slate-300'
                                     }`}
                                   >
-                                    <img
-                                      src={p.avatarUrl || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80'}
-                                      alt={p.nickname}
-                                      className="w-4 h-4 rounded-full object-cover flex-shrink-0"
-                                      onError={(e) => {
-                                        (e.target as HTMLElement).style.display = 'none';
-                                      }}
-                                    />
+                                    {p.avatarUrl ? (
+                                      <img
+                                        src={p.avatarUrl}
+                                        alt={p.nickname}
+                                        className="w-4 h-4 rounded-full object-cover flex-shrink-0"
+                                        onError={(e) => {
+                                          (e.target as HTMLElement).style.display = 'none';
+                                        }}
+                                      />
+                                    ) : (
+                                      <div className="w-4 h-4 rounded-full bg-slate-700 text-[8px] font-bold text-white flex items-center justify-center flex-shrink-0">
+                                        {p.nickname.slice(0, 1).toUpperCase()}
+                                      </div>
+                                    )}
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center justify-between">
                                         <span className="font-['Orbitron'] font-bold text-[10px] truncate">

@@ -586,11 +586,20 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                       <div className="flex flex-col gap-1.5">
                         {playerBadges.map((b) => (
                           <div key={b.playerId} className="flex items-center gap-2">
-                            <img
-                              src={b.playerAvatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80'}
-                              alt={b.playerNickname}
-                              className="w-6 h-6 rounded-full object-cover border border-white/20 flex-shrink-0"
-                            />
+                            {b.playerAvatar ? (
+                              <img
+                                src={b.playerAvatar}
+                                alt={b.playerNickname}
+                                className="w-6 h-6 rounded-full object-cover border border-white/20 flex-shrink-0"
+                                onError={(e) => {
+                                  (e.target as HTMLElement).style.display = 'none';
+                                }}
+                              />
+                            ) : (
+                              <div className="w-6 h-6 rounded-full bg-slate-700 text-[9px] font-bold text-white flex items-center justify-center flex-shrink-0">
+                                {b.playerNickname.slice(0, 1).toUpperCase()}
+                              </div>
+                            )}
                             <div className="flex flex-col min-w-0 flex-1">
                               <div className="flex items-center justify-between">
                                 <span className="font-['Orbitron'] font-bold text-xs text-white truncate">
