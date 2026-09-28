@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Player, PlayerPosition, PlayerHeroPoolItem, HeroProficiency } from '../types/player';
+import { Player, PlayerPosition, PlayerHeroPoolItem, HeroProficiency, PlayerCategory } from '../types/player';
 import { HEROES, HERO_IMG_MAP, HERO_IMG_OVERRIDE } from '../data/heroes';
 import { X, Search, Star, Trash2, UserPlus, Check } from 'lucide-react';
 
@@ -12,6 +12,7 @@ interface PlayerModalProps {
     position: PlayerPosition;
     avatarUrl: string;
     heroPool: PlayerHeroPoolItem[];
+    category?: PlayerCategory;
   }) => void;
   initialPlayer?: Player | null;
 }
@@ -53,6 +54,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
   const [name, setName] = useState(initialPlayer?.name || '');
   const [nickname, setNickname] = useState(initialPlayer?.nickname || '');
   const [position, setPosition] = useState<PlayerPosition>(initialPlayer?.position || 'DSL');
+  const [category, setCategory] = useState<PlayerCategory>(initialPlayer?.category || 'male');
   const [avatarUrl, setAvatarUrl] = useState(
     initialPlayer?.avatarUrl || PRESET_AVATARS[0]
   );
@@ -118,6 +120,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
       name: cleanName || effectiveNick,
       nickname: effectiveNick.toUpperCase(),
       position,
+      category,
       avatarUrl: avatarUrl.trim() || PRESET_AVATARS[0],
       heroPool,
     });
@@ -191,7 +194,52 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
             </div>
           )}
 
-          {/* Row 2: Position */}
+          {/* Row 2: Team Division / Category */}
+          <div>
+            <label className="block text-xs font-['Barlow_Condensed'] font-bold tracking-wider text-white/80 uppercase mb-1.5">
+              หมวดหมู่ทีม (Team Category) *
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setCategory('male')}
+                className={`py-2 px-3 rounded-lg border font-['Barlow_Condensed'] font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                  category === 'male'
+                    ? 'bg-sky-600/30 border-sky-400 text-sky-200 ring-1 ring-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.3)]'
+                    : 'border-white/10 bg-white/[0.03] text-white/60 hover:text-white hover:border-white/20'
+                }`}
+              >
+                <span>👨</span>
+                <span>ทีมชาย (Men)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategory('female')}
+                className={`py-2 px-3 rounded-lg border font-['Barlow_Condensed'] font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                  category === 'female'
+                    ? 'bg-rose-600/30 border-rose-400 text-rose-200 ring-1 ring-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.3)]'
+                    : 'border-white/10 bg-white/[0.03] text-white/60 hover:text-white hover:border-white/20'
+                }`}
+              >
+                <span>👩</span>
+                <span>ทีมหญิง (Women)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCategory('mixed')}
+                className={`py-2 px-3 rounded-lg border font-['Barlow_Condensed'] font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                  category === 'mixed'
+                    ? 'bg-purple-600/30 border-purple-400 text-purple-200 ring-1 ring-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
+                    : 'border-white/10 bg-white/[0.03] text-white/60 hover:text-white hover:border-white/20'
+                }`}
+              >
+                <span>👥</span>
+                <span>ทีมผสม (Mixed)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Row 3: Position */}
           <div>
             <label className="block text-xs font-['Barlow_Condensed'] font-bold tracking-wider text-white/80 uppercase mb-1.5">
               ตำแหน่งหลัก (Position) *

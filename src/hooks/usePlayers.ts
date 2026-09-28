@@ -1,15 +1,15 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Player, PlayerPosition, HeroPlayerBadge, PlayerHeroPoolItem } from '../types/player';
+import { Player, PlayerPosition, HeroPlayerBadge, PlayerHeroPoolItem, PlayerCategory, TeamCategory } from '../types/player';
+import { INITIAL_ROV_PLAYERS } from '../data/seedPlayers';
 import {
   supabase,
   isSupabaseConfigured,
   subscribeSupabaseConfigChange,
 } from '../services/supabase';
 
-const STORAGE_KEY = 'mcu_rov_players_v1';
+const STORAGE_KEY = 'mcu_rov_players_v2';
 const TEAM_STORAGE_KEY = 'mcu_rov_team_id_v1';
 const DEFAULT_TEAM_ID = 'main_team';
-const PURGE_KEY = 'mcu_rov_players_purge_v3';
 
 // Validate player structure, ensuring user players (regardless of nickname) are preserved
 function sanitizePlayers(list: any[]): Player[] {
@@ -21,7 +21,10 @@ function sanitizePlayers(list: any[]): Player[] {
       typeof p.nickname === 'string' &&
       p.nickname.trim().length > 0 &&
       p.id !== 'legacy_mock_seed_1'
-  );
+  ).map((p) => ({
+    ...p,
+    category: p.category || 'male',
+  }));
 }
 
 export function usePlayers() {
@@ -38,24 +41,23 @@ export function usePlayers() {
   // 2. Players State (loaded from localStorage first for instant responsiveness)
   const [players, setPlayers] = useState<Player[]>(() => {
     try {
-      if (!localStorage.getItem(PURGE_KEY)) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
-        localStorage.setItem(PURGE_KEY, 'done');
-        return [];
-      }
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           const sanitized = sanitizePlayers(parsed);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
-          return sanitized;
+          if (sanitized.length > 0) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(sanitized));
+            return sanitized;
+          }
         }
       }
     } catch (e) {
       console.error('Failed to load players from localStorage', e);
     }
-    return [];
+    // Default to INITIAL_ROV_PLAYERS (Men, Women, Mixed)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ROV_PLAYERS));
+    return INITIAL_ROV_PLAYERS;
   });
 
   // Sync statuses
@@ -348,9 +350,11 @@ export function usePlayers() {
       position: PlayerPosition;
       avatarUrl: string;
       heroPool: PlayerHeroPoolItem[];
+      category?: PlayerCategory;
     }) => {
       const newPlayer: Player = {
         ...newPlayerData,
+        category: newPlayerData.category || 'male',
         id: 'player_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
         createdAt: Date.now(),
       };
@@ -380,7 +384,7 @@ export function usePlayers() {
 
   // Reset / Clear all players
   const resetToDefaultPlayers = useCallback(() => {
-    persistPlayers([]);
+    persistPlayers(INITIAL_ROV_PLAYERS);
   }, [persistPlayers]);
 
   const clearAllPlayers = useCallback(() => {
@@ -403,6 +407,7 @@ export function usePlayers() {
           position: player.position,
           tier: item.tier,
           playerAvatar: (player.avatarUrl && player.avatarUrl.trim()) ? player.avatarUrl.trim() : 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80',
+          category: player.category || 'male',
         });
       });
     });

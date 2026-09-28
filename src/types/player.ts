@@ -2,6 +2,9 @@ export type PlayerPosition = 'DSL' | 'Jungle' | 'Mid' | 'Support' | 'ADL';
 
 export type HeroProficiency = 'signature' | 'comfortable';
 
+export type TeamCategory = 'all' | 'male' | 'female' | 'mixed';
+export type PlayerCategory = 'male' | 'female' | 'mixed';
+
 export interface PlayerHeroPoolItem {
   heroName: string;
   tier: HeroProficiency;
@@ -14,6 +17,7 @@ export interface Player {
   position: PlayerPosition;
   avatarUrl?: string;
   heroPool: PlayerHeroPoolItem[];
+  category?: PlayerCategory; // 'male' | 'female' | 'mixed'
   createdAt: number;
 }
 
@@ -24,4 +28,5 @@ export interface HeroPlayerBadge {
   position: PlayerPosition;
   tier: HeroProficiency;
   playerAvatar?: string;
+  category?: PlayerCategory;
 }

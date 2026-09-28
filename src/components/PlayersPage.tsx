@@ -59,6 +59,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [posFilter, setPosFilter] = useState<'ALL' | PlayerPosition>('ALL');
+  const [catFilter, setCatFilter] = useState<'ALL' | 'male' | 'female' | 'mixed'>('ALL');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,6 +68,9 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
   // Filtered Players
   const filteredPlayers = useMemo(() => {
     return players.filter((p) => {
+      // Category filter
+      if (catFilter !== 'ALL' && (p.category || 'male') !== catFilter) return false;
+
       // Pos filter
       if (posFilter !== 'ALL' && p.position !== posFilter) return false;
 
@@ -82,7 +86,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
 
       return true;
     });
-  }, [players, posFilter, searchQuery]);
+  }, [players, catFilter, posFilter, searchQuery]);
 
   const handleEdit = (player: Player) => {
     setEditingPlayer(player);
@@ -170,37 +174,98 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
       )}
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3 bg-black/40 border border-white/10 rounded-xl backdrop-blur-sm">
-        {/* Search */}
-        <div className="relative w-full sm:max-w-xs">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={13} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="ค้นหาชื่อ, Nickname, หรือ Hero..."
-            className="w-full bg-[rgba(20,20,26,0.8)] border border-white/10 text-white text-xs font-['Kanit'] pl-8 pr-3 py-1.5 rounded-lg outline-none focus:border-[#a82844]"
-          />
-        </div>
-
-        {/* Position Filter Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar w-full sm:w-auto">
-          {POS_FILTERS.map((f) => {
-            const isActive = posFilter === f.key;
-            return (
+      <div className="flex flex-col gap-2.5 p-3 bg-black/40 border border-white/10 rounded-xl backdrop-blur-sm">
+        {/* Row 1: Category Filter Tabs */}
+        <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-white/5">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-['Barlow_Condensed'] font-black text-slate-400 uppercase tracking-wider">
+              หมวดหมู่ทีม:
+            </span>
+            <div className="flex items-center gap-1">
               <button
-                key={f.key}
-                onClick={() => setPosFilter(f.key)}
-                className={`px-3 py-1 rounded-lg font-['Barlow_Condensed'] font-bold text-xs tracking-wider transition-all whitespace-nowrap flex items-center gap-1 ${
-                  isActive
-                    ? 'bg-[#a82844] text-white shadow-[0_0_10px_rgba(168,40,68,0.4)]'
-                    : `bg-white/5 border border-white/10 text-white/60 hover:text-white ${f.color}`
+                type="button"
+                onClick={() => setCatFilter('ALL')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-['Barlow_Condensed'] font-black transition-all ${
+                  catFilter === 'ALL'
+                    ? 'bg-white text-black shadow-md'
+                    : 'bg-white/5 text-slate-300 hover:text-white border border-white/10'
                 }`}
               >
-                <span>{f.label}</span>
+                🌐 ทั้งหมด ({players.length})
               </button>
-            );
-          })}
+              <button
+                type="button"
+                onClick={() => setCatFilter('male')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-['Barlow_Condensed'] font-black transition-all flex items-center gap-1 ${
+                  catFilter === 'male'
+                    ? 'bg-sky-600 text-white border border-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.4)]'
+                    : 'bg-white/5 text-slate-300 hover:text-white border border-white/10'
+                }`}
+              >
+                <span>👨</span>
+                <span>ทีมชาย ({players.filter((p) => (p.category || 'male') === 'male').length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCatFilter('female')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-['Barlow_Condensed'] font-black transition-all flex items-center gap-1 ${
+                  catFilter === 'female'
+                    ? 'bg-rose-600 text-white border border-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.4)]'
+                    : 'bg-white/5 text-slate-300 hover:text-white border border-white/10'
+                }`}
+              >
+                <span>👩</span>
+                <span>ทีมหญิง ({players.filter((p) => p.category === 'female').length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setCatFilter('mixed')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-['Barlow_Condensed'] font-black transition-all flex items-center gap-1 ${
+                  catFilter === 'mixed'
+                    ? 'bg-purple-600 text-white border border-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.4)]'
+                    : 'bg-white/5 text-slate-300 hover:text-white border border-white/10'
+                }`}
+              >
+                <span>👥</span>
+                <span>ทีมผสม ({players.filter((p) => p.category === 'mixed').length})</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 2: Search & Role Filters */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Search */}
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={13} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="ค้นหาชื่อ, Nickname, หรือ Hero..."
+              className="w-full bg-[rgba(20,20,26,0.8)] border border-white/10 text-white text-xs font-['Kanit'] pl-8 pr-3 py-1.5 rounded-lg outline-none focus:border-[#a82844]"
+            />
+          </div>
+
+          {/* Position Filter Pills */}
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar w-full sm:w-auto">
+            {POS_FILTERS.map((f) => {
+              const isActive = posFilter === f.key;
+              return (
+                <button
+                  key={f.key}
+                  onClick={() => setPosFilter(f.key)}
+                  className={`px-3 py-1 rounded-lg font-['Barlow_Condensed'] font-bold text-xs tracking-wider transition-all whitespace-nowrap flex items-center gap-1 ${
+                    isActive
+                      ? 'bg-[#a82844] text-white shadow-[0_0_10px_rgba(168,40,68,0.4)]'
+                      : `bg-white/5 border border-white/10 text-white/60 hover:text-white ${f.color}`
+                  }`}
+                >
+                  <span>{f.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -256,6 +321,21 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                           <h4 className="font-['Orbitron'] font-extrabold text-base tracking-wider text-white">
                             {player.nickname}
                           </h4>
+                          <span
+                            className={`text-[9px] font-['Barlow_Condensed'] font-black px-1.5 py-0.2 rounded border ${
+                              player.category === 'female'
+                                ? 'bg-rose-950/80 text-rose-300 border-rose-600/60'
+                                : (player.category || 'male') === 'male'
+                                ? 'bg-sky-950/80 text-sky-300 border-sky-600/60'
+                                : 'bg-purple-950/80 text-purple-300 border-purple-600/60'
+                            }`}
+                          >
+                            {player.category === 'female'
+                              ? '👩 ทีมหญิง'
+                              : (player.category || 'male') === 'male'
+                              ? '👨 ทีมชาย'
+                              : '👥 ทีมผสม'}
+                          </span>
                         </div>
                         <p className="text-xs text-[#a0a0a8] font-['Kanit']">{player.name}</p>
                         <span className="inline-block mt-0.5 text-[10px] font-['Barlow_Condensed'] font-bold text-white/50 tracking-wider uppercase">

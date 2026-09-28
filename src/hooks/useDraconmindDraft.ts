@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Hero, PositionKey, LaneSelectKey, DraftAction, MatchNoteGame } from '../types/draft';
+import { Player, PlayerCategory, TeamCategory } from '../types/player';
 import { DRAFT_TURNS, BLUE_PICK_ORDER, RED_PICK_ORDER } from '../data/draftSteps';
 import { HEROES } from '../data/heroes';
 import { calcTeamScore, DraftScoreResult } from '../data/metaData';
@@ -9,6 +10,11 @@ export interface PickSlotState {
   hero: Hero | null;
   pos: LaneSelectKey;
   order: number;
+  playerId?: string;
+  playerName?: string;
+  playerNickname?: string;
+  playerAvatar?: string;
+  playerCategory?: PlayerCategory;
 }
 
 const DEFAULT_BLUE_POS: LaneSelectKey[] = ['DSL', 'JG', 'MID', 'ROAM', 'ADL'];
@@ -19,6 +25,17 @@ export function useDraconmindDraft() {
   const [blueTeamName, setBlueTeamName] = useState('BLUE SIDE');
   const [redTeamName, setRedTeamName] = useState('RED SIDE');
   const [blueIsUs, setBlueIsUs] = useState(true); // true = US is Blue, false = US is Red
+
+  // Selected Team Category: 'all' | 'male' | 'female' | 'mixed'
+  const [selectedTeamCategory, setSelectedTeamCategory] = useState<TeamCategory>(() => {
+    try {
+      const saved = localStorage.getItem('draconmind_team_category');
+      if (saved === 'male' || saved === 'female' || saved === 'mixed' || saved === 'all') {
+        return saved;
+      }
+    } catch {}
+    return 'male'; // default to ทีมชาย
+  });
 
   // Draft sequence state
   const [draftActive, setDraftActive] = useState(false);
@@ -260,6 +277,57 @@ export function useDraconmindDraft() {
     setBlueIsUs((prev) => !prev);
     showToast('⇄ สลับฝั่ง Blue ↔ Red');
   }, [redTeamName, showToast]);
+
+  // Change Team Category (ทีมชาย, ทีมหญิง, ทีมผสม, ทั้งหมด)
+  const changeTeamCategory = useCallback((cat: TeamCategory) => {
+    setSelectedTeamCategory(cat);
+    try {
+      localStorage.setItem('draconmind_team_category', cat);
+    } catch {}
+    const label = cat === 'male' ? '👨 ทีมชาย (Men)' : cat === 'female' ? '👩 ทีมหญิง (Women)' : cat === 'mixed' ? '👥 ทีมผสม (Mixed)' : '🌐 ทั้งหมด (All)';
+    showToast(`🏆 สลับหมวดหมู่: ${label}`);
+  }, [showToast]);
+
+  // Assign Player to Pick Slot
+  const assignPlayerToPickSlot = useCallback(
+    (team: 'blue' | 'red', slotIndex: number, player: Player | null) => {
+      if (team === 'blue') {
+        setBluePicks((prev) => {
+          const next = [...prev];
+          if (!next[slotIndex]) return prev;
+          next[slotIndex] = {
+            ...next[slotIndex],
+            playerId: player?.id,
+            playerName: player?.name,
+            playerNickname: player?.nickname,
+            playerAvatar: player?.avatarUrl,
+            playerCategory: player?.category,
+          };
+          return next;
+        });
+      } else {
+        setRedPicks((prev) => {
+          const next = [...prev];
+          if (!next[slotIndex]) return prev;
+          next[slotIndex] = {
+            ...next[slotIndex],
+            playerId: player?.id,
+            playerName: player?.name,
+            playerNickname: player?.nickname,
+            playerAvatar: player?.avatarUrl,
+            playerCategory: player?.category,
+          };
+          return next;
+        });
+      }
+      if (player) {
+        showToast(`👤 กำหนด ${player.nickname} ให้ช่อง ${team === 'blue' ? 'Blue' : 'Red'} #${slotIndex + 1}`);
+      } else {
+        showToast(`ลบข้อมูลนักแข่งออกจากช่องแล้ว`);
+      }
+    },
+    [showToast]
+  );
 
   // Select Hero
   const selectHero = useCallback((hero: Hero): boolean => {
@@ -619,6 +687,12 @@ export function useDraconmindDraft() {
     blueIsUs,
     setBlueIsUs,
     swapSides,
+
+    // Team Division / Category
+    selectedTeamCategory,
+    setSelectedTeamCategory,
+    changeTeamCategory,
+    assignPlayerToPickSlot,
 
     // Turn & Sequence
     draftActive,

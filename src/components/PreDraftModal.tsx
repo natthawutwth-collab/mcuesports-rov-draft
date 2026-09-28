@@ -48,6 +48,9 @@ export const PreDraftModal: React.FC<PreDraftModalProps> = ({
   const [patch, setPatch] = useState(
     initialMetadata?.patch || 'Patch 1.56 (Summer 2026)'
   );
+  const [teamCategory, setTeamCategory] = useState<'male' | 'female' | 'mixed'>(
+    initialMetadata?.teamCategory || 'male'
+  );
 
   if (!isOpen) return null;
 
@@ -60,6 +63,7 @@ export const PreDraftModal: React.FC<PreDraftModalProps> = ({
       blueTeam: blueTeam.trim() || 'Blue Team',
       redTeam: redTeam.trim() || 'Red Team',
       patch: patch.trim() || 'Patch 1.56',
+      teamCategory,
     });
   };
 
@@ -151,6 +155,52 @@ export const PreDraftModal: React.FC<PreDraftModalProps> = ({
                   ))}
                 </select>
               </div>
+            </div>
+          </div>
+
+          {/* หมวดหมู่ทีม: ทีมชาย / ทีมหญิง / ทีมผสม */}
+          <div>
+            <label className="block font-['Barlow_Condensed'] text-xs font-black tracking-wider uppercase text-white/80 mb-1.5 flex items-center justify-between">
+              <span>หมวดหมู่ทีม (TEAM DIVISION)</span>
+              <span className="text-[10px] text-slate-400 font-normal">คัดกรองข้อมูลนักแข่งในหน้าดราฟ</span>
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setTeamCategory('male')}
+                className={`py-2 px-2 rounded-xl border text-xs font-['Barlow_Condensed'] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                  teamCategory === 'male'
+                    ? 'bg-sky-600 border-sky-400 text-white shadow-[0_0_12px_rgba(56,189,248,0.5)] font-black'
+                    : 'bg-black/40 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <span>👨</span>
+                <span>ทีมชาย (Men)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTeamCategory('female')}
+                className={`py-2 px-2 rounded-xl border text-xs font-['Barlow_Condensed'] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                  teamCategory === 'female'
+                    ? 'bg-rose-600 border-rose-400 text-white shadow-[0_0_12px_rgba(244,63,94,0.5)] font-black'
+                    : 'bg-black/40 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <span>👩</span>
+                <span>ทีมหญิง (Women)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setTeamCategory('mixed')}
+                className={`py-2 px-2 rounded-xl border text-xs font-['Barlow_Condensed'] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                  teamCategory === 'mixed'
+                    ? 'bg-purple-600 border-purple-400 text-white shadow-[0_0_12px_rgba(168,85,247,0.5)] font-black'
+                    : 'bg-black/40 border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                <span>👥</span>
+                <span>ทีมผสม (Mixed)</span>
+              </button>
             </div>
           </div>
 

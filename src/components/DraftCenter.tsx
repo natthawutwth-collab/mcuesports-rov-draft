@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Hero, PositionKey, TeamSide, SlotType } from '../types/draft';
-import { HeroPlayerBadge } from '../types/player';
+import { HeroPlayerBadge, TeamCategory } from '../types/player';
 import { DRAFT_TURNS } from '../data/draftSteps';
 import { HEROES, getHeroImageUrl } from '../data/heroes';
 import { DraftScoreResult } from '../data/metaData';
@@ -37,6 +37,8 @@ interface DraftCenterProps {
   isStatsOpen?: boolean;
   onToggleStats?: () => void;
   onOpenCoachPanel?: () => void;
+  selectedTeamCategory?: TeamCategory;
+  onChangeTeamCategory?: (cat: TeamCategory) => void;
 }
 
 const ROLES: { key: PositionKey; label: string; colorClass: string; activeClass: string }[] = [
@@ -75,6 +77,8 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
   isStatsOpen,
   onToggleStats,
   onOpenCoachPanel,
+  selectedTeamCategory = 'male',
+  onChangeTeamCategory,
 }) => {
   const currentTurn = DRAFT_TURNS[draftTurnIdx];
 
@@ -151,7 +155,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
       : '#38bdf8'; // sky
 
   return (
-    <div className="flex-1 flex flex-col bg-[#0b0d14]/95 border-2 border-slate-700/80 rounded-2xl shadow-2xl backdrop-blur-md overflow-hidden min-w-0">
+    <div className="flex-1 min-w-[480px] sm:min-w-[540px] xl:min-w-[620px] flex flex-col bg-[#0b0d14]/95 border-2 border-slate-700/80 rounded-2xl shadow-2xl backdrop-blur-md overflow-hidden">
       {/* 1. TOP DRAFT STATUS BAR */}
       <div className="flex items-center justify-between gap-3 px-4 py-3 bg-[#07090f] border-b-2 border-slate-700/80 flex-wrap">
         {/* Left: Turn Badge & Team Details */}
@@ -257,6 +261,23 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
             </button>
           );
         })}
+        {/* Category Indicator in Filter Bar */}
+        {onChangeTeamCategory && (
+          <div className="flex items-center gap-1 pl-2 border-l border-slate-800">
+            <span className="text-[10px] font-['Barlow_Condensed'] font-bold text-slate-400 uppercase hidden sm:inline">หมวดทีม:</span>
+            <select
+              value={selectedTeamCategory}
+              onChange={(e) => onChangeTeamCategory(e.target.value as any)}
+              className="bg-[#121624] border border-slate-700 hover:border-[#fbbf24] text-slate-200 text-[11px] font-['Barlow_Condensed'] font-bold px-2 py-0.5 rounded-lg outline-none cursor-pointer shadow-sm transition-all"
+            >
+              <option value="male">👨 ทีมชาย</option>
+              <option value="female">👩 ทีมหญิง</option>
+              <option value="mixed">👥 ทีมผสม</option>
+              <option value="all">🌐 ทั้งหมด</option>
+            </select>
+          </div>
+        )}
+
         <div className="ml-auto flex items-center gap-2 pl-2">
           {onOpenCoachPanel && (
             <button
@@ -423,7 +444,11 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
               const isPicked = pickedHeroNames.has(hero.name);
               const isUnavailable = isBanned || isPicked;
               const isInspected = inspectedHeroName?.toLowerCase() === hero.name.toLowerCase();
-              const playerBadges = heroToPlayersMap[hero.name] || [];
+              const rawBadges = heroToPlayersMap[hero.name] || [];
+              const playerBadges =
+                selectedTeamCategory && selectedTeamCategory !== 'all'
+                  ? rawBadges.filter((b) => (b.category || 'male') === selectedTeamCategory)
+                  : rawBadges;
 
               // Primary pos color
               const posColor =

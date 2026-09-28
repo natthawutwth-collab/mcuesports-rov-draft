@@ -1,5 +1,6 @@
 import React from 'react';
-import { RotateCcw, Save, Undo2, Play } from 'lucide-react';
+import { RotateCcw, Save, Undo2, Play, Users } from 'lucide-react';
+import { TeamCategory } from '../types/player';
 
 interface DraftHeaderProps {
   blueTeamName: string;
@@ -23,6 +24,7 @@ interface DraftHeaderProps {
     match: string;
     gameNumber: number;
     patch: string;
+    teamCategory?: string;
   };
   draftActive: boolean;
   isSidePanelOpen?: boolean;
@@ -30,6 +32,10 @@ interface DraftHeaderProps {
   onToggleCoachPanel?: () => void;
   onToggleStatsPanel?: () => void;
   onOpenDataModal?: () => void;
+  selectedTeamCategory?: TeamCategory;
+  onChangeTeamCategory?: (cat: TeamCategory) => void;
+  isRosterBarOpen?: boolean;
+  onToggleRosterBar?: () => void;
 }
 
 export const DraftHeader: React.FC<DraftHeaderProps> = ({
@@ -56,6 +62,10 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
   onToggleCoachPanel,
   onToggleStatsPanel,
   onOpenDataModal,
+  selectedTeamCategory = 'male',
+  onChangeTeamCategory,
+  isRosterBarOpen = true,
+  onToggleRosterBar,
 }) => {
   return (
     <div className="w-full flex items-center gap-2.5 flex-wrap px-4 py-3 bg-[#0a0c14]/95 border border-slate-700/70 rounded-xl shadow-2xl backdrop-blur-md">
@@ -144,6 +154,84 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
           🔴
         </div>
       </div>
+
+      {/* Team Division / Category Selector */}
+      {onChangeTeamCategory && (
+        <div className="flex items-center gap-1 bg-black/60 p-1 rounded-xl border border-slate-700 shadow-inner">
+          <span className="text-[10px] font-['Barlow_Condensed'] font-black text-slate-400 px-1 uppercase tracking-wider hidden md:inline">
+            หมวด:
+          </span>
+          <button
+            type="button"
+            onClick={() => onChangeTeamCategory('male')}
+            className={`font-['Barlow_Condensed'] text-[11px] font-black tracking-wider px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
+              selectedTeamCategory === 'male'
+                ? 'bg-sky-600 border-sky-400 text-white shadow-[0_0_10px_rgba(56,189,248,0.5)]'
+                : 'border-slate-800 bg-transparent text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+            title="สลับเป็นทีมชาย"
+          >
+            <span>👨</span>
+            <span>ทีมชาย</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onChangeTeamCategory('female')}
+            className={`font-['Barlow_Condensed'] text-[11px] font-black tracking-wider px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
+              selectedTeamCategory === 'female'
+                ? 'bg-rose-600 border-rose-400 text-white shadow-[0_0_10px_rgba(244,63,94,0.5)]'
+                : 'border-slate-800 bg-transparent text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+            title="สลับเป็นทีมหญิง"
+          >
+            <span>👩</span>
+            <span>ทีมหญิง</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onChangeTeamCategory('mixed')}
+            className={`font-['Barlow_Condensed'] text-[11px] font-black tracking-wider px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
+              selectedTeamCategory === 'mixed'
+                ? 'bg-purple-600 border-purple-400 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]'
+                : 'border-slate-800 bg-transparent text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+            title="สลับเป็นทีมผสม"
+          >
+            <span>👥</span>
+            <span>ทีมผสม</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onChangeTeamCategory('all')}
+            className={`font-['Barlow_Condensed'] text-[11px] font-black tracking-wider px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
+              selectedTeamCategory === 'all'
+                ? 'bg-white border-white text-black shadow-md'
+                : 'border-slate-800 bg-transparent text-slate-400 hover:text-white hover:bg-white/5'
+            }`}
+            title="แสดงทั้งหมด"
+          >
+            <span>🌐</span>
+            <span>ทั้งหมด</span>
+          </button>
+        </div>
+      )}
+
+      {/* Roster Bar Quick Toggle */}
+      {onToggleRosterBar && (
+        <button
+          type="button"
+          onClick={onToggleRosterBar}
+          title={isRosterBarOpen ? 'ซ่อนแถบข้อมูลนักแข่ง' : 'แสดงแถบข้อมูลนักแข่ง'}
+          className={`font-['Barlow_Condensed'] text-[11px] font-black tracking-wider px-2.5 py-1.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${
+            isRosterBarOpen
+              ? 'bg-[#fbbf24]/20 border-[#fbbf24] text-[#fbbf24] shadow-[0_0_10px_rgba(251,191,36,0.3)]'
+              : 'bg-black/60 border-slate-700 text-slate-300 hover:text-white hover:bg-white/10'
+          }`}
+        >
+          <Users size={12} className="text-[#fbbf24]" />
+          <span>ข้อมูลนักแข่ง</span>
+        </button>
+      )}
 
       {/* Phase Label */}
       <div className="hidden xl:flex items-center gap-2 font-['Barlow_Condensed'] text-[12px] text-slate-200 tracking-[1.5px] uppercase font-bold mx-1 px-2.5 py-1 bg-black/40 border border-slate-800 rounded-lg">

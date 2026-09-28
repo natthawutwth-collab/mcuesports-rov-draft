@@ -1,3 +1,5 @@
+import { PlayerCategory } from './player';
+
 export type MatchWinner = 'blue' | 'red' | 'draw' | 'undecided';
 
 export interface DraftMatchMetadata {
@@ -7,6 +9,7 @@ export interface DraftMatchMetadata {
   blueTeam: string;
   redTeam: string;
   patch: string;
+  teamCategory?: PlayerCategory;
 }
 
 export interface DraftTeamRecord {
@@ -17,6 +20,8 @@ export interface DraftTeamRecord {
     heroName: string;
     position: string; // DSL, JG, MID, ROAM, ADL
     pickOrder?: number;
+    playerId?: string;
+    playerNickname?: string;
   }>;
 }
 
@@ -28,6 +33,7 @@ export interface DraftHistoryRecord {
   match: string;
   gameNumber: number;
   patch: string;
+  teamCategory?: PlayerCategory;
   blueTeam: DraftTeamRecord;
   redTeam: DraftTeamRecord;
   winner: MatchWinner;

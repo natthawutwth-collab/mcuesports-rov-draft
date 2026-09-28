@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Hero, LaneSelectKey, TeamSide } from '../types/draft';
 import { PickSlotState } from '../hooks/useDraconmindDraft';
+import { Player, TeamCategory } from '../types/player';
 import { getHeroImageUrl } from '../data/heroes';
-import { X } from 'lucide-react';
+import { X, UserPlus, UserCheck, Star, Sparkles } from 'lucide-react';
 
 interface TeamColumnProps {
   side: TeamSide;
@@ -20,6 +21,9 @@ interface TeamColumnProps {
   onChangePickPos: (index: number, pos: LaneSelectKey) => void;
   onInspectHero?: (heroName: string) => void;
   inspectedHeroName?: string | null;
+  players?: Player[];
+  onAssignPlayer?: (slotIndex: number, player: Player | null) => void;
+  teamCategory?: TeamCategory;
 }
 
 export const TeamColumn: React.FC<TeamColumnProps> = ({
@@ -34,11 +38,23 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
   onChangePickPos,
   onInspectHero,
   inspectedHeroName,
+  players = [],
+  onAssignPlayer,
+  teamCategory = 'all',
 }) => {
   const isBlue = side === 'blue';
   const sideEmoji = isBlue ? '🔵' : '🔴';
   const sideTitle = isBlue ? 'BLUE SIDE' : 'RED SIDE';
   const banPrefix = isBlue ? 'B' : 'R';
+
+  // State to track which slot has the player picker popover open
+  const [activePlayerPickerSlot, setActivePlayerPickerSlot] = useState<number | null>(null);
+
+  // Filter players by team category
+  const filteredPlayers = React.useMemo(() => {
+    if (teamCategory === 'all') return players;
+    return players.filter((p) => (p.category || 'male') === teamCategory);
+  }, [players, teamCategory]);
 
   // Subtitle: only show if user entered a custom name different from default
   const isCustomName =
@@ -48,7 +64,7 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
 
   return (
     <div
-      className={`w-full lg:w-[250px] xl:w-[268px] flex-shrink-0 flex flex-col gap-3 p-3 rounded-2xl border-2 backdrop-blur-md transition-all shadow-2xl ${
+      className={`w-[235px] sm:w-[250px] xl:w-[268px] flex-shrink-0 flex flex-col gap-3 p-2.5 sm:p-3 rounded-2xl border-2 backdrop-blur-md transition-all shadow-2xl ${
         isBlue
           ? 'bg-[#071322]/95 border-[#0284c7]/60 shadow-[0_0_30px_rgba(2,132,199,0.2)]'
           : 'bg-[#200812]/95 border-[#e11d48]/60 shadow-[0_0_30px_rgba(225,29,72,0.2)]'
@@ -312,6 +328,146 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                 ) : (
                   <div className="h-5" />
                 )}
+
+                {/* Assigned Player Strip */}
+                <div
+                  className={`mt-1 pt-1 border-t border-white/5 flex items-center gap-1.5 ${
+                    isBlue ? 'justify-start' : 'justify-end'
+                  }`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {pick.playerId && pick.playerNickname ? (
+                    <div className="flex items-center gap-1 min-w-0 bg-black/60 px-1.5 py-0.5 rounded-md border border-slate-700/80">
+                      <img
+                        src={pick.playerAvatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80'}
+                        alt={pick.playerNickname}
+                        className="w-4 h-4 rounded-full object-cover border border-white/30 flex-shrink-0"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                      <span className="font-['Orbitron'] font-black text-[9.5px] text-[#fbbf24] truncate max-w-[70px]">
+                        {pick.playerNickname}
+                      </span>
+
+                      {/* Proficiency badge if hero is picked */}
+                      {pick.hero && (() => {
+                        const assignedP = players.find((p) => p.id === pick.playerId);
+                        const matchHero = assignedP?.heroPool.find(
+                          (h) => h.heroName.toLowerCase() === pick.hero!.name.toLowerCase()
+                        );
+                        if (matchHero?.tier === 'signature') {
+                          return (
+                            <span className="text-[8px] font-['Barlow_Condensed'] font-black px-1 py-0.1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 whitespace-nowrap">
+                              ⭐ SIG
+                            </span>
+                          );
+                        }
+                        if (matchHero?.tier === 'comfortable') {
+                          return (
+                            <span className="text-[8px] font-['Barlow_Condensed'] font-black px-1 py-0.1 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 whitespace-nowrap">
+                              ★ COM
+                            </span>
+                          );
+                        }
+                        return null;
+                      })()}
+
+                      {/* Change / Unassign button */}
+                      {onAssignPlayer && (
+                        <button
+                          type="button"
+                          onClick={() => onAssignPlayer(idx, null)}
+                          title="ลบนักแข่งออกจากช่องนี้"
+                          className="text-slate-400 hover:text-red-400 ml-0.5"
+                        >
+                          <X size={10} />
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    onAssignPlayer && (
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setActivePlayerPickerSlot((prev) => (prev === idx ? null : idx))
+                          }
+                          className="text-[9px] font-['Kanit'] text-slate-400 hover:text-white bg-black/40 hover:bg-slate-800 border border-slate-700/80 px-1.5 py-0.5 rounded flex items-center gap-1 transition-colors cursor-pointer"
+                          title="คลิกเพื่อกำหนดนักแข่งประจำช่องนี้"
+                        >
+                          <UserPlus size={10} className="text-[#fbbf24]" />
+                          <span>+ นักแข่ง</span>
+                        </button>
+
+                        {/* Player Picker Dropdown Popover */}
+                        {activePlayerPickerSlot === idx && (
+                          <div className="absolute bottom-full mb-1 left-0 z-50 w-44 p-1.5 bg-[#0e111a] border border-slate-600 rounded-xl shadow-2xl backdrop-blur-md flex flex-col gap-1 max-h-48 overflow-y-auto custom-scrollbar">
+                            <div className="text-[9px] font-['Orbitron'] font-bold text-slate-400 px-1.5 py-0.5 border-b border-slate-800 flex items-center justify-between">
+                              <span>เลือกนักแข่ง</span>
+                              <button
+                                type="button"
+                                onClick={() => setActivePlayerPickerSlot(null)}
+                                className="text-slate-400 hover:text-white"
+                              >
+                                <X size={10} />
+                              </button>
+                            </div>
+                            {filteredPlayers.length === 0 ? (
+                              <div className="text-[9.5px] text-slate-400 p-1 text-center font-['Kanit']">
+                                ไม่มีนักแข่งในหมวดหมู่นี้
+                              </div>
+                            ) : (
+                              filteredPlayers.map((p) => {
+                                const isPosMatch =
+                                  (pick.pos === 'DSL' && p.position === 'DSL') ||
+                                  (pick.pos === 'JG' && p.position === 'Jungle') ||
+                                  (pick.pos === 'MID' && p.position === 'Mid') ||
+                                  (pick.pos === 'ROAM' && p.position === 'Support') ||
+                                  (pick.pos === 'ADL' && p.position === 'ADL');
+
+                                return (
+                                  <button
+                                    key={p.id}
+                                    type="button"
+                                    onClick={() => {
+                                      onAssignPlayer(idx, p);
+                                      setActivePlayerPickerSlot(null);
+                                    }}
+                                    className={`w-full flex items-center gap-1.5 p-1 rounded-lg text-left transition-colors cursor-pointer ${
+                                      isPosMatch
+                                        ? 'bg-slate-800/80 hover:bg-slate-700 text-white'
+                                        : 'hover:bg-slate-800 text-slate-300'
+                                    }`}
+                                  >
+                                    <img
+                                      src={p.avatarUrl || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80'}
+                                      alt={p.nickname}
+                                      className="w-4 h-4 rounded-full object-cover flex-shrink-0"
+                                      onError={(e) => {
+                                        (e.target as HTMLElement).style.display = 'none';
+                                      }}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center justify-between">
+                                        <span className="font-['Orbitron'] font-bold text-[10px] truncate">
+                                          {p.nickname}
+                                        </span>
+                                        <span className="text-[8px] font-['Barlow_Condensed'] text-slate-400">
+                                          {p.position}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  )}
+                </div>
               </div>
 
               {/* Position Select Dropdown */}
