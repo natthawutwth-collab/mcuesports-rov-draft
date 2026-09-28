@@ -24,6 +24,8 @@ interface TeamColumnProps {
   players?: Player[];
   onAssignPlayer?: (slotIndex: number, player: Player | null) => void;
   teamCategory?: TeamCategory;
+  compact?: boolean;
+  className?: string;
 }
 
 export const TeamColumn: React.FC<TeamColumnProps> = ({
@@ -41,6 +43,8 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
   players = [],
   onAssignPlayer,
   teamCategory = 'all',
+  compact = false,
+  className,
 }) => {
   const isBlue = side === 'blue';
   const sideEmoji = isBlue ? '🔵' : '🔴';
@@ -62,9 +66,15 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
     teamName.trim().toUpperCase() !== 'BLUE SIDE' &&
     teamName.trim().toUpperCase() !== 'RED SIDE';
 
+  const containerWidthClass = compact
+    ? 'w-full min-w-0'
+    : className || 'w-[195px] md:w-[215px] lg:w-[240px] xl:w-[260px] flex-shrink-0';
+
   return (
     <div
-      className={`w-[235px] sm:w-[250px] xl:w-[268px] flex-shrink-0 flex flex-col gap-3 p-2.5 sm:p-3 rounded-2xl border-2 backdrop-blur-md transition-all shadow-2xl ${
+      className={`${containerWidthClass} flex flex-col ${
+        compact ? 'gap-2 p-2 rounded-xl' : 'gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl'
+      } border-2 backdrop-blur-md transition-all shadow-2xl ${
         isBlue
           ? 'bg-[#071322]/95 border-[#0284c7]/60 shadow-[0_0_30px_rgba(2,132,199,0.2)]'
           : 'bg-[#200812]/95 border-[#e11d48]/60 shadow-[0_0_30px_rgba(225,29,72,0.2)]'
@@ -72,22 +82,36 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
     >
       {/* Header with High-Contrast Side Badge */}
       <div
-        className={`flex flex-col items-center justify-center text-center p-2.5 rounded-xl border ${
+        className={`flex flex-col items-center justify-center text-center ${
+          compact ? 'p-1.5 rounded-lg' : 'p-2 sm:p-2.5 rounded-xl'
+        } border ${
           isBlue
             ? 'bg-[#0284c7]/20 border-[#38bdf8]/50 text-white'
             : 'bg-[#e11d48]/20 border-[#f43f5e]/50 text-white'
         }`}
       >
-        <div className="flex items-center gap-2 font-['Orbitron'] font-black text-[13.5px] tracking-[2.5px] text-white">
-          <span className="text-sm">{sideEmoji}</span>
+        <div
+          className={`flex items-center gap-1.5 font-['Orbitron'] font-black ${
+            compact ? 'text-[11px] tracking-[1.5px]' : 'text-[12.5px] sm:text-[13.5px] tracking-[2px]'
+          } text-white`}
+        >
+          <span className={compact ? 'text-xs' : 'text-sm'}>{sideEmoji}</span>
           <span className={isBlue ? 'text-[#38bdf8]' : 'text-[#f43f5e]'}>{sideTitle}</span>
         </div>
         {isCustomName ? (
-          <div className="text-[11.5px] font-['Barlow_Condensed'] font-black text-[#fbbf24] tracking-wider truncate max-w-[220px] mt-0.5">
+          <div
+            className={`${
+              compact ? 'text-[10px]' : 'text-[11px] sm:text-[11.5px]'
+            } font-['Barlow_Condensed'] font-black text-[#fbbf24] tracking-wider truncate max-w-[200px] mt-0.5`}
+          >
             {teamName} ({isUs ? 'US' : 'OPP'})
           </div>
         ) : (
-          <div className="text-[10px] font-['Barlow_Condensed'] font-extrabold text-slate-300 tracking-widest mt-0.5 uppercase">
+          <div
+            className={`${
+              compact ? 'text-[9px]' : 'text-[9.5px] sm:text-[10px]'
+            } font-['Barlow_Condensed'] font-extrabold text-slate-300 tracking-widest mt-0.5 uppercase`}
+          >
             {isUs ? '— OUR LINEUP —' : '— OPPONENT —'}
           </div>
         )}
@@ -95,26 +119,32 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
 
       {/* BANS SECTION — Clearly Partitioned Box */}
       <div
-        className={`p-2.5 rounded-xl border shadow-inner ${
+        className={`${compact ? 'p-1.5 rounded-lg' : 'p-2 sm:p-2.5 rounded-xl'} border shadow-inner ${
           isBlue
             ? 'bg-black/50 border-[#0284c7]/30'
             : 'bg-black/50 border-[#e11d48]/30'
         }`}
       >
-        <div className="flex items-center justify-between mb-2 px-1">
+        <div className="flex items-center justify-between mb-1.5 px-0.5">
           <span
-            className={`font-['Orbitron'] text-[9.5px] tracking-[2px] font-black uppercase ${
+            className={`font-['Orbitron'] ${
+              compact ? 'text-[8.5px] tracking-[1px]' : 'text-[9px] sm:text-[9.5px] tracking-[1.5px]'
+            } font-black uppercase ${
               isBlue ? 'text-[#38bdf8]' : 'text-[#f43f5e]'
             }`}
           >
             🚫 {sideTitle} BANS
           </span>
-          <span className="text-[9px] font-['Barlow_Condensed'] font-bold text-slate-400">
+          <span
+            className={`${
+              compact ? 'text-[8px]' : 'text-[8.5px] sm:text-[9px]'
+            } font-['Barlow_Condensed'] font-bold text-slate-400`}
+          >
             4 SLOTS
           </span>
         </div>
 
-        <div className="grid grid-cols-4 gap-1.5">
+        <div className={`grid grid-cols-4 ${compact ? 'gap-1' : 'gap-1 sm:gap-1.5'}`}>
           {bans.map((hero, idx) => {
             const isActive =
               currentTurnSlot?.team === side &&
@@ -187,21 +217,27 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
 
       {/* PICKS SECTION — Clearly Partitioned Box */}
       <div
-        className={`flex flex-col gap-2 p-2.5 rounded-xl border shadow-inner flex-1 ${
+        className={`flex flex-col ${compact ? 'gap-1.5 p-1.5 rounded-lg' : 'gap-2 p-2 sm:p-2.5 rounded-xl'} border shadow-inner flex-1 ${
           isBlue
             ? 'bg-black/50 border-[#0284c7]/30'
             : 'bg-black/50 border-[#e11d48]/30'
         }`}
       >
-        <div className="flex items-center justify-between mb-0.5 px-1">
+        <div className="flex items-center justify-between mb-0.5 px-0.5">
           <span
-            className={`font-['Orbitron'] text-[9.5px] tracking-[2px] font-black uppercase ${
+            className={`font-['Orbitron'] ${
+              compact ? 'text-[8.5px] tracking-[1px]' : 'text-[9px] sm:text-[9.5px] tracking-[1.5px]'
+            } font-black uppercase ${
               isBlue ? 'text-[#38bdf8]' : 'text-[#f43f5e]'
             }`}
           >
             ⚔️ {sideTitle} PICKS
           </span>
-          <span className="text-[9px] font-['Barlow_Condensed'] font-bold text-slate-400">
+          <span
+            className={`${
+              compact ? 'text-[8px]' : 'text-[8.5px] sm:text-[9px]'
+            } font-['Barlow_Condensed'] font-bold text-slate-400`}
+          >
             5 HEROES
           </span>
         </div>
@@ -233,7 +269,7 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                 if (pick.hero && onInspectHero) onInspectHero(pick.hero.name);
                 onSlotClick('pick', idx);
               }}
-              className={`relative flex items-center gap-2.5 p-2 rounded-xl border-2 cursor-pointer transition-all ${
+              className={`relative flex items-center ${compact ? 'gap-1.5 p-1.5' : 'gap-2 sm:gap-2.5 p-2'} rounded-xl border-2 cursor-pointer transition-all ${
                 isBlue ? 'flex-row' : 'flex-row-reverse text-right'
               } ${
                 isActive
@@ -254,9 +290,11 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
               {/* Floating active badge */}
               {isActive && (
                 <div
-                  className={`absolute -top-2.5 ${
-                    isBlue ? 'left-2' : 'right-2'
-                  } bg-[#fbbf24] text-black font-['Orbitron'] font-black text-[8px] tracking-[1.5px] px-2.5 py-0.5 rounded-full shadow-[0_0_10px_rgba(251,191,36,0.6)] flex items-center gap-1 z-20 animate-bounce`}
+                  className={`absolute -top-2 ${
+                    isBlue ? 'left-1.5' : 'right-1.5'
+                  } bg-[#fbbf24] text-black font-['Orbitron'] font-black ${
+                    compact ? 'text-[7px] px-1.5 py-0.2 tracking-[1px]' : 'text-[8px] px-2.5 py-0.5 tracking-[1.5px]'
+                  } rounded-full shadow-[0_0_10px_rgba(251,191,36,0.6)] flex items-center gap-1 z-20 animate-bounce`}
                 >
                   <span>▶</span>
                   <span>PICKING</span>
@@ -265,16 +303,20 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
 
               {/* Order number badge */}
               <div
-                className={`absolute top-1.5 ${
-                  isBlue ? 'right-2' : 'left-2'
-                } font-['Orbitron'] font-black text-[9px] px-1.5 py-0.2 rounded bg-black/60 border border-slate-700 text-slate-400 pointer-events-none`}
+                className={`absolute top-1 ${
+                  isBlue ? 'right-1.5' : 'left-1.5'
+                } font-['Orbitron'] font-black ${
+                  compact ? 'text-[8px] px-1 py-0.1' : 'text-[9px] px-1.5 py-0.2'
+                } rounded bg-black/60 border border-slate-700 text-slate-400 pointer-events-none`}
               >
                 #{pick.order}
               </div>
 
-              {/* Avatar Box (44x44px square with high contrast border) */}
+              {/* Avatar Box with high contrast border */}
               <div
-                className={`w-[44px] h-[44px] rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center font-['Barlow_Condensed'] font-black text-[13px] bg-black/80 border-2 ${posColorClass.split(' ')[0]} relative shadow-sm`}
+                className={`${
+                  compact ? 'w-[32px] h-[32px] text-[11px]' : 'w-[40px] h-[40px] sm:w-[44px] sm:h-[44px] text-[13px]'
+                } rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center font-['Barlow_Condensed'] font-black bg-black/80 border-2 ${posColorClass.split(' ')[0]} relative shadow-sm`}
               >
                 {pick.hero ? (
                   <img
@@ -306,7 +348,11 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
 
                 {pick.hero ? (
                   <>
-                    <div className="font-['Barlow_Condensed'] text-[14px] font-extrabold text-white truncate flex items-center gap-1.5 mt-0.5">
+                    <div
+                      className={`font-['Barlow_Condensed'] ${
+                        compact ? 'text-[12px]' : 'text-[13.5px] sm:text-[14px]'
+                      } font-extrabold text-white truncate flex items-center gap-1 mt-0.5`}
+                    >
                       <span className="truncate">{pick.hero.name}</span>
                       <button
                         type="button"
@@ -315,23 +361,25 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                           if (onInspectHero) onInspectHero(pick.hero!.name);
                         }}
                         title={`ดูสถิติ ${pick.hero.name}`}
-                        className="text-[9.5px] px-1.5 py-0.5 rounded bg-white/10 hover:bg-[#0284c7] text-white transition-colors cursor-pointer flex-shrink-0 border border-white/20"
+                        className="text-[9px] px-1 py-0.2 rounded bg-white/10 hover:bg-[#0284c7] text-white transition-colors cursor-pointer flex-shrink-0 border border-white/20"
                       >
                         📊
                       </button>
                     </div>
 
-                    <div className="text-[10.5px] font-['Kanit'] text-slate-400 truncate">
-                      {pick.hero.nameTh}
-                    </div>
+                    {!compact && (
+                      <div className="text-[10px] sm:text-[10.5px] font-['Kanit'] text-slate-400 truncate">
+                        {pick.hero.nameTh}
+                      </div>
+                    )}
                   </>
                 ) : (
-                  <div className="h-5" />
+                  <div className={compact ? 'h-3.5' : 'h-5'} />
                 )}
 
                 {/* Assigned Player Strip */}
                 <div
-                  className={`mt-1 pt-1 border-t border-white/5 flex items-center gap-1.5 ${
+                  className={`mt-1 pt-1 border-t border-white/5 flex items-center gap-1 ${
                     isBlue ? 'justify-start' : 'justify-end'
                   }`}
                   onClick={(e) => e.stopPropagation()}
@@ -341,12 +389,12 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                       <img
                         src={pick.playerAvatar || 'https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=150&auto=format&fit=crop&q=80'}
                         alt={pick.playerNickname}
-                        className="w-4 h-4 rounded-full object-cover border border-white/30 flex-shrink-0"
+                        className="w-3.5 h-3.5 rounded-full object-cover border border-white/30 flex-shrink-0"
                         onError={(e) => {
                           (e.target as HTMLElement).style.display = 'none';
                         }}
                       />
-                      <span className="font-['Orbitron'] font-black text-[9.5px] text-[#fbbf24] truncate max-w-[70px]">
+                      <span className={`font-['Orbitron'] font-black ${compact ? 'text-[8.5px] max-w-[50px]' : 'text-[9.5px] max-w-[70px]'} text-[#fbbf24] truncate`}>
                         {pick.playerNickname}
                       </span>
 

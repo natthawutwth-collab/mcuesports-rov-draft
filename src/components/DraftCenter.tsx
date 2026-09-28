@@ -155,7 +155,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
       : '#38bdf8'; // sky
 
   return (
-    <div className="flex-1 min-w-[480px] sm:min-w-[540px] xl:min-w-[620px] flex flex-col bg-[#0b0d14]/95 border-2 border-slate-700/80 rounded-2xl shadow-2xl backdrop-blur-md overflow-hidden">
+    <div className="flex-1 min-w-0 w-full flex flex-col bg-[#0b0d14]/95 border-2 border-slate-700/80 rounded-2xl shadow-2xl backdrop-blur-md overflow-hidden">
       {/* 1. TOP DRAFT STATUS BAR */}
       <div className="flex items-center justify-between gap-3 px-4 py-3 bg-[#07090f] border-b-2 border-slate-700/80 flex-wrap">
         {/* Left: Turn Badge & Team Details */}
