@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MatchNoteGame, Hero } from '../types/draft';
 import { HERO_IMG_MAP, HERO_IMG_OVERRIDE } from '../data/heroes';
 import { HeroPickerModal } from './HeroPickerModal';
-import { Trash2, Plus, Trophy, Award } from 'lucide-react';
+import { Trash2, Plus, Trophy, Award, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface MatchNotesSectionProps {
   games: MatchNoteGame[];
@@ -57,6 +57,10 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
   onUpdateSlot,
   onDeleteGame,
 }) => {
+  const [isCollapsed, setIsCollapsed] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 840 : false
+  );
+
   // Modal State for slot editing
   const [pickerTarget, setPickerTarget] = useState<{
     gameId: string;
@@ -72,18 +76,20 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
   const oppWins = games.filter((g) => g.winner === 'opp').length;
 
   return (
-    <div className="w-full mt-4 p-4 sm:p-5 rounded-2xl border-2 border-slate-700/80 bg-[#0a0c14]/95 shadow-2xl backdrop-blur-md">
+    <div className="w-full mt-2.5 sm:mt-4 p-2.5 sm:p-5 rounded-xl sm:rounded-2xl border sm:border-2 border-slate-700/80 bg-[#0a0c14]/95 shadow-xl backdrop-blur-md">
       {/* Top Bar */}
-      <div className="flex items-center justify-between gap-3 pb-3 mb-4 border-b-2 border-slate-700/80 flex-wrap">
-        <div className="flex items-center gap-3">
-          <div className="font-['Orbitron'] font-black text-[15px] sm:text-[17px] tracking-[3px] text-white flex items-center gap-2">
-            <span className="text-lg">🎮</span>
+      <div className={`flex items-center justify-between gap-2 sm:gap-3 ${isCollapsed ? '' : 'pb-2 sm:pb-3 mb-3 sm:mb-4 border-b sm:border-b-2 border-slate-700/80'} flex-wrap`}>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="font-['Orbitron'] font-black text-xs sm:text-base tracking-[1.5px] sm:tracking-[3px] text-white flex items-center gap-1.5 sm:gap-2">
+            <span className="text-sm sm:text-lg">🎮</span>
             <span>
-              <span className="text-[#38bdf8]">MATCH NOTES</span> — <span className="text-[#fbbf24]">SERIES LOG</span>
+              <span className="text-[#38bdf8]">MATCH NOTES</span>{' '}
+              <span className="text-slate-500 hidden sm:inline">—</span>{' '}
+              <span className="text-[#fbbf24] hidden sm:inline">SERIES LOG</span>
             </span>
           </div>
           {games.length > 0 && (
-            <div className="flex items-center gap-2 font-['Orbitron'] text-xs font-black px-3 py-1 rounded-lg bg-black/60 border border-slate-700 shadow-inner">
+            <div className="flex items-center gap-1.5 sm:gap-2 font-['Orbitron'] text-[10.5px] sm:text-xs font-black px-2 sm:px-2.5 py-0.2 sm:py-0.5 rounded-md sm:rounded-lg bg-black/60 border border-slate-700 shadow-inner">
               <span className="text-[#38bdf8]">{usWins}</span>
               <span className="text-slate-400">:</span>
               <span className="text-[#f43f5e]">{oppWins}</span>
@@ -91,29 +97,42 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {games.length > 0 && (
+        <div className="flex items-center gap-1 sm:gap-2 ml-auto">
+          {!isCollapsed && games.length > 0 && (
             <button
               onClick={onClearAllGames}
-              className="font-['Barlow_Condensed'] text-[11px] font-black tracking-wider text-rose-300 hover:text-white bg-rose-950/40 hover:bg-rose-900/60 border border-rose-700/50 px-3 py-1.5 rounded-lg cursor-pointer transition-colors flex items-center gap-1.5 shadow-sm"
+              className="font-['Barlow_Condensed'] text-[10px] sm:text-[11px] font-black tracking-wider text-rose-300 hover:text-white bg-rose-950/40 hover:bg-rose-900/60 border border-rose-700/50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg cursor-pointer transition-colors flex items-center gap-1 shadow-sm"
             >
-              <Trash2 size={13} />
-              <span>ล้างทั้งหมด</span>
+              <Trash2 size={11} />
+              <span>ล้าง</span>
+            </button>
+          )}
+
+          {!isCollapsed && (
+            <button
+              onClick={onAddEmptyGame}
+              disabled={games.length >= 7}
+              className="font-['Barlow_Condensed'] text-[10px] sm:text-[11.5px] font-black tracking-wider text-black bg-[#fbbf24] hover:bg-[#fde047] disabled:opacity-40 border border-[#fde047] px-2.5 sm:px-4 py-0.5 sm:py-1.5 rounded-md sm:rounded-lg cursor-pointer transition-all flex items-center gap-1 shadow-md active:scale-95"
+            >
+              <Plus size={11} className="stroke-[3]" />
+              <span>＋ เพิ่มเกม</span>
             </button>
           )}
 
           <button
-            onClick={onAddEmptyGame}
-            disabled={games.length >= 7}
-            className="font-['Barlow_Condensed'] text-[11.5px] font-black tracking-wider text-black bg-[#fbbf24] hover:bg-[#fde047] disabled:opacity-40 border border-[#fde047] px-4 py-1.5 rounded-lg cursor-pointer transition-all flex items-center gap-1.5 shadow-md active:scale-95"
+            type="button"
+            onClick={() => setIsCollapsed((prev) => !prev)}
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg bg-black/50 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-[10px] sm:text-[11px] font-['Barlow_Condensed'] font-bold cursor-pointer transition-all"
           >
-            <Plus size={14} className="stroke-[3]" />
-            <span>＋ เพิ่มเกมใหม่ (BO3 - BO7)</span>
+            <span>{isCollapsed ? 'แสดง' : 'ซ่อน'}</span>
+            {isCollapsed ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
           </button>
         </div>
       </div>
 
-      {/* Games List */}
+      {!isCollapsed && (
+        <>
+          {/* Games List */}
       <div className="flex flex-col gap-3.5">
         {games.length === 0 ? (
           <div className="p-8 text-center rounded-xl bg-black/40 border border-slate-800 font-['Kanit'] text-sm text-slate-400 shadow-inner">
@@ -423,6 +442,8 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
             );
           }}
         />
+      )}
+        </>
       )}
     </div>
   );

@@ -54,11 +54,21 @@
 }
 
 @layer base {
+  html {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
   body {
     background-color: #040507;
     color: var(--text);
     font-family: var(--font-thai-active, 'Mitr'), 'Chakra Petch', 'Prompt', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     overflow-x: hidden;
+    max-width: 100vw;
+  }
+  #root {
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
   }
 }
 

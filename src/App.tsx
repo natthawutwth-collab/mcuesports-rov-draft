@@ -150,10 +150,11 @@ export default function App() {
 
   const isMobileScreen = windowWidth < 840;
 
-  // View mode for mobile screens:
-  // 'mobile_split': Blue & Red side-by-side at top, hero pool below (100% natural mobile fit)
-  // 'pc_scaled': Full 3-column PC arena auto-scaled to exactly 100% width of the mobile viewport
-  const [mobileViewMode, setMobileViewMode] = useState<'mobile_split' | 'pc_scaled'>('mobile_split');
+  // Scaled 3-column PC layout on mobile (Heroes in center, Blue left, Red right - scaled to fit screen)
+  const arenaBaseWidth = 780;
+  const scaledArenaContentRef = useRef<HTMLDivElement>(null);
+  const [scaledContentHeight, setScaledContentHeight] = useState<number>(760);
+  const [mobileZoomMode, setMobileZoomMode] = useState<'fit' | 'zoom'>('fit');
 
   // Container ref to measure exact available width
   const arenaContainerRef = useRef<HTMLDivElement>(null);
@@ -171,29 +172,46 @@ export default function App() {
     };
     updateWidth();
     window.addEventListener('resize', updateWidth);
-    return () => window.removeEventListener('resize', updateWidth);
+
+    let observer: ResizeObserver | null = null;
+    if (arenaContainerRef.current) {
+      observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          if (entry.contentRect.width > 0) {
+            setArenaContainerWidth(entry.contentRect.width);
+          }
+        }
+      });
+      observer.observe(arenaContainerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateWidth);
+      if (observer) observer.disconnect();
+    };
   }, []);
 
-  // For PC-scaled mode on mobile: target width is 760px
-  const pcScaledWidth = 760;
-  const pcAutoFitScale = useMemo(() => {
-    const available = Math.max(300, arenaContainerWidth - 4);
-    const scale = available / pcScaledWidth;
-    return Math.min(1, Math.max(0.35, scale));
-  }, [arenaContainerWidth]);
+  useEffect(() => {
+    if (!scaledArenaContentRef.current) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.height > 0) {
+          setScaledContentHeight(entry.contentRect.height);
+        }
+      }
+    });
+    observer.observe(scaledArenaContentRef.current);
+    return () => observer.disconnect();
+  }, [isMobileScreen]);
 
-  // Jump smoothly to sections on mobile
-  const scrollToDraftSection = (section: 'teams' | 'pool' | 'coach') => {
-    if (section === 'coach') {
-      setIsSidePanelOpen(true);
-      return;
+  const mobileScale = useMemo(() => {
+    const available = Math.max(100, arenaContainerWidth);
+    const fitScale = Math.min(1, available / arenaBaseWidth);
+    if (mobileZoomMode === 'zoom') {
+      return Math.min(1.25, fitScale * 1.25);
     }
-    const targetId = section === 'teams' ? 'mobile-teams-section' : 'center-draft-arena';
-    const el = document.getElementById(targetId);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  };
+    return fitScale;
+  }, [arenaContainerWidth, mobileZoomMode]);
 
   // Render Coaching Dock Content (shared between desktop sidebar and mobile/laptop overlay drawer)
   const renderCoachDockBody = () => (
@@ -262,8 +280,10 @@ export default function App() {
     </div>
   );
 
-  // Collapsible state for Draft Player Roster Bar on Draft screen
-  const [isRosterBarOpen, setIsRosterBarOpen] = useState(true);
+  // Collapsible state for Draft Player Roster Bar on Draft screen (collapsed on mobile by default to keep draft front & center)
+  const [isRosterBarOpen, setIsRosterBarOpen] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 840 : true
+  );
 
   // Status for BrandBar
   const brandStatus: 'ready' | 'drafting' | 'complete' = isDraftComplete
@@ -424,7 +444,7 @@ export default function App() {
   }, [inspectedHeroName, bluePicks, redPicks, currentTurn, currentTurnSlot]);
 
   return (
-    <div className="relative min-h-screen text-[#ffffff] flex flex-col p-2 sm:p-3.5 md:p-5 max-w-[1600px] mx-auto gap-2.5 sm:gap-3 w-full overflow-x-hidden">
+    <div className="relative min-h-screen text-[#ffffff] flex flex-col p-2 sm:p-3.5 md:p-5 pb-20 md:pb-6 max-w-[1600px] mx-auto gap-2 sm:gap-3 w-full overflow-x-hidden">
       {/* 1. Brand Bar with Draft / History / Players Tab Navigation */}
       <BrandBar
         status={brandStatus}
@@ -434,9 +454,11 @@ export default function App() {
         draftsCount={historyRecords.length}
       />
 
-      {/* 2. Breadcrumb */}
+      {/* 2. Breadcrumb (hidden on mobile to save vertical space) */}
       {currentView === 'draft' ? (
-        <Breadcrumb />
+        <div className="hidden sm:block">
+          <Breadcrumb />
+        </div>
       ) : currentView === 'history' ? (
         <div className="flex items-center gap-2 text-[11px] font-['Barlow_Condensed'] font-semibold tracking-wider text-[#a0a0a8] px-1">
           <span
@@ -568,75 +590,54 @@ export default function App() {
           />
 
           {/* Draft Arena View Mode & Toolbar */}
-          <div className="flex items-center justify-between gap-2 px-3 py-2 bg-[#0a0c14]/95 border-2 border-slate-700/80 rounded-xl shadow-lg flex-wrap">
-            <div className="flex items-center gap-2">
-              <span className="font-['Orbitron'] font-black text-xs text-[#fbbf24] flex items-center gap-1.5 tracking-wider">
+          <div className="flex items-center justify-between gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-2 bg-[#0a0c14]/95 border border-slate-700/80 rounded-xl shadow-md">
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <span className="font-['Orbitron'] font-black text-[11px] sm:text-xs text-[#fbbf24] flex items-center gap-1 sm:gap-1.5 tracking-wider flex-shrink-0">
                 <span>⚔️</span>
                 <span>DRAFT ARENA</span>
               </span>
-              <span className="text-[11px] font-['Kanit'] text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-md flex items-center gap-1 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>พอดีจออัตโนมัติ (No Scroll)</span>
-              </span>
+              {isMobileScreen ? (
+                <span className="text-[9px] font-['Kanit'] text-emerald-400 bg-emerald-950/70 border border-emerald-500/50 px-1.5 py-0.2 rounded flex items-center gap-1 font-semibold truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+                  <span>3 คอลัมน์</span>
+                </span>
+              ) : (
+                <span className="text-[11px] font-['Kanit'] text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-md flex items-center gap-1 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>3 คอลัมน์พอดีจอคอมพิวเตอร์ (No Scroll)</span>
+                </span>
+              )}
             </div>
 
             {isMobileScreen ? (
-              <div className="flex items-center gap-1.5 ml-auto flex-wrap">
-                {/* Mobile Jump Buttons */}
-                <div className="flex items-center gap-1 mr-1">
+              <div className="flex items-center gap-1 ml-auto flex-shrink-0">
+                {/* Mobile Scale/Zoom Toggle */}
+                <div className="flex items-center gap-0.5 bg-black/60 p-0.5 rounded-md border border-slate-700">
                   <button
                     type="button"
-                    onClick={() => scrollToDraftSection('teams')}
-                    className="px-2 py-0.5 text-[10.5px] font-['Barlow_Condensed'] font-black rounded bg-sky-950/60 border border-sky-600/50 text-sky-300 hover:text-white cursor-pointer"
-                    title="เลื่อนไปดูฝั่งทีม Blue/Red"
-                  >
-                    🔵🔴 ทีม
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => scrollToDraftSection('pool')}
-                    className="px-2 py-0.5 text-[10.5px] font-['Barlow_Condensed'] font-black rounded bg-white/10 border border-white/30 text-white cursor-pointer"
-                    title="เลื่อนไปดูกระดานเลือกฮีโร่"
-                  >
-                    ⚔️ ฮีโร่
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => scrollToDraftSection('coach')}
-                    className="px-2 py-0.5 text-[10.5px] font-['Barlow_Condensed'] font-black rounded bg-amber-950/60 border border-amber-600/50 text-[#fbbf24] cursor-pointer"
-                    title="เปิด Coach Analysis"
-                  >
-                    🎯 Coach
-                  </button>
-                </div>
-
-                {/* Mobile View Mode Switcher */}
-                <div className="flex items-center gap-1 bg-black/60 p-0.5 rounded-lg border border-slate-700">
-                  <button
-                    type="button"
-                    onClick={() => setMobileViewMode('mobile_split')}
-                    className={`px-2 py-1 text-[10.5px] font-['Barlow_Condensed'] font-black tracking-wider rounded transition-all cursor-pointer flex items-center gap-1 ${
-                      mobileViewMode === 'mobile_split'
-                        ? 'bg-[#10b981] text-black shadow-md'
+                    onClick={() => setMobileZoomMode('fit')}
+                    className={`px-1.5 py-0.5 text-[9.5px] font-['Barlow_Condensed'] font-black tracking-wider rounded transition-all cursor-pointer flex items-center gap-0.5 ${
+                      mobileZoomMode === 'fit'
+                        ? 'bg-[#10b981] text-black shadow-sm'
                         : 'text-slate-400 hover:text-white'
                     }`}
-                    title="มุมมองจัดทีม Blue และ Red คู่กันด้านบน ฮีโร่อยู่ด้านล่าง พอดีจอมือถือ"
+                    title="ย่อ 3 คอลัมน์ให้พอดีหน้าจอมือถือ 100% ไม่ต้องเลื่อนข้าง"
                   >
-                    <span>📱</span>
-                    <span>พอดีจอมือถือ</span>
+                    <span>📐</span>
+                    <span>พอดีจอ</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => setMobileViewMode('pc_scaled')}
-                    className={`px-2 py-1 text-[10.5px] font-['Barlow_Condensed'] font-black tracking-wider rounded transition-all cursor-pointer flex items-center gap-1 ${
-                      mobileViewMode === 'pc_scaled'
-                        ? 'bg-[#0284c7] text-white shadow-md'
+                    onClick={() => setMobileZoomMode('zoom')}
+                    className={`px-1.5 py-0.5 text-[9.5px] font-['Barlow_Condensed'] font-black tracking-wider rounded transition-all cursor-pointer flex items-center gap-0.5 ${
+                      mobileZoomMode === 'zoom'
+                        ? 'bg-[#0284c7] text-white shadow-sm'
                         : 'text-slate-400 hover:text-white'
                     }`}
-                    title="ย่อ 3 คอลัมน์แบบ PC ให้พอดีจอมือถือโดยไม่ต้องเลื่อนข้าง"
+                    title="ขยายขนาด 1.25x ให้มองเห็นได้ใหญ่ขึ้น"
                   >
-                    <span>🖥️</span>
-                    <span>ย่อแบบ PC พอดีจอ</span>
+                    <span>🔍</span>
+                    <span>1.25x</span>
                   </button>
                 </div>
               </div>
@@ -647,14 +648,11 @@ export default function App() {
                 </span>
                 <span>+</span>
                 <span className="px-2 py-0.5 rounded bg-black/50 border border-slate-700 font-bold text-white">
-                  ⚔️ HERO POOL
+                  ⚔️ HERO POOL (ตรงกลาง)
                 </span>
                 <span>+</span>
                 <span className="px-2 py-0.5 rounded bg-black/50 border border-slate-700 font-bold text-rose-400">
                   🔴 RED
-                </span>
-                <span className="hidden sm:inline text-slate-400 text-[10.5px] font-['Kanit']">
-                  (แสดงผล 3 คอลัมน์พร้อมกันพอดีจอคอมพิวเตอร์)
                 </span>
               </div>
             )}
@@ -665,100 +663,26 @@ export default function App() {
             ref={arenaContainerRef}
             className="w-full overflow-x-hidden pb-2 select-none"
           >
-            {isMobileScreen && mobileViewMode === 'mobile_split' ? (
-              /* Mobile View: Esports Split Dual Teams on top + Hero Selection Arena below */
-              <div className="w-full flex flex-col gap-2.5 overflow-x-hidden">
-                {/* Dual Teams side-by-side (100% width, no sideways scroll) */}
-                <div id="mobile-teams-section" className="grid grid-cols-2 gap-2 w-full">
-                  <div id="blue-team-column" className="w-full min-w-0">
-                    <TeamColumn
-                      side="blue"
-                      compact={true}
-                      teamName={blueTeamName}
-                      isUs={blueIsUs}
-                      bans={blueBans}
-                      picks={bluePicks}
-                      currentTurnSlot={currentTurnSlot}
-                      onSlotClick={(phase, index) => setManualTarget({ team: 'blue', phase, index })}
-                      onClearSlot={(phase, index) => clearSlot('blue', phase, index)}
-                      onChangePickPos={(index, pos) => changePickPos('blue', index, pos)}
-                      onInspectHero={handleInspectHero}
-                      inspectedHeroName={inspectedHeroName}
-                      players={players}
-                      onAssignPlayer={(slotIndex, player) => assignPlayerToPickSlot('blue', slotIndex, player)}
-                      teamCategory={selectedTeamCategory}
-                    />
-                  </div>
-
-                  <div id="red-team-column" className="w-full min-w-0">
-                    <TeamColumn
-                      side="red"
-                      compact={true}
-                      teamName={redTeamName}
-                      isUs={!blueIsUs}
-                      bans={redBans}
-                      picks={redPicks}
-                      currentTurnSlot={currentTurnSlot}
-                      onSlotClick={(phase, index) => setManualTarget({ team: 'red', phase, index })}
-                      onClearSlot={(phase, index) => clearSlot('red', phase, index)}
-                      onChangePickPos={(index, pos) => changePickPos('red', index, pos)}
-                      onInspectHero={handleInspectHero}
-                      inspectedHeroName={inspectedHeroName}
-                      players={players}
-                      onAssignPlayer={(slotIndex, player) => assignPlayerToPickSlot('red', slotIndex, player)}
-                      teamCategory={selectedTeamCategory}
-                    />
-                  </div>
-                </div>
-
-                {/* Center Hero Selection Draft Arena */}
-                <div id="center-draft-arena" className="w-full min-w-0">
-                  <DraftCenter
-                    draftActive={draftActive}
-                    draftTurnIdx={draftTurnIdx}
-                    draftTurnSel={draftTurnSel}
-                    isDraftComplete={isDraftComplete}
-                    currentTurnSlot={currentTurnSlot}
-                    blueTeamName={blueTeamName}
-                    redTeamName={redTeamName}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    roleFilter={roleFilter}
-                    setRoleFilter={setRoleFilter}
-                    timerSec={timerSec}
-                    timerMax={timerMax}
-                    isTimerPaused={isTimerPaused}
-                    toggleTimerPause={toggleTimerPause}
-                    bannedHeroNames={bannedHeroNames}
-                    pickedHeroNames={pickedHeroNames}
-                    onSelectHero={handleSelectHero}
-                    blueScore={draftScore}
-                    redScore={redDraftScore}
-                    heroToPlayersMap={heroToPlayersMap}
-                    inspectedHeroName={inspectedHeroName}
-                    onInspectHero={handleInspectHero}
-                    isStatsOpen={isSidePanelOpen && sidePanelTab === 'stats'}
-                    onToggleStats={handleToggleStatsPanel}
-                    onOpenCoachPanel={handleToggleCoachPanel}
-                    selectedTeamCategory={selectedTeamCategory}
-                    onChangeTeamCategory={changeTeamCategory}
-                  />
-                </div>
-              </div>
-            ) : isMobileScreen && mobileViewMode === 'pc_scaled' ? (
-              /* Mobile PC Scaled View: Full 3-column PC arena auto-scaled to 100% width with no overflow */
-              <div className="w-full overflow-hidden flex flex-col items-center">
+            {isMobileScreen ? (
+              /* Mobile View: Exactly like PC (Blue Left | Heroes in Center | Red Right) auto-scaled to 100% screen width */
+              <div
+                className={`w-full ${mobileZoomMode === 'zoom' ? 'overflow-x-auto custom-scrollbar' : 'overflow-hidden'} flex flex-col items-center`}
+                style={{
+                  height: `${Math.ceil(scaledContentHeight * mobileScale)}px`,
+                }}
+              >
                 <div
+                  ref={scaledArenaContentRef}
                   style={{
-                    width: `${pcScaledWidth}px`,
-                    transform: `scale(${pcAutoFitScale})`,
+                    width: `${arenaBaseWidth}px`,
+                    transform: `scale(${mobileScale})`,
                     transformOrigin: 'top center',
-                    marginBottom: `-${(1 - pcAutoFitScale) * 680}px`,
                   }}
-                  className="transition-transform duration-200"
+                  className="transition-transform duration-150 flex-shrink-0"
                 >
-                  <main className="w-[760px] flex flex-row items-stretch gap-2 min-h-0">
-                    <div id="blue-team-column" className="w-[185px] flex-shrink-0">
+                  <main className="w-[780px] flex flex-row items-stretch gap-2 min-h-0">
+                    {/* Left: Blue Side */}
+                    <div id="blue-team-column" className="w-[175px] flex-shrink-0">
                       <TeamColumn
                         side="blue"
                         compact={true}
@@ -778,6 +702,7 @@ export default function App() {
                       />
                     </div>
 
+                    {/* Center: Draft Center Arena (Heroes in center, just like PC!) */}
                     <div id="center-draft-arena" className="flex-1 min-w-0">
                       <DraftCenter
                         draftActive={draftActive}
@@ -811,7 +736,8 @@ export default function App() {
                       />
                     </div>
 
-                    <div id="red-team-column" className="w-[185px] flex-shrink-0">
+                    {/* Right: Red Side */}
+                    <div id="red-team-column" className="w-[175px] flex-shrink-0">
                       <TeamColumn
                         side="red"
                         compact={true}
@@ -1004,6 +930,72 @@ export default function App() {
         redPicks={redPicks}
         onSave={handleSaveDraftRecord}
       />
+
+      {/* 4. Mobile Floating Bottom Quick Action Dock (Compact, Ergonomic, Clean) */}
+      {currentView === 'draft' && (
+        <nav
+          aria-label="Mobile Draft Quick Bar"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#070912]/95 backdrop-blur-md border-t border-slate-700/80 px-1.5 py-1 flex items-center justify-around shadow-[0_-4px_16px_rgba(0,0,0,0.7)]"
+        >
+          <button
+            type="button"
+            onClick={handleToggleCoachPanel}
+            className={`flex flex-col items-center justify-center gap-0.5 px-2 py-0.5 rounded-lg text-[9px] font-['Barlow_Condensed'] font-black tracking-wider transition-all cursor-pointer ${
+              isSidePanelOpen && sidePanelTab === 'coach'
+                ? 'text-black bg-[#fbbf24] shadow-[0_0_8px_rgba(251,191,36,0.6)]'
+                : 'text-[#fbbf24] hover:bg-white/5'
+            }`}
+          >
+            <span className="text-sm leading-none">🎯</span>
+            <span>COACH</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleToggleStatsPanel}
+            className={`flex flex-col items-center justify-center gap-0.5 px-2 py-0.5 rounded-lg text-[9px] font-['Barlow_Condensed'] font-black tracking-wider transition-all cursor-pointer ${
+              isSidePanelOpen && sidePanelTab === 'stats'
+                ? 'text-white bg-[#e11d48] shadow-[0_0_8px_rgba(244,63,94,0.6)]'
+                : 'text-rose-400 hover:bg-white/5'
+            }`}
+          >
+            <span className="text-sm leading-none">📊</span>
+            <span>STATS</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={undo}
+            disabled={!canUndo}
+            className="flex flex-col items-center justify-center gap-0.5 px-2 py-0.5 rounded-lg text-[9px] font-['Barlow_Condensed'] font-black tracking-wider text-slate-300 disabled:opacity-30 disabled:cursor-not-allowed hover:text-white transition-all cursor-pointer"
+          >
+            <span className="text-sm leading-none">↩️</span>
+            <span>UNDO</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenSaveDraft}
+            className={`flex flex-col items-center justify-center gap-0.5 px-2 py-0.5 rounded-lg text-[9px] font-['Barlow_Condensed'] font-black tracking-wider transition-all cursor-pointer ${
+              isDraftComplete
+                ? 'text-black bg-emerald-400 font-extrabold shadow-[0_0_8px_rgba(52,211,153,0.7)] animate-pulse'
+                : 'text-emerald-400 hover:bg-white/5'
+            }`}
+          >
+            <span className="text-sm leading-none">💾</span>
+            <span>SAVE</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleOpenPreDraft}
+            className="flex flex-col items-center justify-center gap-0.5 px-2 py-0.5 rounded-lg text-[9px] font-['Barlow_Condensed'] font-black tracking-wider text-sky-400 hover:bg-white/5 transition-all cursor-pointer"
+          >
+            <span className="text-sm leading-none">⚔️</span>
+            <span>{draftActive ? 'RESTART' : 'NEW'}</span>
+          </button>
+        </nav>
+      )}
     </div>
   );
 }
