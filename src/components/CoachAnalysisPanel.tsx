@@ -113,8 +113,7 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
 
   return (
     <aside
-      className="w-full h-full flex flex-col bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-xl overflow-hidden transition-all text-[#1F2937] font-['Prompt'] select-none"
-      style={{ minHeight: '680px' }}
+      className="w-full h-full flex flex-col bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-xl overflow-hidden transition-all text-[#1F2937] font-['Prompt'] select-none min-h-0"
       aria-label="Coach Analysis Panel"
     >
       {/* 1. Header & Team Perspective Switcher */}

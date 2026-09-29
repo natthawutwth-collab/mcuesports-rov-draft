@@ -223,34 +223,34 @@ export default function App() {
 
   // Render Coaching Dock Content (shared between desktop sidebar and mobile/laptop overlay drawer)
   const renderCoachDockBody = () => (
-    <div className="flex flex-col h-full min-h-0">
+    <div className="flex flex-col h-full min-h-0 w-full overflow-hidden">
       {/* Dock Mode Switcher - High Contrast Segmented Buttons */}
-      <div className="flex items-center gap-1.5 mb-2.5 p-1.5 bg-white rounded-xl border-2 border-[#F3D5E2] shadow-xs">
+      <div className="flex items-center gap-1.5 mb-2 p-1.5 bg-white rounded-xl border-2 border-[#F3D5E2] shadow-xs flex-shrink-0">
         <button
           type="button"
           onClick={() => setSidePanelTab('coach')}
-          className={`flex-1 py-2 px-2 rounded-lg font-['Prompt'] text-[11.5px] font-bold tracking-wide flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
+          className={`flex-1 py-1.5 px-2 rounded-lg font-['Prompt'] text-[11px] font-bold tracking-wide flex items-center justify-center gap-1 transition-all cursor-pointer border ${
             sidePanelTab === 'coach'
               ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs'
               : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <span>🎯</span>
-          <span>COACH ANALYSIS</span>
-          <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+          <span className="truncate">COACH ANALYSIS</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse flex-shrink-0"></span>
         </button>
 
         <button
           type="button"
           onClick={() => setSidePanelTab('stats')}
-          className={`flex-1 py-2 px-2 rounded-lg font-['Prompt'] text-[11.5px] font-bold tracking-wide flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
+          className={`flex-1 py-1.5 px-2 rounded-lg font-['Prompt'] text-[11px] font-bold tracking-wide flex items-center justify-center gap-1 transition-all cursor-pointer border ${
             sidePanelTab === 'stats'
               ? 'bg-[#0284C7] border-[#0284C7] text-white shadow-xs'
               : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <span>📊</span>
-          <span>RPL STATS</span>
+          <span className="truncate">RPL STATS</span>
         </button>
       </div>
 
@@ -849,7 +849,7 @@ export default function App() {
                 {isSidePanelOpen && (
                   <div
                     id="coach-dock-column"
-                    className="hidden xl:flex w-[290px] 2xl:w-[330px] flex-shrink-0 flex-col transition-all min-h-0"
+                    className="hidden xl:flex w-[320px] 2xl:w-[360px] flex-shrink-0 flex-col transition-all min-h-0"
                   >
                     {renderCoachDockBody()}
                   </div>
