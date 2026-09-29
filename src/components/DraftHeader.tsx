@@ -253,6 +253,23 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
 
         {/* Right Section: Roster Toggle & Lifecycle Action Buttons */}
         <div className="flex items-center gap-1 sm:gap-1.5 ml-auto flex-shrink-0">
+          {/* Coach & Stats Dock Toggle */}
+          {onToggleCoachPanel && (
+            <button
+              type="button"
+              onClick={onToggleCoachPanel}
+              title={isSidePanelOpen ? 'ซ่อนแผงวิเคราะห์โค้ชและสถิติ' : 'เปิดแผงวิเคราะห์โค้ชและสถิติ'}
+              className={`font-['Prompt'] text-[9.5px] sm:text-[10.5px] font-semibold px-2 py-0.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
+                isSidePanelOpen
+                  ? 'bg-[#E91E63] border-[#E91E63] text-white font-bold shadow-xs'
+                  : 'bg-white border-[#CBD5E1] text-[#64748B] hover:text-[#E91E63] hover:bg-[#FFF0F5]'
+              }`}
+            >
+              <span>🎯</span>
+              <span>{isSidePanelOpen ? 'ซ่อนแผงโค้ช' : 'แผงโค้ช'}</span>
+            </button>
+          )}
+
           {/* Roster Bar Toggle Button */}
           {onToggleRosterBar && (
             <button
@@ -341,6 +358,20 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
                     >
                       <Settings size={12} className="text-[#E91E63]" />
                       <span>ตั้งค่าแมตช์ (Setup)</span>
+                    </button>
+                  )}
+
+                  {onToggleCoachPanel && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMoreMenuOpen(false);
+                        onToggleCoachPanel();
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-lg text-left text-[#1F2937] hover:text-[#E91E63] hover:bg-[#FFF0F5] flex items-center gap-2 cursor-pointer transition-colors"
+                    >
+                      <span className="text-xs">🎯</span>
+                      <span>{isSidePanelOpen ? 'ปิดแผงวิเคราะห์โค้ช / สถิติ' : 'เปิดแผงวิเคราะห์โค้ช / สถิติ'}</span>
                     </button>
                   )}
 

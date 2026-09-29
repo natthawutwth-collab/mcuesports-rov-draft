@@ -23,9 +23,72 @@ import { DraftMatchMetadata, MatchWinner } from './types/draftHistory';
 import { HEROES } from './data/heroes';
 import { X } from 'lucide-react';
 
+const CURRENT_VIEW_KEY = 'mcu_rov_current_view';
+const SIDE_PANEL_OPEN_KEY = 'mcu_rov_side_panel_open';
+const SIDE_PANEL_TAB_KEY = 'mcu_rov_side_panel_tab';
+
+const getInitialView = (): 'draft' | 'players' | 'history' => {
+  if (typeof window !== 'undefined') {
+    // 1. Check URL hash first (e.g. #players, #history, #draft)
+    const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
+    if (hash === 'players' || hash === 'history' || hash === 'draft') {
+      return hash as 'draft' | 'players' | 'history';
+    }
+    // 2. Check query param (e.g. ?view=players or ?tab=players)
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const queryView = params.get('view') || params.get('tab');
+      if (queryView === 'players' || queryView === 'history' || queryView === 'draft') {
+        return queryView as 'draft' | 'players' | 'history';
+      }
+    } catch {
+      // ignore
+    }
+    // 3. Check localStorage for last active page
+    try {
+      const saved = localStorage.getItem(CURRENT_VIEW_KEY);
+      if (saved === 'players' || saved === 'history' || saved === 'draft') {
+        return saved as 'draft' | 'players' | 'history';
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return 'draft';
+};
+
+const getInitialSidePanelOpen = (): boolean => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem(SIDE_PANEL_OPEN_KEY);
+      if (saved !== null) {
+        return saved === 'true';
+      }
+    } catch {
+      // ignore
+    }
+  }
+  // Default to FALSE so it NEVER automatically pops open over the screen on load
+  return false;
+};
+
+const getInitialSidePanelTab = (): 'coach' | 'stats' => {
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = localStorage.getItem(SIDE_PANEL_TAB_KEY);
+      if (saved === 'stats' || saved === 'coach') {
+        return saved;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return 'coach';
+};
+
 export default function App() {
-  // Navigation view: Draft Simulator vs Players Management vs Draft History
-  const [currentView, setCurrentView] = useState<'draft' | 'players' | 'history'>('draft');
+  // Navigation view: Draft Simulator vs Players Management vs Draft History (with persistence & URL hash)
+  const [currentView, setCurrentView] = useState<'draft' | 'players' | 'history'>(getInitialView);
 
   // Match metadata (Pre-Draft: Tournament, Match, Game #, Blue, Red, Patch)
   const [matchMetadata, setMatchMetadata] = useState<DraftMatchMetadata>({
@@ -47,12 +110,59 @@ export default function App() {
     saveDraft: saveDraftToHistory,
   } = useDraftHistory();
 
-  // Hero Stats & Coach Analysis Side Panel State
+  // Hero Stats & Coach Analysis Side Panel State (with persistence)
   const [inspectedHeroName, setInspectedHeroName] = useState<string | null>('Nakroth');
-  const [isSidePanelOpen, setIsSidePanelOpen] = useState<boolean>(true);
-  const [sidePanelTab, setSidePanelTab] = useState<'coach' | 'stats'>('coach');
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState<boolean>(getInitialSidePanelOpen);
+  const [sidePanelTab, setSidePanelTab] = useState<'coach' | 'stats'>(getInitialSidePanelTab);
   const [isDataModalOpen, setIsDataModalOpen] = useState<boolean>(false);
   const [statsStatus, setStatsStatus] = useState(() => statsDataProvider.getStatus());
+
+  const handleSelectView = (view: 'draft' | 'players' | 'history') => {
+    setCurrentView(view);
+    try {
+      localStorage.setItem(CURRENT_VIEW_KEY, view);
+      if (window.location.hash.replace(/^#\/?/, '') !== view) {
+        window.history.replaceState(null, '', `#${view}`);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSetSidePanelOpen = (isOpen: boolean) => {
+    setIsSidePanelOpen(isOpen);
+    try {
+      localStorage.setItem(SIDE_PANEL_OPEN_KEY, String(isOpen));
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSetSidePanelTab = (tab: 'coach' | 'stats') => {
+    setSidePanelTab(tab);
+    try {
+      localStorage.setItem(SIDE_PANEL_TAB_KEY, tab);
+    } catch {
+      // ignore
+    }
+  };
+
+  // Sync with browser back/forward and hash changes
+  useEffect(() => {
+    const onHashChange = () => {
+      const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
+      if (hash === 'players' || hash === 'history' || hash === 'draft') {
+        setCurrentView(hash as 'draft' | 'players' | 'history');
+        try {
+          localStorage.setItem(CURRENT_VIEW_KEY, hash);
+        } catch {
+          // ignore
+        }
+      }
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
 
   useEffect(() => {
     return statsDataProvider.subscribe(() => {
@@ -228,7 +338,7 @@ export default function App() {
       <div className="flex items-center gap-1.5 mb-2 p-1.5 bg-white rounded-xl border-2 border-[#F3D5E2] shadow-xs flex-shrink-0">
         <button
           type="button"
-          onClick={() => setSidePanelTab('coach')}
+          onClick={() => handleSetSidePanelTab('coach')}
           className={`flex-1 py-1.5 px-2 rounded-lg font-['Prompt'] text-[11px] font-bold tracking-wide flex items-center justify-center gap-1 transition-all cursor-pointer border ${
             sidePanelTab === 'coach'
               ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs'
@@ -242,7 +352,7 @@ export default function App() {
 
         <button
           type="button"
-          onClick={() => setSidePanelTab('stats')}
+          onClick={() => handleSetSidePanelTab('stats')}
           className={`flex-1 py-1.5 px-2 rounded-lg font-['Prompt'] text-[11px] font-bold tracking-wide flex items-center justify-center gap-1 transition-all cursor-pointer border ${
             sidePanelTab === 'stats'
               ? 'bg-[#0284C7] border-[#0284C7] text-white shadow-xs'
@@ -258,7 +368,7 @@ export default function App() {
       {sidePanelTab === 'coach' ? (
         <CoachAnalysisPanel
           isOpen={true}
-          onClose={() => setIsSidePanelOpen(false)}
+          onClose={() => handleSetSidePanelOpen(false)}
           activeTurnTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
           bluePicks={bluePicks}
           redPicks={redPicks}
@@ -279,7 +389,7 @@ export default function App() {
         <HeroStatsSidePanel
           heroName={inspectedHeroName}
           isOpen={true}
-          onClose={() => setIsSidePanelOpen(false)}
+          onClose={() => handleSetSidePanelOpen(false)}
           oppPicks={currentOppPicks}
           onSelectHeroToInspect={handleInspectHero}
           onOpenDataModal={() => setIsDataModalOpen(true)}
@@ -326,35 +436,34 @@ export default function App() {
     showToast('🔄 รีเซ็ตไลน์อัปนักแข่งเป็นค่าเริ่มต้นแล้ว');
   };
 
-  // Side Panel Toggle handlers
+  // Side Panel Toggle handlers (saved in localStorage)
   const handleToggleCoachPanel = () => {
     if (isSidePanelOpen && sidePanelTab === 'coach') {
-      setIsSidePanelOpen(false);
+      handleSetSidePanelOpen(false);
     } else {
-      setIsSidePanelOpen(true);
-      setSidePanelTab('coach');
+      handleSetSidePanelOpen(true);
+      handleSetSidePanelTab('coach');
     }
   };
 
   const handleToggleStatsPanel = () => {
     if (isSidePanelOpen && sidePanelTab === 'stats') {
-      setIsSidePanelOpen(false);
+      handleSetSidePanelOpen(false);
     } else {
-      setIsSidePanelOpen(true);
-      setSidePanelTab('stats');
+      handleSetSidePanelOpen(true);
+      handleSetSidePanelTab('stats');
     }
   };
 
-  // Hero Selection & Inspection (opens Side Panel real-time)
+  // Hero Selection & Inspection
   const handleSelectHero = (hero: Hero) => {
     setInspectedHeroName(hero.name);
-    setIsSidePanelOpen(true);
     selectHero(hero);
   };
 
   const handleInspectHero = (heroName: string) => {
     setInspectedHeroName(heroName);
-    setIsSidePanelOpen(true);
+    handleSetSidePanelOpen(true);
   };
 
   // Pre-Draft Setup & Start
@@ -457,7 +566,7 @@ export default function App() {
       <BrandBar
         status={brandStatus}
         currentView={currentView}
-        onSelectView={setCurrentView}
+        onSelectView={handleSelectView}
         playersCount={players.length}
         draftsCount={historyRecords.length}
       />
@@ -470,7 +579,7 @@ export default function App() {
       ) : currentView === 'history' ? (
         <div className="flex items-center gap-2 text-[11px] font-['Barlow_Condensed'] font-semibold tracking-wider text-[#a0a0a8] px-1">
           <span
-            onClick={() => setCurrentView('draft')}
+            onClick={() => handleSelectView('draft')}
             className="cursor-pointer hover:text-white transition-colors"
           >
             🏠 HOME
@@ -481,7 +590,7 @@ export default function App() {
       ) : (
         <div className="flex items-center gap-2 text-[11px] font-['Barlow_Condensed'] font-semibold tracking-wider text-[#a0a0a8] px-1">
           <span
-            onClick={() => setCurrentView('draft')}
+            onClick={() => handleSelectView('draft')}
             className="cursor-pointer hover:text-white transition-colors"
           >
             🏠 HOME
@@ -505,7 +614,7 @@ export default function App() {
           onUpdatePlayer={handleUpdatePlayer}
           onDeletePlayer={handleDeletePlayer}
           onResetToDefault={handleResetPlayers}
-          onSwitchToDraft={() => setCurrentView('draft')}
+          onSwitchToDraft={() => handleSelectView('draft')}
           onChangeTeamId={(newId) => {
             changeTeamId(newId);
             showToast(`🔑 สลับไปใช้รหัสทีม "${newId}" เรียบร้อยแล้ว`);
@@ -525,7 +634,7 @@ export default function App() {
         <DraftHistoryPage
           onInspectHero={handleInspectHero}
           onOpenNewDraftSetup={() => {
-            setCurrentView('draft');
+            handleSelectView('draft');
             setIsPreDraftModalOpen(true);
           }}
           onStartNewDraftFromMatch={(rec) => {
@@ -541,7 +650,7 @@ export default function App() {
             });
             setBlueTeamName(rec.redTeam.teamName);
             setRedTeamName(rec.blueTeam.teamName);
-            setCurrentView('draft');
+            handleSelectView('draft');
             startNewDraft();
             showToast(`⚔️ เริ่ม Game ${nextGameNum}: ${rec.redTeam.teamName} (Blue) vs ${rec.blueTeam.teamName} (Red)`);
           }}
@@ -863,7 +972,7 @@ export default function App() {
             <div className="xl:hidden fixed inset-0 z-50 flex justify-end">
               <div
                 className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
-                onClick={() => setIsSidePanelOpen(false)}
+                onClick={() => handleSetSidePanelOpen(false)}
               />
               <div className="relative w-full sm:w-[380px] max-w-full h-full bg-white border-l-2 border-[#F3D5E2] shadow-2xl p-3 flex flex-col z-10 overflow-y-auto custom-scrollbar font-['Prompt']">
                 <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#F3D5E2]">
@@ -873,7 +982,7 @@ export default function App() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => setIsSidePanelOpen(false)}
+                    onClick={() => handleSetSidePanelOpen(false)}
                     className="p-1 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 cursor-pointer"
                     title="ปิดหน้าต่าง Coaching Dock"
                   >
