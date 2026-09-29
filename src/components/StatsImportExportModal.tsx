@@ -98,44 +98,44 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-[#0e0e14] border border-white/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200 font-['Prompt']">
+      <div className="w-full max-w-2xl bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-[#1F2937]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-black/40">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#F3D5E2] bg-[#FFF0F5]">
           <div className="flex items-center gap-2">
-            <span className="font-['Orbitron'] font-bold text-base tracking-wider text-white">
+            <span className="font-['Orbitron'] font-bold text-base tracking-wider text-[#1F2937]">
               📊 DATA LAYER & STATS MANAGER
             </span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+            className="w-8 h-8 rounded-full bg-white hover:bg-slate-100 border border-slate-300 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors shadow-2xs cursor-pointer"
           >
             <X size={16} />
           </button>
         </div>
 
         {/* Current Status Info */}
-        <div className="p-4 bg-black/30 border-b border-white/10 flex items-center justify-between flex-wrap gap-2">
+        <div className="p-4 bg-[#FFF8FB] border-b border-[#F3D5E2] flex items-center justify-between flex-wrap gap-2">
           <div className="flex flex-col">
-            <div className="text-[11px] font-['Barlow_Condensed'] font-semibold text-[#a0a0a8] uppercase tracking-wider">
+            <div className="text-[11px] font-['Prompt'] font-semibold text-slate-500 uppercase tracking-wider">
               แหล่งข้อมูลปัจจุบัน (Active Dataset)
             </div>
-            <div className="text-sm font-['Orbitron'] font-bold text-[#e6f1ff]">
+            <div className="text-sm font-['Orbitron'] font-bold text-[#1F2937]">
               {status.tournamentName}
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-xs font-['Barlow_Condensed']">
-            <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-sky-300">
+          <div className="flex items-center gap-3 text-xs font-['Prompt']">
+            <span className="px-2 py-1 rounded-lg bg-sky-50 border border-sky-300 text-[#0284C7] font-semibold">
               🎮 {status.heroCount} Heroes Tracked
             </span>
-            <span className="px-2 py-1 rounded bg-white/5 border border-white/10 text-amber-300">
+            <span className="px-2 py-1 rounded-lg bg-amber-50 border border-amber-300 text-amber-800 font-semibold">
               ⚔ {status.matchupCount} Matchup Records
             </span>
             {status.isCustomLoaded && (
-              <span className="px-2 py-1 rounded bg-[#a82844]/20 border border-[#a82844] text-red-300">
+              <span className="px-2 py-1 rounded-lg bg-rose-50 border border-rose-300 text-rose-700 font-semibold">
                 Custom Data
               </span>
             )}
@@ -143,14 +143,14 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
         </div>
 
         {/* Navigation Tabs (JSON / CSV / API) */}
-        <div className="flex items-center border-b border-white/10 bg-black/20 px-4 pt-2 gap-2">
+        <div className="flex items-center border-b border-[#F3D5E2] bg-white px-4 pt-2 gap-2">
           <button
             type="button"
             onClick={() => { setActiveTab('json'); setFeedback(null); }}
-            className={`px-3 py-2 text-xs font-['Barlow_Condensed'] font-bold tracking-wider rounded-t-lg transition-colors border-b-2 ${
+            className={`px-3 py-2 text-xs font-['Prompt'] font-bold tracking-wider rounded-t-lg transition-colors border-b-2 cursor-pointer ${
               activeTab === 'json'
-                ? 'border-[#a82844] text-white bg-white/5'
-                : 'border-transparent text-white/50 hover:text-white'
+                ? 'border-[#E91E63] text-[#E91E63] bg-[#FFF0F5]'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             JSON DATA
@@ -158,10 +158,10 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
           <button
             type="button"
             onClick={() => { setActiveTab('csv'); setFeedback(null); }}
-            className={`px-3 py-2 text-xs font-['Barlow_Condensed'] font-bold tracking-wider rounded-t-lg transition-colors border-b-2 ${
+            className={`px-3 py-2 text-xs font-['Prompt'] font-bold tracking-wider rounded-t-lg transition-colors border-b-2 cursor-pointer ${
               activeTab === 'csv'
-                ? 'border-[#a82844] text-white bg-white/5'
-                : 'border-transparent text-white/50 hover:text-white'
+                ? 'border-[#E91E63] text-[#E91E63] bg-[#FFF0F5]'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             CSV SPREADSHEET
@@ -169,25 +169,25 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
           <button
             type="button"
             onClick={() => { setActiveTab('api'); setFeedback(null); }}
-            className={`px-3 py-2 text-xs font-['Barlow_Condensed'] font-bold tracking-wider rounded-t-lg transition-colors border-b-2 ${
+            className={`px-3 py-2 text-xs font-['Prompt'] font-bold tracking-wider rounded-t-lg transition-colors border-b-2 cursor-pointer ${
               activeTab === 'api'
-                ? 'border-[#a82844] text-white bg-white/5'
-                : 'border-transparent text-white/50 hover:text-white'
+                ? 'border-[#E91E63] text-[#E91E63] bg-[#FFF0F5]'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
-            API ENDPOINT (FUTURE)
+            API ENDPOINT
           </button>
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar flex flex-col gap-4">
+        <div className="flex-1 overflow-y-auto p-5 custom-scrollbar flex flex-col gap-4 bg-white">
           {/* Feedback message */}
           {feedback && (
             <div
-              className={`p-3 rounded-lg flex items-center gap-2 text-xs font-['Kanit'] ${
+              className={`p-3 rounded-lg flex items-center gap-2 text-xs font-['Prompt'] ${
                 feedback.type === 'success'
-                  ? 'bg-emerald-950/70 border border-emerald-500 text-emerald-200'
-                  : 'bg-red-950/70 border border-red-500 text-red-200'
+                  ? 'bg-emerald-50 border border-emerald-300 text-emerald-800'
+                  : 'bg-rose-50 border border-rose-300 text-rose-800'
               }`}
             >
               {feedback.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
@@ -197,7 +197,7 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
 
           {activeTab === 'json' && (
             <div className="flex flex-col gap-3">
-              <p className="text-xs text-[#a0a0a8] font-['Kanit'] leading-relaxed">
+              <p className="text-xs text-slate-500 font-['Prompt'] leading-relaxed">
                 นำเข้าข้อมูลสถิติรูปแบบ JSON (โครงสร้าง HeroStats และ Matchups) รองรับการแชร์และอัปเดตชุดสถิติตามแพตช์ทัวร์นาเมนต์
               </p>
               <textarea
@@ -205,13 +205,13 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
                 onChange={(e) => setJsonText(e.target.value)}
                 placeholder='วางข้อมูล JSON ที่นี่ เช่น: {"tournamentName": "RPL 2026 Summer", "heroes": { "Nakroth": { "games": 34, "winRate": 55.9, ... } }, "matchups": { ... } }'
                 rows={7}
-                className="w-full bg-[rgba(20,20,26,0.8)] border border-white/15 focus:border-[#a82844] rounded-lg p-3 text-xs text-white font-mono outline-none"
+                className="w-full bg-[#FFF8FB] border border-[#F3D5E2] focus:border-[#E91E63] focus:bg-white rounded-lg p-3 text-xs text-[#1F2937] font-mono outline-none"
               />
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={handleImportJson}
-                  className="px-4 py-2 rounded-lg font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider bg-[#a82844] hover:bg-[#c93958] text-white flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-lg font-['Prompt'] font-bold text-xs uppercase tracking-wider bg-[#E91E63] hover:bg-[#D81B60] text-white flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
                 >
                   <Upload size={13} />
                   <span>นำเข้า JSON</span>
@@ -219,7 +219,7 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
                 <button
                   type="button"
                   onClick={handleExportJson}
-                  className="px-4 py-2 rounded-lg font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider bg-white/5 hover:bg-white/10 text-white/80 flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-lg font-['Prompt'] font-bold text-xs uppercase tracking-wider bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 >
                   <Download size={13} />
                   <span>ดาวน์โหลด JSON ปัจจุบัน</span>
@@ -230,11 +230,11 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
 
           {activeTab === 'csv' && (
             <div className="flex flex-col gap-3">
-              <p className="text-xs text-[#a0a0a8] font-['Kanit'] leading-relaxed">
+              <p className="text-xs text-slate-500 font-['Prompt'] leading-relaxed">
                 นำเข้าข้อมูลสถิติรูปแบบ CSV (Liquipedia Statistics Format)
               </p>
               <div>
-                <label className="block text-xs font-['Barlow_Condensed'] font-bold text-white/80 uppercase mb-1">
+                <label className="block text-xs font-['Prompt'] font-bold text-slate-700 uppercase mb-1">
                   1. Hero Statistics CSV (Hero, Games, Wins, Losses, Win Rate%, Bans, Ban Rate%, Pick Rate%)
                 </label>
                 <textarea
@@ -242,12 +242,12 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
                   onChange={(e) => setHeroesCsv(e.target.value)}
                   placeholder="Hero,Games,Wins,Losses,Win Rate %,Bans,Ban Rate %,Pick Rate %&#10;Nakroth,34,19,15,55.9%,42,38.2%,30.9%&#10;Aoi,42,26,16,61.9%,68,61.8%,38.2%"
                   rows={4}
-                  className="w-full bg-[rgba(20,20,26,0.8)] border border-white/15 focus:border-[#a82844] rounded-lg p-2.5 text-xs text-white font-mono outline-none"
+                  className="w-full bg-[#FFF8FB] border border-[#F3D5E2] focus:border-[#E91E63] focus:bg-white rounded-lg p-2.5 text-xs text-[#1F2937] font-mono outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-['Barlow_Condensed'] font-bold text-white/80 uppercase mb-1">
+                <label className="block text-xs font-['Prompt'] font-bold text-slate-700 uppercase mb-1">
                   2. Head-to-Head Matchups CSV (Hero, Opponent Hero, Games, Wins, Losses, Win Rate %, Win Rate Diff %)
                 </label>
                 <textarea
@@ -255,7 +255,7 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
                   onChange={(e) => setMatchupsCsv(e.target.value)}
                   placeholder="Hero,Opponent Hero,Games,Wins,Losses,Win Rate %,Win Rate Diff %&#10;Nakroth,Raz,12,8,4,66.7%,+12.0%&#10;Nakroth,Liliana,14,9,5,64.3%,+8.4%&#10;Nakroth,Keera,14,5,9,35.7%,-20.2%"
                   rows={4}
-                  className="w-full bg-[rgba(20,20,26,0.8)] border border-white/15 focus:border-[#a82844] rounded-lg p-2.5 text-xs text-white font-mono outline-none"
+                  className="w-full bg-[#FFF8FB] border border-[#F3D5E2] focus:border-[#E91E63] focus:bg-white rounded-lg p-2.5 text-xs text-[#1F2937] font-mono outline-none"
                 />
               </div>
 
@@ -263,15 +263,15 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
                 <button
                   type="button"
                   onClick={handleImportCsv}
-                  className="px-4 py-2 rounded-lg font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider bg-[#a82844] hover:bg-[#c93958] text-white flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-lg font-['Prompt'] font-bold text-xs uppercase tracking-wider bg-[#E91E63] hover:bg-[#D81B60] text-white flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
                 >
                   <Upload size={13} />
-                  <span>นำเข้า CSV</span>
+                  <span>ประมวลผลและนำเข้า CSV</span>
                 </button>
                 <button
                   type="button"
                   onClick={handleExportCsv}
-                  className="px-4 py-2 rounded-lg font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider bg-white/5 hover:bg-white/10 text-white/80 flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-lg font-['Prompt'] font-bold text-xs uppercase tracking-wider bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 >
                   <Download size={13} />
                   <span>ดาวน์โหลด CSV ปัจจุบัน</span>
@@ -282,36 +282,36 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
 
           {activeTab === 'api' && (
             <div className="flex flex-col gap-3">
-              <p className="text-xs text-[#a0a0a8] font-['Kanit'] leading-relaxed">
+              <p className="text-xs text-slate-500 font-['Prompt'] leading-relaxed">
                 เชื่อมต่อ Endpoint API เพื่อดึงข้อมูลสถิติการแข่งขันและ Matchup แบบไดนามิกในอนาคต (REST API / JSON Response)
               </p>
               <div>
-                <label className="block text-xs font-['Barlow_Condensed'] font-bold text-white/80 uppercase mb-1">
+                <label className="block text-xs font-['Prompt'] font-bold text-slate-700 uppercase mb-1">
                   API Endpoint URL
                 </label>
                 <div className="flex items-center gap-2">
                   <div className="relative flex-1">
-                    <Globe size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
+                    <Globe size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
                       type="url"
                       value={apiUrl}
                       onChange={(e) => setApiUrl(e.target.value)}
                       placeholder="https://api.esports-stats.com/v1/rov/rpl-2026-summer/statistics"
-                      className="w-full bg-[rgba(20,20,26,0.8)] border border-white/15 focus:border-[#a82844] rounded-lg pl-8 pr-3 py-2 text-xs text-white font-mono outline-none"
+                      className="w-full bg-[#FFF8FB] border border-[#F3D5E2] focus:border-[#E91E63] focus:bg-white rounded-lg pl-8 pr-3 py-2 text-xs text-[#1F2937] font-mono outline-none"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleFetchApi}
                     disabled={isLoadingApi}
-                    className="px-4 py-2 rounded-lg font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider bg-[#a82844] hover:bg-[#c93958] text-white flex items-center gap-1.5 disabled:opacity-50"
+                    className="px-4 py-2 rounded-lg font-['Prompt'] font-bold text-xs uppercase tracking-wider bg-[#E91E63] hover:bg-[#D81B60] text-white flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-xs"
                   >
                     <RefreshCw size={13} className={isLoadingApi ? 'animate-spin' : ''} />
                     <span>ดึงข้อมูล API</span>
                   </button>
                 </div>
               </div>
-              <div className="p-3 bg-black/40 border border-white/5 rounded-lg text-[11px] text-[#a0a0a8] font-['Kanit']">
+              <div className="p-3 bg-[#FFF8FB] border border-[#F3D5E2] rounded-lg text-[11px] text-slate-500 font-['Prompt']">
                 * Data Layer ถูกออกแบบให้รองรับสตรีม API โดยตรง เมื่อ Backend ส่ง JSON สถิติที่มี Schema รองรับ ระบบจะ Sync ข้อมูลเข้าหน้าดราฟแบบ Real-time ทันที
               </div>
             </div>
@@ -319,11 +319,11 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/10 bg-black/40 flex items-center justify-between">
+        <div className="p-4 border-t border-[#F3D5E2] bg-white flex items-center justify-between">
           <button
             type="button"
             onClick={handleReset}
-            className="px-3 py-1.5 rounded-lg font-['Barlow_Condensed'] font-bold text-xs text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 transition-colors flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-lg font-['Prompt'] font-bold text-xs text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <RefreshCw size={12} />
             <span>รีเซ็ตกลับเป็นข้อมูล RPL 2026 Summer ค่าเริ่มต้น</span>
@@ -332,7 +332,7 @@ export const StatsImportExportModal: React.FC<StatsImportExportModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg font-['Barlow_Condensed'] font-bold text-xs text-white/80 hover:text-white bg-white/10 hover:bg-white/15 transition-colors"
+            className="px-4 py-1.5 rounded-lg font-['Prompt'] font-bold text-xs text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-colors cursor-pointer"
           >
             ปิด
           </button>

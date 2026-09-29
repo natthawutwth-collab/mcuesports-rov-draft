@@ -117,29 +117,29 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
   const comfortables = heroPool.filter((h) => h.tier === 'comfortable');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-[#0e0e14] border border-white/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-black/40">
-          <div className="flex items-center gap-2 font-['Orbitron'] font-bold text-base tracking-wider text-white">
-            <UserPlus size={18} className="text-[#a82844]" />
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#F3D5E2] bg-[#FFF0F5]">
+          <div className="flex items-center gap-2 font-['Prompt'] font-bold text-base tracking-wider text-[#1F2937]">
+            <UserPlus size={18} className="text-[#E91E63]" />
             <span>{initialPlayer ? 'แก้ไขข้อมูลนักแข่ง' : 'เพิ่มนักแข่งใหม่'}</span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors"
+            className="w-8 h-8 rounded-full bg-white hover:bg-slate-100 border border-slate-300 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors shadow-2xs cursor-pointer"
           >
             <X size={16} />
           </button>
         </div>
 
         {/* Content Form */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 custom-scrollbar flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 custom-scrollbar flex flex-col gap-4 font-['Prompt']">
           {/* Row 1: Nickname & Full Name */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-['Barlow_Condensed'] font-bold tracking-wider text-white/80 uppercase mb-1">
+              <label className="block text-xs font-['Prompt'] font-bold tracking-wider text-slate-700 uppercase mb-1">
                 In-game Nickname *
               </label>
               <input
@@ -151,13 +151,13 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                   if (nicknameError) setNicknameError(null);
                 }}
                 placeholder="เช่น MOON, ALEX, 007x"
-                className={`w-full bg-[rgba(20,20,26,0.8)] border rounded-lg px-3 py-2 text-white font-['Orbitron'] font-bold text-sm tracking-wider outline-none transition-colors ${
-                  nicknameError ? 'border-red-500 ring-1 ring-red-500' : 'border-white/15 focus:border-[#a82844]'
+                className={`w-full bg-[#FFF8FB] border rounded-lg px-3 py-2 text-[#1F2937] font-['Orbitron'] font-bold text-sm tracking-wider outline-none transition-colors ${
+                  nicknameError ? 'border-red-500 ring-1 ring-red-500' : 'border-[#F3D5E2] focus:border-[#E91E63] focus:bg-white'
                 }`}
               />
             </div>
             <div>
-              <label className="block text-xs font-['Barlow_Condensed'] font-bold tracking-wider text-white/80 uppercase mb-1">
+              <label className="block text-xs font-['Prompt'] font-bold tracking-wider text-slate-700 uppercase mb-1">
                 ชื่อ-นามสกุลจริง
               </label>
               <input
@@ -168,13 +168,13 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                   if (nicknameError) setNicknameError(null);
                 }}
                 placeholder="เช่น ธนากรณ์ ใจดี"
-                className="w-full bg-[rgba(20,20,26,0.8)] border border-white/15 focus:border-[#a82844] rounded-lg px-3 py-2 text-white text-sm font-['Kanit'] outline-none transition-colors"
+                className="w-full bg-[#FFF8FB] border border-[#F3D5E2] focus:border-[#E91E63] focus:bg-white rounded-lg px-3 py-2 text-[#1F2937] text-sm font-['Prompt'] outline-none transition-colors"
               />
             </div>
           </div>
 
           {nicknameError && (
-            <div className="px-3 py-2 rounded-lg bg-red-950/60 border border-red-500/50 text-red-200 text-xs font-['Kanit'] flex items-center gap-1.5 animate-in fade-in">
+            <div className="px-3 py-2 rounded-lg bg-rose-50 border border-rose-300 text-rose-700 text-xs font-['Prompt'] flex items-center gap-1.5 animate-in fade-in">
               <span>⚠️</span>
               <span>{nicknameError}</span>
             </div>
@@ -182,17 +182,17 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
 
           {/* Row 2: Team Division / Category */}
           <div>
-            <label className="block text-xs font-['Barlow_Condensed'] font-bold tracking-wider text-white/80 uppercase mb-1.5">
+            <label className="block text-xs font-['Prompt'] font-bold tracking-wider text-slate-700 uppercase mb-1.5">
               หมวดหมู่ทีม (Team Category) *
             </label>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setCategory('male')}
-                className={`py-2 px-3 rounded-lg border font-['Barlow_Condensed'] font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-2 px-3 rounded-lg border font-['Prompt'] font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   category === 'male'
-                    ? 'bg-sky-600/30 border-sky-400 text-sky-200 ring-1 ring-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.3)]'
-                    : 'border-white/10 bg-white/[0.03] text-white/60 hover:text-white hover:border-white/20'
+                    ? 'bg-sky-50 border-[#0284C7] text-[#0284C7] shadow-xs'
+                    : 'border-[#F3D5E2] bg-white text-slate-600 hover:text-slate-900 hover:border-slate-400'
                 }`}
               >
                 <span>👨</span>
@@ -201,10 +201,10 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
               <button
                 type="button"
                 onClick={() => setCategory('female')}
-                className={`py-2 px-3 rounded-lg border font-['Barlow_Condensed'] font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-2 px-3 rounded-lg border font-['Prompt'] font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   category === 'female'
-                    ? 'bg-rose-600/30 border-rose-400 text-rose-200 ring-1 ring-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.3)]'
-                    : 'border-white/10 bg-white/[0.03] text-white/60 hover:text-white hover:border-white/20'
+                    ? 'bg-rose-50 border-[#E11D48] text-[#E11D48] shadow-xs'
+                    : 'border-[#F3D5E2] bg-white text-slate-600 hover:text-slate-900 hover:border-slate-400'
                 }`}
               >
                 <span>👩</span>
@@ -213,10 +213,10 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
               <button
                 type="button"
                 onClick={() => setCategory('mixed')}
-                className={`py-2 px-3 rounded-lg border font-['Barlow_Condensed'] font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+                className={`py-2 px-3 rounded-lg border font-['Prompt'] font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                   category === 'mixed'
-                    ? 'bg-purple-600/30 border-purple-400 text-purple-200 ring-1 ring-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.3)]'
-                    : 'border-white/10 bg-white/[0.03] text-white/60 hover:text-white hover:border-white/20'
+                    ? 'bg-purple-50 border-purple-500 text-purple-700 shadow-xs'
+                    : 'border-[#F3D5E2] bg-white text-slate-600 hover:text-slate-900 hover:border-slate-400'
                 }`}
               >
                 <span>👥</span>
@@ -227,7 +227,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
 
           {/* Row 3: Position */}
           <div>
-            <label className="block text-xs font-['Barlow_Condensed'] font-bold tracking-wider text-white/80 uppercase mb-1.5">
+            <label className="block text-xs font-['Prompt'] font-bold tracking-wider text-slate-700 uppercase mb-1.5">
               ตำแหน่งหลัก (Position) *
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
@@ -238,10 +238,10 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                     key={pos.key}
                     type="button"
                     onClick={() => setPosition(pos.key)}
-                    className={`py-2 px-2.5 rounded-lg border font-['Barlow_Condensed'] font-bold text-xs tracking-wider transition-all flex flex-col items-center justify-center gap-0.5 ${
+                    className={`py-2 px-2.5 rounded-lg border font-['Prompt'] font-bold text-xs tracking-wider transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
                       isSelected
-                        ? `bg-white/15 ${pos.color} shadow-[0_0_12px_rgba(255,255,255,0.15)] ring-1 ring-white/30`
-                        : 'border-white/10 bg-white/[0.03] text-white/60 hover:text-white hover:border-white/20'
+                        ? 'bg-[#FCE4EC] border-[#E91E63] text-[#E91E63] shadow-xs'
+                        : 'border-[#F3D5E2] bg-white text-slate-600 hover:text-slate-900 hover:border-slate-400'
                     }`}
                   >
                     <span className="font-['Orbitron'] text-xs font-black">{pos.key}</span>
@@ -252,13 +252,13 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
           </div>
 
           {/* Hero Pool Configuration */}
-          <div className="pt-3 border-t border-white/10 flex flex-col gap-3">
+          <div className="pt-3 border-t border-[#F3D5E2] flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <div>
-                <span className="font-['Orbitron'] font-bold text-xs tracking-wider text-white">
+                <span className="font-['Orbitron'] font-bold text-xs tracking-wider text-[#1F2937]">
                   HERO POOL
                 </span>
-                <span className="text-[11px] font-['Kanit'] text-[#a0a0a8] ml-2">
+                <span className="text-[11px] font-['Prompt'] text-slate-500 ml-2">
                   (⭐ Signature: {signatures.length} | ★ Comfortable: {comfortables.length})
                 </span>
               </div>
@@ -267,25 +267,25 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
             {/* Hero search & tier selection */}
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={13} />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
                 <input
                   type="text"
                   value={heroSearch}
                   onChange={(e) => setHeroSearch(e.target.value)}
                   placeholder="พิมพ์ชื่อ Hero เพื่อเพิ่มเข้า Hero Pool..."
-                  className="w-full bg-[rgba(20,20,26,0.8)] border border-white/15 focus:border-[#a82844] text-white pl-8 pr-3 py-1.5 rounded-lg text-xs outline-none font-['Kanit']"
+                  className="w-full bg-[#FFF8FB] border border-[#F3D5E2] focus:border-[#E91E63] focus:bg-white text-[#1F2937] pl-8 pr-3 py-1.5 rounded-lg text-xs outline-none font-['Prompt']"
                 />
               </div>
 
               {/* Tier selector for newly added hero */}
-              <div className="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-white/10">
+              <div className="flex items-center gap-1 bg-[#FFF0F5] p-1 rounded-lg border border-[#F3D5E2]">
                 <button
                   type="button"
                   onClick={() => setSelectedTier('signature')}
-                  className={`px-2.5 py-1 rounded text-xs font-['Barlow_Condensed'] font-bold tracking-wider flex items-center gap-1 transition-colors ${
+                  className={`px-2.5 py-1 rounded text-xs font-['Prompt'] font-bold tracking-wider flex items-center gap-1 transition-colors cursor-pointer ${
                     selectedTier === 'signature'
-                      ? 'bg-[#d4a857]/20 border border-[#d4a857] text-[#ffd67a]'
-                      : 'text-white/50 hover:text-white'
+                      ? 'bg-[#FEF3C7] border border-[#F59E0B] text-[#B45309]'
+                      : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   <span>⭐</span>
@@ -294,10 +294,10 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedTier('comfortable')}
-                  className={`px-2.5 py-1 rounded text-xs font-['Barlow_Condensed'] font-bold tracking-wider flex items-center gap-1 transition-colors ${
+                  className={`px-2.5 py-1 rounded text-xs font-['Prompt'] font-bold tracking-wider flex items-center gap-1 transition-colors cursor-pointer ${
                     selectedTier === 'comfortable'
-                      ? 'bg-slate-400/20 border border-slate-300 text-slate-200'
-                      : 'text-white/50 hover:text-white'
+                      ? 'bg-slate-200 border border-slate-400 text-slate-800'
+                      : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
                   <span>★</span>
@@ -308,13 +308,13 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
 
             {/* Autocomplete dropdown options */}
             {availableHeroes.length > 0 && (
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 bg-black/50 p-2 rounded-lg border border-white/10">
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 bg-[#FFF8FB] p-2 rounded-lg border border-[#F3D5E2]">
                 {availableHeroes.map((hero) => (
                   <button
                     key={hero.id}
                     type="button"
                     onClick={() => handleAddHero(hero.name)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/10 hover:bg-[#a82844]/40 border border-white/10 hover:border-[#a82844] text-xs font-['Barlow_Condensed'] font-bold text-white transition-colors flex-shrink-0"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white hover:bg-[#FFF0F5] border border-slate-200 hover:border-[#E91E63] text-xs font-['Prompt'] font-bold text-slate-800 transition-colors flex-shrink-0 cursor-pointer shadow-2xs"
                   >
                     <img
                       src={hero.avatarUrl || getHeroImg(hero.name)}
@@ -322,41 +322,41 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                       className="w-5 h-5 rounded-full object-cover"
                     />
                     <span>{hero.name}</span>
-                    <span className="text-[10px] text-white/50">({hero.nameTh})</span>
-                    <span className="text-[#a82844] ml-1">＋</span>
+                    <span className="text-[10px] text-slate-400">({hero.nameTh})</span>
+                    <span className="text-[#E91E63] ml-1">＋</span>
                   </button>
                 ))}
               </div>
             )}
 
             {/* Assigned Hero Pool Chips */}
-            <div className="flex flex-col gap-2.5 bg-black/30 p-3 rounded-xl border border-white/5">
+            <div className="flex flex-col gap-2.5 bg-[#FFF8FB] p-3 rounded-xl border border-[#F3D5E2]">
               {/* Signature section */}
               <div>
-                <div className="flex items-center gap-1 text-[11px] font-['Barlow_Condensed'] font-extrabold text-[#d4a857] tracking-wider uppercase mb-1.5">
-                  <Star size={12} className="fill-[#d4a857] text-[#d4a857]" />
+                <div className="flex items-center gap-1 text-[11px] font-['Prompt'] font-bold text-[#B45309] tracking-wider uppercase mb-1.5">
+                  <Star size={12} className="fill-[#F59E0B] text-[#F59E0B]" />
                   <span>SIGNATURE HEROES (⭐ สีทอง)</span>
                 </div>
                 {signatures.length === 0 ? (
-                  <span className="text-[11px] text-white/30 font-['Kanit']">ยังไม่มีฮีโร่ระดับ Signature</span>
+                  <span className="text-[11px] text-slate-400 font-['Prompt']">ยังไม่มีฮีโร่ระดับ Signature</span>
                 ) : (
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {signatures.map((item) => (
                       <div
                         key={item.heroName}
-                        className="flex items-center gap-1.5 pl-1.5 pr-1 py-1 rounded-md bg-[#d4a857]/15 border border-[#d4a857]/50 text-white text-xs font-['Barlow_Condensed'] font-bold shadow-sm"
+                        className="flex items-center gap-1.5 pl-1.5 pr-1 py-1 rounded-md bg-[#FEF3C7] border border-[#F59E0B] text-[#B45309] text-xs font-['Prompt'] font-bold shadow-2xs"
                       >
                         <img
                           src={getHeroImg(item.heroName)}
                           alt={item.heroName}
                           className="w-5 h-5 rounded object-cover"
                         />
-                        <span className="text-[#ffd67a]">⭐ {item.heroName}</span>
+                        <span>⭐ {item.heroName}</span>
                         <button
                           type="button"
                           onClick={() => handleToggleTier(item.heroName)}
                           title="เปลี่ยนเป็น Comfortable (★)"
-                          className="p-0.5 hover:bg-white/10 rounded text-white/50 hover:text-white"
+                          className="p-0.5 hover:bg-[#FDE68A] rounded text-[#B45309] cursor-pointer"
                         >
                           ⇄
                         </button>
@@ -364,7 +364,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                           type="button"
                           onClick={() => handleRemoveHero(item.heroName)}
                           title="ลบออกจาก Hero Pool"
-                          className="p-0.5 hover:bg-red-500/20 rounded text-white/50 hover:text-red-300"
+                          className="p-0.5 hover:bg-red-100 rounded text-red-600 cursor-pointer"
                         >
                           <Trash2 size={11} />
                         </button>
@@ -375,31 +375,31 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
               </div>
 
               {/* Comfortable section */}
-              <div className="pt-2 border-t border-white/5">
-                <div className="flex items-center gap-1 text-[11px] font-['Barlow_Condensed'] font-extrabold text-slate-300 tracking-wider uppercase mb-1.5">
-                  <Star size={12} className="fill-slate-300 text-slate-300" />
+              <div className="pt-2 border-t border-[#F3D5E2]">
+                <div className="flex items-center gap-1 text-[11px] font-['Prompt'] font-bold text-slate-600 tracking-wider uppercase mb-1.5">
+                  <Star size={12} className="fill-slate-400 text-slate-400" />
                   <span>COMFORTABLE HEROES (★ สีเงิน)</span>
                 </div>
                 {comfortables.length === 0 ? (
-                  <span className="text-[11px] text-white/30 font-['Kanit']">ยังไม่มีฮีโร่ระดับ Comfortable</span>
+                  <span className="text-[11px] text-slate-400 font-['Prompt']">ยังไม่มีฮีโร่ระดับ Comfortable</span>
                 ) : (
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {comfortables.map((item) => (
                       <div
                         key={item.heroName}
-                        className="flex items-center gap-1.5 pl-1.5 pr-1 py-1 rounded-md bg-white/10 border border-slate-400/50 text-white text-xs font-['Barlow_Condensed'] font-bold shadow-sm"
+                        className="flex items-center gap-1.5 pl-1.5 pr-1 py-1 rounded-md bg-white border border-slate-300 text-slate-700 text-xs font-['Prompt'] font-bold shadow-2xs"
                       >
                         <img
                           src={getHeroImg(item.heroName)}
                           alt={item.heroName}
                           className="w-5 h-5 rounded object-cover"
                         />
-                        <span className="text-slate-200">★ {item.heroName}</span>
+                        <span>★ {item.heroName}</span>
                         <button
                           type="button"
                           onClick={() => handleToggleTier(item.heroName)}
                           title="เปลี่ยนเป็น Signature (⭐)"
-                          className="p-0.5 hover:bg-white/10 rounded text-white/50 hover:text-white"
+                          className="p-0.5 hover:bg-slate-100 rounded text-slate-500 cursor-pointer"
                         >
                           ⇄
                         </button>
@@ -407,7 +407,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                           type="button"
                           onClick={() => handleRemoveHero(item.heroName)}
                           title="ลบออกจาก Hero Pool"
-                          className="p-0.5 hover:bg-red-500/20 rounded text-white/50 hover:text-red-300"
+                          className="p-0.5 hover:bg-red-100 rounded text-red-600 cursor-pointer"
                         >
                           <Trash2 size={11} />
                         </button>
@@ -420,17 +420,17 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
           </div>
 
           {/* Footer buttons */}
-          <div className="pt-3 border-t border-white/10 flex items-center justify-end gap-2.5">
+          <div className="pt-3 border-t border-[#F3D5E2] flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+              className="px-4 py-2 rounded-lg font-['Prompt'] font-bold text-xs uppercase tracking-wider bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors border border-slate-300 cursor-pointer"
             >
               ยกเลิก
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-lg font-['Barlow_Condensed'] font-black text-xs uppercase tracking-wider bg-[#a82844] hover:bg-[#c93958] text-white shadow-lg transition-all flex items-center gap-1.5"
+              className="px-5 py-2 rounded-lg font-['Prompt'] font-bold text-xs uppercase tracking-wider bg-[#E91E63] hover:bg-[#D81B60] text-white shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
             >
               <Check size={14} />
               <span>{initialPlayer ? 'บันทึกการแก้ไข' : 'เพิ่มนักแข่ง'}</span>

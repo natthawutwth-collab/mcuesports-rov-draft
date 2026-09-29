@@ -48,32 +48,32 @@ export const HeroPickerModal: React.FC<HeroPickerModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in">
-      <div className="w-full max-w-2xl bg-[#0e0e14] border border-white/20 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in select-none font-['Prompt']">
+      <div className="w-full max-w-2xl bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-[#1F2937]">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/10 bg-black/40">
-          <div className="font-['Orbitron'] font-bold text-sm tracking-wider text-white">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#F3D5E2] bg-[#FFF0F5]">
+          <div className="font-['Orbitron'] font-bold text-sm tracking-wider text-[#1F2937]">
             {title}
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/70 hover:text-white"
+            className="w-8 h-8 rounded-full bg-white hover:bg-slate-100 border border-slate-300 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors cursor-pointer shadow-2xs"
           >
             <X size={16} />
           </button>
         </div>
 
         {/* Filter & Search Bar */}
-        <div className="p-3 border-b border-white/10 flex flex-col sm:flex-row gap-2 bg-black/20">
+        <div className="p-3 border-b border-[#F3D5E2] flex flex-col sm:flex-row gap-2 bg-white">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={14} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
             <input
               type="text"
               autoFocus
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="ค้นหา Hero (ชื่อไทย/อังกฤษ)..."
-              className="w-full bg-[rgba(20,20,26,0.8)] border border-white/15 text-white pl-9 pr-3 py-1.5 rounded-lg text-sm outline-none focus:border-[#a82844]"
+              className="w-full bg-[#FFF8FB] border border-[#F3D5E2] text-[#1F2937] placeholder-slate-400 pl-9 pr-3 py-1.5 rounded-lg text-sm outline-none focus:border-[#E91E63] focus:bg-white"
             />
           </div>
           <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
@@ -81,10 +81,10 @@ export const HeroPickerModal: React.FC<HeroPickerModalProps> = ({
               <button
                 key={r.key}
                 onClick={() => setRoleFilter(r.key)}
-                className={`font-['Barlow_Condensed'] font-bold text-xs px-3 py-1.5 rounded border transition-colors ${
+                className={`font-['Prompt'] font-bold text-xs px-3 py-1.5 rounded-lg border transition-colors cursor-pointer ${
                   roleFilter === r.key
-                    ? 'bg-[#a82844] border-[#a82844] text-white'
-                    : 'bg-white/5 border-white/10 text-white/60 hover:text-white'
+                    ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs'
+                    : 'bg-white border-[#F3D5E2] text-slate-700 hover:border-[#E91E63] hover:text-[#E91E63]'
                 }`}
               >
                 {r.label}
@@ -94,7 +94,7 @@ export const HeroPickerModal: React.FC<HeroPickerModalProps> = ({
         </div>
 
         {/* Hero Grid */}
-        <div className="p-4 overflow-y-auto custom-scrollbar flex-1">
+        <div className="p-4 overflow-y-auto custom-scrollbar flex-1 bg-[#FFF8FB]">
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 gap-2.5">
             {filtered.map((hero) => (
               <button
@@ -103,22 +103,22 @@ export const HeroPickerModal: React.FC<HeroPickerModalProps> = ({
                   onSelect(hero);
                   onClose();
                 }}
-                className="group flex flex-col items-center p-1 rounded-lg border border-white/10 hover:border-[#a82844] bg-white/[0.02] hover:bg-white/[0.08] transition-all"
+                className="group flex flex-col items-center p-1 rounded-xl border border-[#F3D5E2] hover:border-[#E91E63] bg-white hover:bg-[#FFF0F5] transition-all shadow-2xs hover:shadow-xs cursor-pointer"
               >
-                <div className="w-full aspect-square rounded-md overflow-hidden bg-black/40 mb-1">
+                <div className="w-full aspect-square rounded-lg overflow-hidden bg-slate-100 mb-1 border border-slate-200">
                   <img
                     src={hero.avatarUrl || getHeroImageUrl(hero.name)}
                     alt={hero.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = getHeroImageUrl(hero.name);
                     }}
                   />
                 </div>
-                <div className="w-full truncate text-center font-['Barlow_Condensed'] font-bold text-[11px] text-white">
+                <div className="w-full truncate text-center font-['Prompt'] font-bold text-[11px] text-[#1F2937] group-hover:text-[#E91E63]">
                   {hero.name}
                 </div>
-                <div className="w-full truncate text-center font-['Kanit'] text-[9px] text-[#a0a0a8]">
+                <div className="w-full truncate text-center font-['Prompt'] text-[9px] text-slate-400">
                   {hero.nameTh}
                 </div>
               </button>

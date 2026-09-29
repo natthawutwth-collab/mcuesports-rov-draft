@@ -65,56 +65,56 @@ export const SaveDraftModal: React.FC<SaveDraftModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn select-none font-['Kanit']">
-      <div className="relative w-full max-w-2xl bg-[#121217] border border-white/20 rounded-2xl shadow-2xl overflow-hidden text-white flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fadeIn select-none font-['Prompt']">
+      <div className="relative w-full max-w-2xl bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-2xl overflow-hidden text-[#1F2937] flex flex-col max-h-[90vh]">
         {/* Modal Header */}
-        <div className="p-4 bg-gradient-to-r from-black/80 via-[#a82844]/25 to-black/80 border-b border-white/10 flex items-center justify-between flex-shrink-0">
+        <div className="p-4 bg-[#FFF0F5] border-b border-[#F3D5E2] flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400">
+            <div className="w-8 h-8 rounded-lg bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 shadow-xs">
               <Save size={18} />
             </div>
             <div>
-              <h2 className="font-['Orbitron'] text-base font-bold tracking-wider text-white">
+              <h2 className="font-['Orbitron'] text-base font-bold tracking-wider text-[#1F2937]">
                 SAVE DRAFT TO CLOUD & HISTORY
               </h2>
-              <p className="text-[11px] text-emerald-400/90 flex items-center gap-1">
+              <p className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
                 <span>☁️ ซิงค์ขึ้น Cloud อัตโนมัติ — บันทึกแล้วข้อมูลไม่หาย เปิดจากเครื่องอื่นก็ยังอยู่</span>
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-white/70 hover:text-white transition-colors cursor-pointer"
+            className="w-8 h-8 rounded-lg bg-white hover:bg-slate-100 border border-slate-300 flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors cursor-pointer shadow-2xs"
           >
             <X size={16} />
           </button>
         </div>
 
         {/* Modal Body */}
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4 text-xs">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4 text-xs font-['Prompt']">
           {/* Match Info Summary Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 bg-black/40 border border-white/10 rounded-xl">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 bg-[#FFF8FB] border border-[#F3D5E2] rounded-xl shadow-2xs">
             <div>
-              <span className="block text-[10px] text-[#a0a0a8] font-bold">TOURNAMENT</span>
-              <span className="font-semibold text-white truncate block text-[11px]">
+              <span className="block text-[10px] text-slate-500 font-bold">TOURNAMENT</span>
+              <span className="font-bold text-[#1F2937] truncate block text-[11px]">
                 {currentTournament}
               </span>
             </div>
             <div>
-              <span className="block text-[10px] text-[#a0a0a8] font-bold">MATCH</span>
-              <span className="font-semibold text-white truncate block text-[11px]">
+              <span className="block text-[10px] text-slate-500 font-bold">MATCH</span>
+              <span className="font-bold text-[#1F2937] truncate block text-[11px]">
                 {currentMatch}
               </span>
             </div>
             <div>
-              <span className="block text-[10px] text-[#a0a0a8] font-bold">GAME #</span>
-              <span className="font-semibold text-[#d4a857] block text-[11px]">
+              <span className="block text-[10px] text-slate-500 font-bold">GAME #</span>
+              <span className="font-bold text-[#E91E63] block text-[11px]">
                 Game {currentGameNum}
               </span>
             </div>
             <div>
-              <span className="block text-[10px] text-[#a0a0a8] font-bold">PATCH</span>
-              <span className="font-semibold text-white/80 block text-[11px] truncate">
+              <span className="block text-[10px] text-slate-500 font-bold">PATCH</span>
+              <span className="font-bold text-slate-700 block text-[11px] truncate">
                 {currentPatch}
               </span>
             </div>
@@ -123,22 +123,22 @@ export const SaveDraftModal: React.FC<SaveDraftModalProps> = ({
           {/* Draft Recap: Blue vs Red Team */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Blue Team Recap */}
-            <div className="p-3 bg-[#6b8fb8]/10 border border-[#6b8fb8]/30 rounded-xl space-y-2">
+            <div className="p-3 bg-[#F0F9FF] border border-[#BAE6FD] rounded-xl space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-white flex items-center gap-1.5">
+                <span className="font-bold text-[#0284C7] flex items-center gap-1.5">
                   <span>🔵</span>
-                  <span className="font-['Barlow_Condensed'] text-sm tracking-wider uppercase">
+                  <span className="font-['Prompt'] text-sm tracking-wider uppercase">
                     {blueTeamName}
                   </span>
                 </span>
-                <span className="text-[10px] text-[#6b8fb8] font-bold font-['Barlow_Condensed'] uppercase">
+                <span className="text-[10px] text-[#0284C7] font-bold uppercase">
                   BLUE SIDE
                 </span>
               </div>
 
               {/* Bans */}
               <div className="space-y-1">
-                <span className="text-[9.5px] text-[#a0a0a8] uppercase font-['Barlow_Condensed']">
+                <span className="text-[9.5px] text-slate-500 uppercase font-bold">
                   Bans:
                 </span>
                 <div className="flex items-center gap-1 flex-wrap">
@@ -146,34 +146,34 @@ export const SaveDraftModal: React.FC<SaveDraftModalProps> = ({
                     h ? (
                       <div
                         key={i}
-                        className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/40 border border-white/10 text-[10px]"
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-white border border-red-300 text-[10px] shadow-2xs"
                       >
                         <img
                           src={h.avatarUrl || getHeroImageUrl(h.name)}
                           alt={h.name}
                           className="w-4 h-4 rounded-full object-cover"
                         />
-                        <span className="font-medium text-white/90">{h.name}</span>
+                        <span className="font-bold text-slate-800">{h.name}</span>
                       </div>
                     ) : (
-                      <span key={i} className="text-white/30 text-[10px]">—</span>
+                      <span key={i} className="text-slate-400 text-[10px]">—</span>
                     )
                   )}
                 </div>
               </div>
 
               {/* Picks */}
-              <div className="space-y-1 pt-1 border-t border-white/5">
-                <span className="text-[9.5px] text-[#a0a0a8] uppercase font-['Barlow_Condensed']">
+              <div className="space-y-1 pt-1 border-t border-[#BAE6FD]">
+                <span className="text-[9.5px] text-slate-500 uppercase font-bold">
                   Picks:
                 </span>
                 <div className="grid grid-cols-5 gap-1">
                   {bluePicks.map((p, i) => (
                     <div
                       key={i}
-                      className="flex flex-col items-center p-1 rounded bg-black/40 border border-white/10"
+                      className="flex flex-col items-center p-1 rounded bg-white border border-[#BAE6FD] shadow-2xs"
                     >
-                      <span className="text-[8px] font-['Barlow_Condensed'] font-bold text-[#6b8fb8]">
+                      <span className="text-[8px] font-bold text-[#0284C7]">
                         {p.pos}
                       </span>
                       {p.hero ? (
@@ -181,14 +181,14 @@ export const SaveDraftModal: React.FC<SaveDraftModalProps> = ({
                           src={p.hero.avatarUrl || getHeroImageUrl(p.hero.name)}
                           alt={p.hero.name}
                           title={p.hero.name}
-                          className="w-6 h-6 rounded-full object-cover mt-0.5"
+                          className="w-6 h-6 rounded-full object-cover mt-0.5 border border-slate-200"
                         />
                       ) : (
-                        <div className="w-6 h-6 rounded-full border border-dashed border-white/20 flex items-center justify-center text-[9px] text-white/30 mt-0.5">
+                        <div className="w-6 h-6 rounded-full border border-dashed border-slate-300 flex items-center justify-center text-[9px] text-slate-400 mt-0.5">
                           —
                         </div>
                       )}
-                      <span className="text-[8.5px] text-white font-medium truncate max-w-[40px] mt-0.5">
+                      <span className="text-[8.5px] text-[#1F2937] font-medium truncate max-w-[40px] mt-0.5">
                         {p.hero?.name || '-'}
                       </span>
                     </div>
@@ -198,22 +198,22 @@ export const SaveDraftModal: React.FC<SaveDraftModalProps> = ({
             </div>
 
             {/* Red Team Recap */}
-            <div className="p-3 bg-[#a82844]/10 border border-[#a82844]/30 rounded-xl space-y-2">
+            <div className="p-3 bg-[#FFF1F2] border border-[#FECDD3] rounded-xl space-y-2">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-white flex items-center gap-1.5">
+                <span className="font-bold text-[#E11D48] flex items-center gap-1.5">
                   <span>🔴</span>
-                  <span className="font-['Barlow_Condensed'] text-sm tracking-wider uppercase">
+                  <span className="font-['Prompt'] text-sm tracking-wider uppercase">
                     {redTeamName}
                   </span>
                 </span>
-                <span className="text-[10px] text-[#ff7b95] font-bold font-['Barlow_Condensed'] uppercase">
+                <span className="text-[10px] text-[#E11D48] font-bold uppercase">
                   RED SIDE
                 </span>
               </div>
 
               {/* Bans */}
               <div className="space-y-1">
-                <span className="text-[9.5px] text-[#a0a0a8] uppercase font-['Barlow_Condensed']">
+                <span className="text-[9.5px] text-slate-500 uppercase font-bold">
                   Bans:
                 </span>
                 <div className="flex items-center gap-1 flex-wrap">
@@ -221,34 +221,34 @@ export const SaveDraftModal: React.FC<SaveDraftModalProps> = ({
                     h ? (
                       <div
                         key={i}
-                        className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/40 border border-white/10 text-[10px]"
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-white border border-red-300 text-[10px] shadow-2xs"
                       >
                         <img
                           src={h.avatarUrl || getHeroImageUrl(h.name)}
                           alt={h.name}
                           className="w-4 h-4 rounded-full object-cover"
                         />
-                        <span className="font-medium text-white/90">{h.name}</span>
+                        <span className="font-bold text-slate-800">{h.name}</span>
                       </div>
                     ) : (
-                      <span key={i} className="text-white/30 text-[10px]">—</span>
+                      <span key={i} className="text-slate-400 text-[10px]">—</span>
                     )
                   )}
                 </div>
               </div>
 
               {/* Picks */}
-              <div className="space-y-1 pt-1 border-t border-white/5">
-                <span className="text-[9.5px] text-[#a0a0a8] uppercase font-['Barlow_Condensed']">
+              <div className="space-y-1 pt-1 border-t border-[#FECDD3]">
+                <span className="text-[9.5px] text-slate-500 uppercase font-bold">
                   Picks:
                 </span>
                 <div className="grid grid-cols-5 gap-1">
                   {redPicks.map((p, i) => (
                     <div
                       key={i}
-                      className="flex flex-col items-center p-1 rounded bg-black/40 border border-white/10"
+                      className="flex flex-col items-center p-1 rounded bg-white border border-[#FECDD3] shadow-2xs"
                     >
-                      <span className="text-[8px] font-['Barlow_Condensed'] font-bold text-[#ff7b95]">
+                      <span className="text-[8px] font-bold text-[#E11D48]">
                         {p.pos}
                       </span>
                       {p.hero ? (
@@ -256,14 +256,14 @@ export const SaveDraftModal: React.FC<SaveDraftModalProps> = ({
                           src={p.hero.avatarUrl || getHeroImageUrl(p.hero.name)}
                           alt={p.hero.name}
                           title={p.hero.name}
-                          className="w-6 h-6 rounded-full object-cover mt-0.5"
+                          className="w-6 h-6 rounded-full object-cover mt-0.5 border border-slate-200"
                         />
                       ) : (
-                        <div className="w-6 h-6 rounded-full border border-dashed border-white/20 flex items-center justify-center text-[9px] text-white/30 mt-0.5">
+                        <div className="w-6 h-6 rounded-full border border-dashed border-slate-300 flex items-center justify-center text-[9px] text-slate-400 mt-0.5">
                           —
                         </div>
                       )}
-                      <span className="text-[8.5px] text-white font-medium truncate max-w-[40px] mt-0.5">
+                      <span className="text-[8.5px] text-[#1F2937] font-medium truncate max-w-[40px] mt-0.5">
                         {p.hero?.name || '-'}
                       </span>
                     </div>
@@ -275,18 +275,18 @@ export const SaveDraftModal: React.FC<SaveDraftModalProps> = ({
 
           {/* 1. Winner Selection */}
           <div className="space-y-1.5">
-            <label className="font-['Barlow_Condensed'] text-xs font-black tracking-wider uppercase text-[#d4a857] flex items-center gap-1.5">
-              <Trophy size={14} />
+            <label className="font-['Prompt'] text-xs font-bold tracking-wider uppercase text-slate-700 flex items-center gap-1.5">
+              <Trophy size={14} className="text-amber-500" />
               <span>MATCH WINNER (ผู้ชนะการแข่งขัน) *</span>
             </label>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setWinner('blue')}
-                className={`py-2 px-3 rounded-lg border font-['Barlow_Condensed'] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`py-2 px-3 rounded-lg border font-['Prompt'] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
                   winner === 'blue'
-                    ? 'bg-[#6b8fb8] border-[#8cb3dd] text-white shadow-[0_0_12px_rgba(107,143,184,0.4)]'
-                    : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10'
+                    ? 'bg-[#0284C7] border-[#0284C7] text-white shadow-xs'
+                    : 'bg-white border-[#BAE6FD] text-[#0284C7] hover:bg-[#F0F9FF]'
                 }`}
               >
                 <span>🔵</span>
@@ -296,10 +296,10 @@ export const SaveDraftModal: React.FC<SaveDraftModalProps> = ({
               <button
                 type="button"
                 onClick={() => setWinner('red')}
-                className={`py-2 px-3 rounded-lg border font-['Barlow_Condensed'] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`py-2 px-3 rounded-lg border font-['Prompt'] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
                   winner === 'red'
-                    ? 'bg-[#a82844] border-[#ff7b95] text-white shadow-[0_0_12px_rgba(168,40,68,0.5)]'
-                    : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10'
+                    ? 'bg-[#E11D48] border-[#E11D48] text-white shadow-xs'
+                    : 'bg-white border-[#FECDD3] text-[#E11D48] hover:bg-[#FFF1F2]'
                 }`}
               >
                 <span>🔴</span>
@@ -309,10 +309,10 @@ export const SaveDraftModal: React.FC<SaveDraftModalProps> = ({
               <button
                 type="button"
                 onClick={() => setWinner('undecided')}
-                className={`py-2 px-3 rounded-lg border font-['Barlow_Condensed'] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`py-2 px-3 rounded-lg border font-['Prompt'] text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
                   winner === 'undecided'
-                    ? 'bg-white/20 border-white/40 text-white'
-                    : 'bg-white/5 border-white/10 text-white/60 hover:text-white hover:bg-white/10'
+                    ? 'bg-slate-200 border-slate-400 text-slate-800 shadow-xs'
+                    : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
                 }`}
               >
                 <span>⏳</span>
@@ -323,8 +323,8 @@ export const SaveDraftModal: React.FC<SaveDraftModalProps> = ({
 
           {/* 2. Notes / Post-Match Review */}
           <div className="space-y-1.5">
-            <label className="font-['Barlow_Condensed'] text-xs font-black tracking-wider uppercase text-white/80 flex items-center gap-1.5">
-              <FileText size={14} />
+            <label className="font-['Prompt'] text-xs font-bold tracking-wider uppercase text-slate-700 flex items-center gap-1.5">
+              <FileText size={14} className="text-[#E91E63]" />
               <span>COACH NOTES & DRAFT ANALYSIS (บันทึกของโค้ช)</span>
             </label>
             <textarea
@@ -332,22 +332,22 @@ export const SaveDraftModal: React.FC<SaveDraftModalProps> = ({
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
               placeholder="บันทึกข้อคิดเห็นของโค้ช เช่น แผนการเดินเกม, จุดได้เปรียบ/เสียเปรียบ, การแก้ทางคอมพ์, หรือข้อผิดพลาดในดราฟ..."
-              className="w-full px-3 py-2 bg-black/50 border border-white/15 focus:border-[#d4a857] rounded-lg text-white text-xs outline-none transition-colors"
+              className="w-full px-3 py-2 bg-[#FFF8FB] border border-[#F3D5E2] focus:border-[#E91E63] focus:bg-white rounded-lg text-[#1F2937] text-xs outline-none transition-colors"
             />
           </div>
 
           {/* Footer Actions */}
-          <div className="pt-3 border-t border-white/10 flex items-center justify-end gap-2.5">
+          <div className="pt-3 border-t border-[#F3D5E2] flex items-center justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 hover:text-white font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
+              className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 font-['Prompt'] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer"
             >
               ยกเลิก
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-500 hover:brightness-110 text-white font-['Orbitron'] font-bold text-xs tracking-wider shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all cursor-pointer flex items-center gap-1.5"
+              className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-['Prompt'] font-bold text-xs tracking-wider shadow-xs transition-all cursor-pointer flex items-center gap-1.5 active:scale-95"
             >
               <Save size={14} />
               <span>CONFIRM & SAVE DRAFT</span>

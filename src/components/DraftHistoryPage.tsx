@@ -99,22 +99,23 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-4 font-['Kanit'] select-none">
+    <div className="w-full max-w-7xl mx-auto space-y-4 font-['Prompt'] select-none">
       {/* 1. Header & Quick Actions */}
-      <div className="p-4 bg-[rgba(20,20,26,0.7)] border border-white/10 rounded-2xl shadow-xl backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="p-4 bg-white border border-[#F3D5E2] rounded-2xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-['Orbitron'] text-xl font-bold tracking-wider text-white">
+            <span className="font-['Orbitron'] text-xl font-bold tracking-wider text-[#1F2937]">
               DRAFT HISTORY
             </span>
-            <span className="font-['Barlow_Condensed'] text-xs font-bold px-2 py-0.5 rounded-full bg-[#a82844]/30 text-[#ff7b95] border border-[#a82844]/50">
+            <span className="font-['Prompt'] text-xs font-bold px-2 py-0.5 rounded-full bg-[#FCE4EC] text-[#E91E63] border border-[#F48FB1]">
               {records.length} DRAFTS SAVED
             </span>
-            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-['Barlow_Condensed'] font-semibold px-2 py-0.5 rounded-md bg-sky-950/50 text-sky-300 border border-sky-500/30">
+            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-['Prompt'] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>☁️ Cloud Synced</span>
             </span>
           </div>
-          <p className="text-xs text-[#a0a0a8] mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             คลังประวัติดราฟต์ RoV Pro League & Scrim พร้อมผลการแข่งขัน Ban/Pick และบทวิเคราะห์
           </p>
         </div>
@@ -123,7 +124,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
           {onOpenNewDraftSetup && (
             <button
               onClick={onOpenNewDraftSetup}
-              className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-[#a82844] to-[#ff476e] hover:brightness-110 text-white font-['Orbitron'] font-bold text-xs tracking-wider flex items-center gap-1.5 shadow-[0_0_12px_rgba(168,40,68,0.4)] transition-all cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-[#E91E63] hover:bg-[#D81B60] text-white font-['Prompt'] font-bold text-xs tracking-wider flex items-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95"
             >
               <Plus size={14} />
               <span>NEW DRAFT SETUP</span>
@@ -132,7 +133,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
 
           <button
             onClick={handleExport}
-            className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white font-['Barlow_Condensed'] text-xs font-bold tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-white hover:bg-[#FFF0F5] border border-[#F3D5E2] text-slate-700 hover:text-[#E91E63] font-['Prompt'] text-xs font-bold tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
             title="ส่งออกประวัติดราฟต์ทั้งหมดเป็นไฟล์ JSON"
           >
             <Download size={13} />
@@ -140,7 +141,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
           </button>
 
           <label
-            className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 hover:text-white font-['Barlow_Condensed'] text-xs font-bold tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-white hover:bg-[#FFF0F5] border border-[#F3D5E2] text-slate-700 hover:text-[#E91E63] font-['Prompt'] text-xs font-bold tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
             title="นำเข้าไฟล์ประวัติดราฟต์ JSON"
           >
             <Upload size={13} />
@@ -155,7 +156,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                   clearAllDrafts();
                 }
               }}
-              className="px-3 py-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-red-500/30 text-red-300 hover:text-red-100 font-['Barlow_Condensed'] text-xs font-bold tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 font-['Prompt'] text-xs font-bold tracking-wider flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
               title="ลบประวัติดราฟต์ทั้งหมด"
             >
               <Trash2 size={13} />
@@ -166,29 +167,29 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
       </div>
 
       {importStatus && (
-        <div className="p-3 bg-emerald-950/40 border border-emerald-500/50 rounded-xl text-emerald-300 text-xs font-bold flex items-center justify-between">
+        <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 text-xs font-bold flex items-center justify-between">
           <span>{importStatus}</span>
-          <button onClick={() => setImportStatus(null)} className="text-white/60 hover:text-white">
+          <button onClick={() => setImportStatus(null)} className="text-slate-400 hover:text-slate-700">
             ✕
           </button>
         </div>
       )}
 
       {/* 2. Search & Filter Bar */}
-      <div className="p-3.5 bg-black/40 border border-white/10 rounded-xl space-y-2.5">
+      <div className="p-3.5 bg-white border border-[#F3D5E2] rounded-xl shadow-xs space-y-2.5">
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
           {/* Text Search Input */}
           <div className="relative flex-1">
             <Search
               size={15}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
             <input
               type="text"
               value={filter.searchQuery || ''}
               onChange={(e) => setFilter({ ...filter, searchQuery: e.target.value })}
               placeholder="ค้นหาชื่อทีม, รายการแข่งขัน, แมตช์, หรือฮีโร่ในดราฟต์..."
-              className="w-full pl-9 pr-3 py-2 bg-black/60 border border-white/15 focus:border-[#d4a857] rounded-lg text-white text-xs outline-none transition-colors"
+              className="w-full pl-9 pr-3 py-2 bg-[#FFF8FB] border border-[#F3D5E2] focus:border-[#E91E63] focus:bg-white rounded-lg text-[#1F2937] placeholder-slate-400 text-xs outline-none transition-colors"
             />
           </div>
 
@@ -197,7 +198,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
             <select
               value={filter.tournament || 'all'}
               onChange={(e) => setFilter({ ...filter, tournament: e.target.value })}
-              className="w-full px-3 py-2 bg-black/60 border border-white/15 focus:border-[#d4a857] rounded-lg text-white text-xs outline-none cursor-pointer"
+              className="w-full px-3 py-2 bg-[#FFF8FB] border border-[#F3D5E2] focus:border-[#E91E63] focus:bg-white rounded-lg text-[#1F2937] text-xs outline-none cursor-pointer"
             >
               <option value="all">ทุกรายการแข่งขัน (All Tournaments)</option>
               {tournaments.map((t) => (
@@ -218,7 +219,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                   winner: e.target.value === 'all' ? undefined : (e.target.value as any),
                 })
               }
-              className="w-full px-3 py-2 bg-black/60 border border-white/15 focus:border-[#d4a857] rounded-lg text-white text-xs outline-none cursor-pointer"
+              className="w-full px-3 py-2 bg-[#FFF8FB] border border-[#F3D5E2] focus:border-[#E91E63] focus:bg-white rounded-lg text-[#1F2937] text-xs outline-none cursor-pointer"
             >
               <option value="all">ผลแพ้/ชนะ ทั้งหมด</option>
               <option value="blue">🔵 Blue Team Win</option>
@@ -231,22 +232,22 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
 
       {/* 3. Draft History Cards List */}
       {isLoading ? (
-        <div className="p-8 text-center text-white/50 text-xs">กำลังโหลดประวัติดราฟต์...</div>
+        <div className="p-8 text-center text-slate-500 text-xs">กำลังโหลดประวัติดราฟต์...</div>
       ) : filteredRecords.length === 0 ? (
-        <div className="p-10 bg-black/30 border border-dashed border-white/15 rounded-2xl text-center space-y-3">
-          <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto text-xl text-white/40">
+        <div className="p-10 bg-white border border-dashed border-[#F3D5E2] rounded-2xl text-center space-y-3 shadow-xs">
+          <div className="w-12 h-12 rounded-full bg-[#FFF0F5] border border-[#F3D5E2] flex items-center justify-center mx-auto text-xl text-[#E91E63]">
             📂
           </div>
           <div>
-            <h3 className="text-white font-bold text-sm">ไม่พบประวัติดราฟต์ตามเงื่อนไขที่ค้นหา</h3>
-            <p className="text-xs text-[#a0a0a8] mt-0.5">
+            <h3 className="text-[#1F2937] font-bold text-sm">ไม่พบประวัติดราฟต์ตามเงื่อนไขที่ค้นหา</h3>
+            <p className="text-xs text-slate-500 mt-0.5">
               คุณสามารถเริ่มดราฟต์และกด Save Draft หลังเสร็จสิ้น เพื่อบันทึกประวัติการแข่งขันลงในระบบ
             </p>
           </div>
           {onOpenNewDraftSetup && (
             <button
               onClick={onOpenNewDraftSetup}
-              className="px-4 py-2 rounded-lg bg-[#a82844] hover:bg-[#a82844]/80 text-white font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer inline-flex items-center gap-1.5"
+              className="px-4 py-2 rounded-lg bg-[#E91E63] hover:bg-[#D81B60] text-white font-['Prompt'] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-xs"
             >
               <Plus size={14} />
               <span>เริ่มดราฟต์ใหม่</span>
@@ -262,21 +263,21 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
             return (
               <div
                 key={rec.id}
-                className="p-4 bg-gradient-to-r from-black/60 via-white/[0.02] to-black/60 hover:to-white/[0.05] border border-white/10 hover:border-white/20 rounded-2xl shadow-lg transition-all flex flex-col gap-3 group"
+                className="p-4 bg-white border-2 border-[#F3D5E2] hover:border-[#E91E63]/50 rounded-2xl shadow-xs hover:shadow-md transition-all flex flex-col gap-3 group"
               >
                 {/* Top Info Bar */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/5 pb-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#F3D5E2] pb-2.5">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-['Orbitron'] text-xs font-black tracking-wider text-[#d4a857]">
+                    <span className="font-['Orbitron'] text-xs font-black tracking-wider text-[#B45309]">
                       {rec.tournament}
                     </span>
-                    <span className="font-['Barlow_Condensed'] text-[11px] font-bold px-1.5 py-0.2 rounded bg-white/10 text-white">
+                    <span className="font-['Prompt'] text-[11px] font-bold px-1.5 py-0.2 rounded bg-slate-100 text-slate-700 border border-slate-200">
                       Game {rec.gameNumber}
                     </span>
-                    <span className="font-['Barlow_Condensed'] text-[11px] text-[#a0a0a8]">
+                    <span className="font-['Prompt'] text-[11px] text-slate-500">
                       {rec.patch}
                     </span>
-                    <span className="text-[10.5px] text-white/40 flex items-center gap-1">
+                    <span className="text-[10.5px] text-slate-400 flex items-center gap-1">
                       <Calendar size={11} />
                       {formatDate(rec.createdAt)}
                     </span>
@@ -285,17 +286,17 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                   <div className="flex items-center gap-2">
                     {/* Winner Badge */}
                     {isBlueWin ? (
-                      <span className="font-['Barlow_Condensed'] text-xs font-black px-2 py-0.5 rounded bg-[#6b8fb8]/20 text-[#6b8fb8] border border-[#6b8fb8]/40 flex items-center gap-1">
+                      <span className="font-['Prompt'] text-xs font-bold px-2 py-0.5 rounded bg-sky-50 text-[#0284C7] border border-sky-300 flex items-center gap-1">
                         <Trophy size={11} />
                         <span>{rec.blueTeam.teamName} WIN</span>
                       </span>
                     ) : isRedWin ? (
-                      <span className="font-['Barlow_Condensed'] text-xs font-black px-2 py-0.5 rounded bg-[#a82844]/20 text-[#ff7b95] border border-[#a82844]/40 flex items-center gap-1">
+                      <span className="font-['Prompt'] text-xs font-bold px-2 py-0.5 rounded bg-rose-50 text-[#E11D48] border border-rose-300 flex items-center gap-1">
                         <Trophy size={11} />
                         <span>{rec.redTeam.teamName} WIN</span>
                       </span>
                     ) : (
-                      <span className="font-['Barlow_Condensed'] text-xs font-bold px-2 py-0.5 rounded bg-white/5 text-white/50 border border-white/10">
+                      <span className="font-['Prompt'] text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-300">
                         Undecided
                       </span>
                     )}
@@ -303,7 +304,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                     {/* Quick View Button */}
                     <button
                       onClick={() => handleOpenDetail(rec)}
-                      className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-['Barlow_Condensed'] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-['Prompt'] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer border border-slate-300"
                     >
                       <Eye size={12} />
                       <span>ดูรายละเอียด</span>
@@ -313,10 +314,10 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                     {onStartNewDraftFromMatch && (
                       <button
                         onClick={() => onStartNewDraftFromMatch(rec)}
-                        className="px-2.5 py-1 rounded-lg bg-[#a82844]/30 hover:bg-[#a82844]/60 border border-[#a82844]/50 text-white text-xs font-['Barlow_Condensed'] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
+                        className="px-2.5 py-1 rounded-lg bg-[#FCE4EC] hover:bg-[#F8BBD0] border border-[#F48FB1] text-[#E91E63] text-xs font-['Prompt'] font-bold uppercase tracking-wider flex items-center gap-1 transition-colors cursor-pointer"
                         title="เริ่มดราฟต์เกมถัดไปโดยใช้ข้อมูลคู่แข่งนี้"
                       >
-                        <ArrowRight size={12} className="text-[#ff7b95]" />
+                        <ArrowRight size={12} className="text-[#E91E63]" />
                         <span>Game {rec.gameNumber + 1}</span>
                       </button>
                     )}
@@ -332,7 +333,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                           deleteDraft(rec.id);
                         }
                       }}
-                      className="w-7 h-7 rounded-lg bg-white/5 hover:bg-red-950/60 border border-white/10 hover:border-red-500/50 text-white/50 hover:text-red-300 flex items-center justify-center transition-colors cursor-pointer"
+                      className="w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 hover:text-rose-800 flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
                       title="ลบดราฟต์"
                     >
                       <Trash2 size={13} />
@@ -341,22 +342,22 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                 </div>
 
                 {/* Match Title */}
-                <div className="font-bold text-white text-sm tracking-wide">{rec.match}</div>
+                <div className="font-bold text-[#1F2937] text-sm tracking-wide">{rec.match}</div>
 
                 {/* Visual Draft Composition: Blue vs Red */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {/* Blue Side Preview */}
-                  <div className="p-2.5 bg-[#6b8fb8]/5 border border-[#6b8fb8]/20 rounded-xl space-y-2">
+                  <div className="p-2.5 bg-[#F0F9FF] border border-[#BAE6FD] rounded-xl space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-white flex items-center gap-1">
+                      <span className="font-bold text-xs text-[#0284C7] flex items-center gap-1">
                         <span>🔵</span>
-                        <span className="font-['Barlow_Condensed'] text-sm uppercase">
+                        <span className="font-['Prompt'] text-sm uppercase">
                           {rec.blueTeam.teamName}
                         </span>
                       </span>
                       {/* Bans */}
                       <div className="flex items-center gap-1">
-                        <span className="text-[9px] text-[#a0a0a8] uppercase font-['Barlow_Condensed']">
+                        <span className="text-[9px] text-slate-500 uppercase font-['Prompt'] font-bold">
                           Bans:
                         </span>
                         {rec.blueTeam.bans.slice(0, 4).filter((b): b is string => Boolean(b && b.trim())).map((b, i) => (
@@ -365,7 +366,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                             src={getHeroImageUrl(b)}
                             alt={b}
                             title={`Banned: ${b}`}
-                            className="w-5 h-5 rounded-full object-cover border border-white/20 grayscale opacity-80"
+                            className="w-5 h-5 rounded-full object-cover border border-red-300 grayscale opacity-80"
                           />
                         ))}
                       </div>
@@ -377,18 +378,18 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                         <div
                           key={i}
                           onClick={() => onInspectHero?.(p.heroName)}
-                          className="flex flex-col items-center p-1 rounded-lg bg-black/40 border border-white/10 hover:border-[#6b8fb8] transition-colors cursor-pointer"
+                          className="flex flex-col items-center p-1 rounded-lg bg-white border border-[#BAE6FD] hover:border-[#0284C7] transition-colors cursor-pointer shadow-2xs"
                           title={`${p.position}: ${p.heroName}`}
                         >
-                          <span className="text-[8.5px] font-['Barlow_Condensed'] font-bold text-[#6b8fb8]">
+                          <span className="text-[8.5px] font-['Prompt'] font-bold text-[#0284C7]">
                             {p.position}
                           </span>
                           <img
                             src={getHeroImageUrl(p.heroName)}
                             alt={p.heroName}
-                            className="w-7 h-7 rounded-full object-cover mt-0.5 border border-white/20"
+                            className="w-7 h-7 rounded-full object-cover mt-0.5 border border-slate-200"
                           />
-                          <span className="text-[9px] text-white font-medium truncate max-w-[48px] mt-0.5">
+                          <span className="text-[9px] text-[#1F2937] font-medium truncate max-w-[48px] mt-0.5">
                             {p.heroName}
                           </span>
                         </div>
@@ -397,17 +398,17 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                   </div>
 
                   {/* Red Side Preview */}
-                  <div className="p-2.5 bg-[#a82844]/5 border border-[#a82844]/20 rounded-xl space-y-2">
+                  <div className="p-2.5 bg-[#FFF1F2] border border-[#FECDD3] rounded-xl space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-white flex items-center gap-1">
+                      <span className="font-bold text-xs text-[#E11D48] flex items-center gap-1">
                         <span>🔴</span>
-                        <span className="font-['Barlow_Condensed'] text-sm uppercase">
+                        <span className="font-['Prompt'] text-sm uppercase">
                           {rec.redTeam.teamName}
                         </span>
                       </span>
                       {/* Bans */}
                       <div className="flex items-center gap-1">
-                        <span className="text-[9px] text-[#a0a0a8] uppercase font-['Barlow_Condensed']">
+                        <span className="text-[9px] text-slate-500 uppercase font-['Prompt'] font-bold">
                           Bans:
                         </span>
                         {rec.redTeam.bans.slice(0, 4).filter((b): b is string => Boolean(b && b.trim())).map((b, i) => (
@@ -416,7 +417,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                             src={getHeroImageUrl(b)}
                             alt={b}
                             title={`Banned: ${b}`}
-                            className="w-5 h-5 rounded-full object-cover border border-white/20 grayscale opacity-80"
+                            className="w-5 h-5 rounded-full object-cover border border-red-300 grayscale opacity-80"
                           />
                         ))}
                       </div>
@@ -428,18 +429,18 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
                         <div
                           key={i}
                           onClick={() => onInspectHero?.(p.heroName)}
-                          className="flex flex-col items-center p-1 rounded-lg bg-black/40 border border-white/10 hover:border-[#a82844] transition-colors cursor-pointer"
+                          className="flex flex-col items-center p-1 rounded-lg bg-white border border-[#FECDD3] hover:border-[#E11D48] transition-colors cursor-pointer shadow-2xs"
                           title={`${p.position}: ${p.heroName}`}
                         >
-                          <span className="text-[8.5px] font-['Barlow_Condensed'] font-bold text-[#ff7b95]">
+                          <span className="text-[8.5px] font-['Prompt'] font-bold text-[#E11D48]">
                             {p.position}
                           </span>
                           <img
                             src={getHeroImageUrl(p.heroName)}
                             alt={p.heroName}
-                            className="w-7 h-7 rounded-full object-cover mt-0.5 border border-white/20"
+                            className="w-7 h-7 rounded-full object-cover mt-0.5 border border-slate-200"
                           />
-                          <span className="text-[9px] text-white font-medium truncate max-w-[48px] mt-0.5">
+                          <span className="text-[9px] text-[#1F2937] font-medium truncate max-w-[48px] mt-0.5">
                             {p.heroName}
                           </span>
                         </div>
@@ -450,7 +451,7 @@ export const DraftHistoryPage: React.FC<DraftHistoryPageProps> = ({
 
                 {/* Notes Preview if exists */}
                 {rec.notes && (
-                  <div className="text-[11px] text-white/70 bg-black/30 p-2 rounded-lg border border-white/5 line-clamp-2 italic">
+                  <div className="text-[11px] text-slate-600 bg-[#FFF8FB] p-2.5 rounded-lg border border-[#F3D5E2] line-clamp-2 italic">
                     💬 "{rec.notes}"
                   </div>
                 )}

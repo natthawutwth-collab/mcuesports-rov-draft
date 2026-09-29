@@ -113,27 +113,27 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
 
   return (
     <aside
-      className="w-full h-full flex flex-col bg-[#0a0c14]/95 border-2 border-[#fbbf24]/50 rounded-2xl shadow-2xl backdrop-blur-md overflow-hidden transition-all text-white font-['Kanit'] select-none"
+      className="w-full h-full flex flex-col bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-xl overflow-hidden transition-all text-[#1F2937] font-['Prompt'] select-none"
       style={{ minHeight: '680px' }}
       aria-label="Coach Analysis Panel"
     >
       {/* 1. Header & Team Perspective Switcher */}
-      <div className="p-3.5 border-b-2 border-slate-700/80 bg-[#07090f] flex flex-col gap-2.5">
+      <div className="p-3.5 border-b-2 border-[#F3D5E2] bg-[#FFF0F5] flex flex-col gap-2.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#fbbf24]/20 border border-[#fbbf24] flex items-center justify-center text-base shadow-[0_0_12px_rgba(251,191,36,0.3)]">
+            <div className="w-8 h-8 rounded-lg bg-[#FCE4EC] border border-[#E91E63] flex items-center justify-center text-base shadow-xs text-[#E91E63]">
               🎯
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-['Barlow_Condensed'] text-[16px] font-black tracking-wider uppercase text-white leading-none">
+                <h3 className="font-['Prompt'] text-[15px] font-bold tracking-wide uppercase text-[#1F2937] leading-none">
                   COACH ANALYSIS PANEL
                 </h3>
-                <span className="text-[9.5px] font-black px-2 py-0.5 rounded-full bg-[#fbbf24] text-black shadow-sm">
+                <span className="text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-[#E91E63] text-white shadow-2xs">
                   LIVE
                 </span>
               </div>
-              <p className="text-[11px] text-slate-300 leading-tight mt-0.5 font-medium">
+              <p className="text-[11px] text-slate-500 leading-tight mt-0.5 font-medium">
                 ระบบวิเคราะห์ดราฟ & ช่วยโค้ชตัดสินใจแบบเรียลไทม์
               </p>
             </div>
@@ -142,41 +142,41 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
           <button
             onClick={onClose}
             title="ปิดพาเนลโค้ช"
-            className="w-7 h-7 rounded-lg bg-black/60 hover:bg-rose-900/60 border border-slate-700 hover:border-rose-500 text-slate-300 hover:text-white flex items-center justify-center text-xs transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-lg bg-white hover:bg-rose-50 border border-slate-300 hover:border-rose-400 text-slate-600 hover:text-rose-600 flex items-center justify-center text-xs transition-colors cursor-pointer shadow-2xs"
           >
             ✕
           </button>
         </div>
 
         {/* Perspective Toggle: Blue Side vs Red Side */}
-        <div className="grid grid-cols-2 gap-2 p-1.5 bg-black/70 rounded-xl border border-slate-700/80 shadow-inner">
+        <div className="grid grid-cols-2 gap-2 p-1 bg-white rounded-xl border border-[#F3D5E2] shadow-2xs">
           <button
             onClick={() => setAnalyzedTeam('blue')}
-            className={`py-1.5 px-2.5 rounded-lg font-['Barlow_Condensed'] text-xs font-black tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`py-1.5 px-2.5 rounded-lg font-['Prompt'] text-xs font-bold tracking-wide flex items-center justify-center gap-2 transition-all cursor-pointer ${
               isBlue
-                ? 'bg-[#0284c7] text-white shadow-[0_0_14px_rgba(56,189,248,0.5)] border border-[#38bdf8]'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                ? 'bg-[#0284c7] text-white shadow-xs border border-[#0284c7]'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
             }`}
           >
             <span>🔵</span>
             <span>BLUE SIDE</span>
             {analysis.myTeamComp.missingRoles.length > 0 && (
-              <span className="w-2 h-2 rounded-full bg-[#fbbf24] animate-pulse"></span>
+              <span className="w-2 h-2 rounded-full bg-[#E91E63] animate-pulse"></span>
             )}
           </button>
 
           <button
             onClick={() => setAnalyzedTeam('red')}
-            className={`py-1.5 px-2.5 rounded-lg font-['Barlow_Condensed'] text-xs font-black tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`py-1.5 px-2.5 rounded-lg font-['Prompt'] text-xs font-bold tracking-wide flex items-center justify-center gap-2 transition-all cursor-pointer ${
               !isBlue
-                ? 'bg-[#e11d48] text-white shadow-[0_0_14px_rgba(244,63,94,0.5)] border border-[#f43f5e]'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                ? 'bg-[#e11d48] text-white shadow-xs border border-[#e11d48]'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent'
             }`}
           >
             <span>🔴</span>
             <span>RED SIDE</span>
             {analysis.oppTeamComp.missingRoles.length > 0 && (
-              <span className="w-2 h-2 rounded-full bg-[#fbbf24] animate-pulse"></span>
+              <span className="w-2 h-2 rounded-full bg-[#E91E63] animate-pulse"></span>
             )}
           </button>
         </div>
@@ -188,11 +188,11 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
         {analysis.warnings.length > 0 && (
           <section className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="font-['Barlow_Condensed'] text-[11px] font-black tracking-wider uppercase text-[#d4a857] flex items-center gap-1">
+              <span className="font-['Prompt'] text-[11px] font-bold tracking-wider uppercase text-[#B45309] flex items-center gap-1">
                 <span>⚠️</span>
                 <span>DRAFT WARNINGS ({analysis.warnings.length})</span>
               </span>
-              <span className="text-[10px] text-[#a0a0a8]">ตรวจจับความเสี่ยงดราฟ</span>
+              <span className="text-[10px] text-slate-500 font-['Prompt']">ตรวจจับความเสี่ยงดราฟ</span>
             </div>
 
             <div className="space-y-1.5">
@@ -202,36 +202,36 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                 const isSuccess = warn.severity === 'success';
 
                 const borderStyle = isErr
-                  ? 'border-red-500/50 bg-red-950/30 text-red-200'
+                  ? 'border-rose-300 bg-rose-50 text-rose-800'
                   : isWarn
-                  ? 'border-amber-500/50 bg-amber-950/25 text-amber-200'
+                  ? 'border-amber-300 bg-amber-50 text-amber-800'
                   : isSuccess
-                  ? 'border-emerald-500/50 bg-emerald-950/25 text-emerald-200'
-                  : 'border-blue-500/40 bg-blue-950/25 text-blue-200';
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                  : 'border-sky-300 bg-sky-50 text-sky-800';
 
                 const icon = isErr ? '🚨' : isWarn ? '⚠️' : isSuccess ? '✅' : 'ℹ️';
 
                 return (
                   <div
                     key={warn.id}
-                    className={`p-2 rounded-lg border text-[11px] flex items-start gap-2 shadow-sm transition-all ${borderStyle}`}
+                    className={`p-2.5 rounded-xl border text-[11px] flex items-start gap-2 shadow-2xs transition-all ${borderStyle}`}
                   >
                     <span className="text-xs flex-shrink-0 mt-0.5">{icon}</span>
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold font-['Kanit'] tracking-wide">
+                      <div className="font-bold font-['Prompt'] tracking-wide">
                         {warn.title}
                       </div>
-                      <div className="text-[10px] text-white/80 leading-relaxed mt-0.5">
+                      <div className="text-[10.5px] text-slate-700 leading-relaxed mt-0.5 font-['Prompt']">
                         {warn.description}
                       </div>
                       {warn.relatedHeroes && warn.relatedHeroes.length > 0 && (
-                        <div className="flex items-center gap-1 mt-1 flex-wrap">
+                        <div className="flex items-center gap-1 mt-1.5 flex-wrap">
                           {warn.relatedHeroes.map((hn) => (
                             <button
                               key={hn}
                               type="button"
                               onClick={() => onSelectHeroToInspect(hn)}
-                              className="px-1.5 py-0.5 rounded bg-black/40 hover:bg-white/20 border border-white/20 text-[9.5px] font-['Barlow_Condensed'] font-bold text-white transition-colors cursor-pointer"
+                              className="px-2 py-0.5 rounded-md bg-white hover:bg-[#FCE4EC] border border-[#F3D5E2] hover:border-[#E91E63] text-[10px] font-['Prompt'] font-bold text-slate-700 hover:text-[#E91E63] transition-colors cursor-pointer shadow-2xs"
                             >
                               🔍 {hn}
                             </button>
@@ -247,21 +247,21 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
         )}
 
         {/* 3. TEAM COMPOSITION (5 ROLES: DSL, Jungle, Mid, Support, ADL) */}
-        <section className="bg-black/30 border border-white/10 rounded-lg p-2.5 space-y-2">
+        <section className="bg-[#FFF8FB] border border-[#F3D5E2] rounded-xl p-3 space-y-2 shadow-xs">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <span className="font-['Barlow_Condensed'] text-[11px] font-black tracking-wider uppercase text-white flex items-center gap-1">
+              <span className="font-['Prompt'] text-[11px] font-bold tracking-wider uppercase text-[#1F2937] flex items-center gap-1">
                 <span>🛡️</span>
                 <span>TEAM COMPOSITION ({analysis.myTeamComp.filledCount}/5)</span>
               </span>
             </div>
-            <div className="flex items-center gap-1 text-[10px]">
+            <div className="flex items-center gap-1 text-[10px] font-['Prompt']">
               {analysis.myTeamComp.missingRoles.length === 0 ? (
-                <span className="text-emerald-400 font-bold bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-300">
                   ✓ ครบ 5 ตำแหน่ง
                 </span>
               ) : (
-                <span className="text-amber-300 font-bold bg-amber-950/40 px-1.5 py-0.5 rounded border border-amber-500/30">
+                <span className="text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded-md border border-amber-300">
                   ขาด {analysis.myTeamComp.missingRoles.join(', ')}
                 </span>
               )}
@@ -269,7 +269,7 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
           </div>
 
           {/* 5 Roles Grid */}
-          <div className="grid grid-cols-5 gap-1">
+          <div className="grid grid-cols-5 gap-1.5">
             {COMP_ROLES.map((role) => {
               const entry = analysis.myTeamComp.roles[role.key];
               const isFilled = entry.filled && entry.heroes.length > 0;
@@ -278,17 +278,17 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
               return (
                 <div
                   key={role.key}
-                  className={`flex flex-col items-center p-1 rounded-md border text-center transition-all ${
+                  className={`flex flex-col items-center p-1.5 rounded-lg border text-center transition-all bg-white ${
                     hasMultiple
-                      ? 'border-red-500 bg-red-950/30'
+                      ? 'border-rose-400 bg-rose-50 shadow-2xs'
                       : isFilled
-                      ? `${role.borderClass} ${role.bgClass}`
-                      : 'border-white/10 border-dashed bg-black/40 opacity-70'
+                      ? 'border-[#F3D5E2] shadow-2xs'
+                      : 'border-slate-300 border-dashed bg-slate-50 opacity-80'
                   }`}
                   title={`${role.label}: ${isFilled ? entry.heroes.map((h) => h.hero.name).join(', ') : 'ยังขาด (ยังไม่ถูกเลือก)'}`}
                 >
                   <span
-                    className="font-['Barlow_Condensed'] text-[9px] font-black tracking-wider uppercase"
+                    className="font-['Prompt'] text-[9.5px] font-bold tracking-wider uppercase"
                     style={{ color: role.color }}
                   >
                     {role.short}
@@ -296,7 +296,7 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
 
                   {isFilled ? (
                     <div className="mt-1 flex flex-col items-center">
-                      <div className="relative w-7 h-7 rounded-full overflow-hidden border border-white/30 shadow">
+                      <div className="relative w-8 h-8 rounded-full overflow-hidden border border-[#F3D5E2] shadow-2xs">
                         <img
                           src={entry.heroes[0].hero.avatarUrl || getHeroImageUrl(entry.heroes[0].hero.name)}
                           alt={entry.heroes[0].hero.name}
@@ -306,21 +306,21 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                           }}
                         />
                         {hasMultiple && (
-                          <div className="absolute inset-0 bg-red-900/80 flex items-center justify-center text-[8px] font-bold text-white">
+                          <div className="absolute inset-0 bg-rose-600/90 flex items-center justify-center text-[8px] font-bold text-white">
                             !2
                           </div>
                         )}
                       </div>
-                      <span className="text-[9px] font-semibold text-white truncate max-w-[52px] mt-0.5">
+                      <span className="text-[9px] font-semibold text-slate-800 truncate max-w-[54px] mt-0.5 font-['Prompt']">
                         {entry.heroes[0].hero.name}
                       </span>
                     </div>
                   ) : (
                     <div className="mt-1 flex flex-col items-center py-1">
-                      <div className="w-7 h-7 rounded-full border border-white/15 border-dashed flex items-center justify-center text-[10px] text-white/30">
+                      <div className="w-8 h-8 rounded-full border border-slate-300 border-dashed flex items-center justify-center text-[10px] text-slate-400 bg-slate-100">
                         —
                       </div>
-                      <span className="text-[8.5px] text-amber-400/80 font-bold mt-0.5">
+                      <span className="text-[9px] text-amber-700 font-bold mt-0.5 font-['Prompt']">
                         ยังขาด
                       </span>
                     </div>
@@ -333,10 +333,10 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
 
         {/* 4. CURRENT HERO INSPECTION (Player Fit & Matchup) */}
         {inspectedHero ? (
-          <section className="bg-gradient-to-b from-white/[0.04] to-black/30 border border-white/15 rounded-xl p-3 space-y-3 shadow-md">
+          <section className="bg-white border border-[#F3D5E2] rounded-xl p-3 space-y-3 shadow-xs font-['Prompt']">
             {/* Hero Quick Header */}
             <div className="flex items-center gap-2.5">
-              <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-white/30 flex-shrink-0 shadow-lg">
+              <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-[#E91E63] flex-shrink-0 shadow-xs">
                 <img
                   src={inspectedHero.avatarUrl || getHeroImageUrl(inspectedHero.name)}
                   alt={inspectedHero.name}
@@ -345,22 +345,22 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                     (e.target as HTMLImageElement).src = getHeroImageUrl(inspectedHero.name);
                   }}
                 />
-                <div className="absolute top-0.5 left-0.5 px-1 rounded bg-black/80 font-['Barlow_Condensed'] text-[8px] font-bold uppercase text-[#d4a857]">
+                <div className="absolute top-0.5 left-0.5 px-1 rounded bg-black/80 font-['Prompt'] text-[8px] font-bold uppercase text-[#fbbf24]">
                   {inspectedHero.primaryPos}
                 </div>
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-['Barlow_Condensed'] text-base font-black tracking-wider text-white">
+                  <span className="font-['Prompt'] text-base font-bold tracking-wide text-[#1F2937]">
                     {inspectedHero.name}
                   </span>
-                  <span className="text-[11px] text-[#a0a0a8]">
+                  <span className="text-[11px] text-slate-500 font-['Prompt']">
                     ({inspectedHero.nameTh})
                   </span>
                 </div>
-                <div className="flex items-center gap-1 text-[9.5px] text-white/70 flex-wrap mt-0.5">
-                  <span className="px-1.5 py-0.2 rounded bg-white/10">
+                <div className="flex items-center gap-1 text-[10px] text-slate-500 flex-wrap mt-0.5">
+                  <span className="px-1.5 py-0.2 rounded bg-[#FFF0F5] border border-[#F3D5E2] text-slate-700 font-medium">
                     {inspectedHero.roles.join(', ')}
                   </span>
                   <span>•</span>
@@ -373,7 +373,7 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                 <button
                   type="button"
                   onClick={() => onPickHeroDirectly(inspectedHero)}
-                  className="font-['Barlow_Condensed'] text-xs font-black tracking-wider px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-[0_0_12px_rgba(16,185,129,0.5)] transition-all cursor-pointer flex-shrink-0"
+                  className="font-['Prompt'] text-xs font-bold tracking-wider px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all cursor-pointer flex-shrink-0"
                 >
                   ✓ PICK NOW
                 </button>
@@ -381,13 +381,13 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
             </div>
 
             {/* A. PLAYER FIT: Who can play this Hero */}
-            <div className="space-y-1.5 border-t border-white/10 pt-2.5">
+            <div className="space-y-1.5 border-t border-[#F3D5E2] pt-2.5">
               <div className="flex items-center justify-between">
-                <span className="font-['Barlow_Condensed'] text-[11px] font-black tracking-wider uppercase text-white flex items-center gap-1">
+                <span className="font-['Prompt'] text-[11px] font-bold tracking-wider uppercase text-slate-800 flex items-center gap-1">
                   <span>👤</span>
                   <span>PLAYER FIT (ใครสามารถเล่น HERO นี้ได้)</span>
                 </span>
-                <span className="text-[9.5px] text-[#a0a0a8]">
+                <span className="text-[10px] text-slate-500">
                   {analysis.playerFit.players.length} นักแข่งในทีม
                 </span>
               </div>
@@ -399,10 +399,10 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                     return (
                       <div
                         key={p.playerId}
-                        className={`flex items-center justify-between p-1.5 rounded-lg border transition-all ${
+                        className={`flex items-center justify-between p-2 rounded-xl border transition-all ${
                           isSig
-                            ? 'bg-[#d4a857]/15 border-[#d4a857]/40 shadow-[0_0_8px_rgba(212,168,87,0.2)]'
-                            : 'bg-white/5 border-white/10'
+                            ? 'bg-[#FEF3C7] border-[#F59E0B] shadow-2xs'
+                            : 'bg-[#FFF8FB] border-[#F3D5E2]'
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0">
@@ -410,37 +410,37 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                             <img
                               src={p.playerAvatar}
                               alt={p.playerNickname}
-                              className="w-6 h-6 rounded-full object-cover border border-white/20 flex-shrink-0"
+                              className="w-7 h-7 rounded-full object-cover border border-[#F3D5E2] flex-shrink-0"
                               onError={(e) => {
                                 (e.target as HTMLElement).style.display = 'none';
                               }}
                             />
                           ) : (
-                            <div className="w-6 h-6 rounded-full bg-slate-700 text-[9px] font-bold text-white flex items-center justify-center flex-shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-[#FCE4EC] text-[#E91E63] text-[9.5px] font-bold flex items-center justify-center flex-shrink-0 border border-[#F48FB1]">
                               {p.playerNickname.slice(0, 1).toUpperCase()}
                             </div>
                           )}
                           <div className="min-w-0">
-                            <div className="font-bold text-[11.5px] text-white truncate flex items-center gap-1">
+                            <div className="font-bold text-[12px] text-slate-800 truncate flex items-center gap-1">
                               <span>{p.playerNickname}</span>
-                              <span className="text-[9px] text-[#a0a0a8] font-normal">
+                              <span className="text-[9.5px] text-slate-500 font-normal">
                                 ({p.playerName})
                               </span>
                             </div>
-                            <div className="text-[9.5px] text-[#a0a0a8]">
-                              ตำแหน่ง: <span className="text-white/90">{p.position}</span>
+                            <div className="text-[10px] text-slate-500">
+                              ตำแหน่ง: <span className="text-slate-800 font-semibold">{p.position}</span>
                             </div>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-1 flex-shrink-0">
                           {isSig ? (
-                            <span className="font-['Barlow_Condensed'] text-[10px] font-black px-1.5 py-0.5 rounded bg-[#d4a857] text-black tracking-wider flex items-center gap-0.5 shadow">
+                            <span className="font-['Prompt'] text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#F59E0B] text-white tracking-wider flex items-center gap-0.5 shadow-2xs">
                               <span>⭐</span>
                               <span>SIGNATURE</span>
                             </span>
                           ) : (
-                            <span className="font-['Barlow_Condensed'] text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 tracking-wider flex items-center gap-0.5">
+                            <span className="font-['Prompt'] text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-300 tracking-wider flex items-center gap-0.5">
                               <span>★</span>
                               <span>COMFORTABLE</span>
                             </span>
@@ -451,38 +451,38 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                   })}
                 </div>
               ) : (
-                <div className="p-2 rounded-lg border border-dashed border-white/15 bg-black/20 text-center text-white/50 text-[10.5px]">
+                <div className="p-2.5 rounded-xl border border-dashed border-[#F3D5E2] bg-slate-50 text-center text-slate-500 text-[11px]">
                   ℹ️ ไม่อยู่ใน Hero Pool ของนักแข่งในไลน์อัป (Off-meta / Flex)
                 </div>
               )}
             </div>
 
             {/* B. MATCHUP (Strong Against & Weak Against) */}
-            <div className="space-y-2 border-t border-white/10 pt-2.5">
+            <div className="space-y-2 border-t border-[#F3D5E2] pt-2.5">
               <div className="flex items-center justify-between">
-                <span className="font-['Barlow_Condensed'] text-[11px] font-black tracking-wider uppercase text-white flex items-center gap-1">
+                <span className="font-['Prompt'] text-[11px] font-bold tracking-wider uppercase text-slate-800 flex items-center gap-1">
                   <span>⚔️</span>
                   <span>MATCHUP วิเคราะห์แพ้ทาง / ชนะทาง</span>
                 </span>
-                <span className="text-[9.5px] text-[#a0a0a8]">RPL 2026 Competitive</span>
+                <span className="text-[10px] text-slate-500">RPL 2026 Competitive</span>
               </div>
 
               {/* Real-time battle against enemy picks */}
               {analysis.inspectedMatchups.liveOpponents.length > 0 && (
-                <div className="bg-black/40 border border-white/10 rounded-lg p-2 space-y-1.5">
-                  <div className="text-[10px] font-bold text-[#d4a857] uppercase font-['Barlow_Condensed'] tracking-wider">
+                <div className="bg-[#FFF0F5] border border-[#F3D5E2] rounded-xl p-2.5 space-y-1.5">
+                  <div className="text-[10.5px] font-bold text-[#E91E63] uppercase font-['Prompt'] tracking-wider">
                     VS ฝั่งตรงข้ามที่เลือกแล้ว ({analysis.inspectedMatchups.liveOpponents.length} ตัว)
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     {analysis.inspectedMatchups.liveOpponents.map((live) => {
                       if (!live.matchup) {
                         return (
                           <div
                             key={live.oppHero}
-                            className="flex items-center justify-between text-[10px] p-1 rounded bg-white/5 text-white/60"
+                            className="flex items-center justify-between text-[10.5px] p-1.5 rounded-lg bg-white border border-[#F3D5E2] text-slate-600"
                           >
-                            <span className="font-bold text-white/80">{live.oppHero}</span>
-                            <span className="text-white/40 italic">No Data ในทัวร์</span>
+                            <span className="font-bold text-slate-800">{live.oppHero}</span>
+                            <span className="text-slate-400 italic">No Data ในทัวร์</span>
                           </div>
                         );
                       }
@@ -490,19 +490,19 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                       return (
                         <div
                           key={live.oppHero}
-                          className={`flex items-center justify-between text-[10.5px] p-1.5 rounded border ${
+                          className={`flex items-center justify-between text-[11px] p-2 rounded-lg border ${
                             isAdv
-                              ? 'border-emerald-500/40 bg-emerald-950/20 text-emerald-300'
-                              : 'border-red-500/40 bg-red-950/20 text-red-300'
+                              ? 'border-emerald-300 bg-emerald-50 text-emerald-800'
+                              : 'border-rose-300 bg-rose-50 text-rose-800'
                           }`}
                         >
                           <div className="flex items-center gap-1.5">
                             <span className="font-bold">{live.oppHero}</span>
-                            <span className="text-[9px] text-white/60">
+                            <span className="text-[9.5px] text-slate-600">
                               ({live.matchup.wins}W / {live.matchup.losses}L)
                             </span>
                           </div>
-                          <div className="flex items-center gap-1 font-['Barlow_Condensed'] font-black">
+                          <div className="flex items-center gap-1 font-['Prompt'] font-bold">
                             <span>{isAdv ? 'ได้เปรียบ' : 'เสียเปรียบ'}</span>
                             <span className="text-xs">
                               {live.matchup.diff > 0 ? `+${live.matchup.diff.toFixed(1)}%` : `${live.matchup.diff.toFixed(1)}%`}
@@ -518,8 +518,8 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
               {/* Tournament Strong Against & Weak Against */}
               <div className="grid grid-cols-2 gap-2">
                 {/* Strong Against */}
-                <div className="bg-emerald-950/20 border border-emerald-500/30 rounded-lg p-2 space-y-1">
-                  <div className="font-['Barlow_Condensed'] text-[10px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1">
+                <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-2.5 space-y-1">
+                  <div className="font-['Prompt'] text-[10.5px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
                     <span>🛡️</span>
                     <span>STRONG AGAINST (ชนะทาง)</span>
                   </div>
@@ -528,23 +528,23 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                       {analysis.inspectedMatchups.strongAgainst.slice(0, 3).map((m) => (
                         <div
                           key={m.opponentHero}
-                          className="flex items-center justify-between text-[10px] text-white/90"
+                          className="flex items-center justify-between text-[10.5px] text-slate-800"
                         >
                           <span className="truncate">{m.opponentHero}</span>
-                          <span className="text-emerald-400 font-bold font-['Barlow_Condensed'] flex-shrink-0">
+                          <span className="text-emerald-700 font-bold font-['Prompt'] flex-shrink-0">
                             +{m.diff.toFixed(1)}%
                           </span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-[9.5px] text-white/40 italic">ไม่มีข้อมูลได้เปรียบเด่นชัด</div>
+                    <div className="text-[10px] text-slate-400 italic">ไม่มีข้อมูลได้เปรียบเด่นชัด</div>
                   )}
                 </div>
 
                 {/* Weak Against */}
-                <div className="bg-red-950/20 border border-red-500/30 rounded-lg p-2 space-y-1">
-                  <div className="font-['Barlow_Condensed'] text-[10px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-1">
+                <div className="bg-rose-50 border border-rose-300 rounded-xl p-2.5 space-y-1">
+                  <div className="font-['Prompt'] text-[10.5px] font-bold text-rose-800 uppercase tracking-wider flex items-center gap-1">
                     <span>⚠️</span>
                     <span>WEAK AGAINST (แพ้ทาง)</span>
                   </div>
@@ -553,25 +553,25 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                       {analysis.inspectedMatchups.weakAgainst.slice(0, 3).map((m) => (
                         <div
                           key={m.opponentHero}
-                          className="flex items-center justify-between text-[10px] text-white/90"
+                          className="flex items-center justify-between text-[10.5px] text-slate-800"
                         >
                           <span className="truncate">{m.opponentHero}</span>
-                          <span className="text-red-400 font-bold font-['Barlow_Condensed'] flex-shrink-0">
+                          <span className="text-rose-700 font-bold font-['Prompt'] flex-shrink-0">
                             {m.diff.toFixed(1)}%
                           </span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <div className="text-[9.5px] text-white/40 italic">ไม่มีข้อมูลเสียเปรียบเด่นชัด</div>
+                    <div className="text-[10px] text-slate-400 italic">ไม่มีข้อมูลเสียเปรียบเด่นชัด</div>
                   )}
                 </div>
               </div>
 
               {/* Live Synergies with Picked Allies */}
               {analysis.inspectedSynergies?.liveAllies && analysis.inspectedSynergies.liveAllies.length > 0 && (
-                <div className="bg-sky-950/20 border border-sky-500/30 rounded-lg p-2 space-y-1.5">
-                  <div className="font-['Barlow_Condensed'] text-[10px] font-bold text-sky-400 uppercase tracking-wider flex items-center justify-between">
+                <div className="bg-sky-50 border border-sky-300 rounded-xl p-2.5 space-y-1.5">
+                  <div className="font-['Prompt'] text-[10.5px] font-bold text-sky-800 uppercase tracking-wider flex items-center justify-between">
                     <span className="flex items-center gap-1">
                       <span>🤝</span>
                       <span>SYNERGY กับเพื่อนร่วมทีม ({analysis.inspectedSynergies.liveAllies.length} ตัว)</span>
@@ -585,22 +585,22 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                       return (
                         <div
                           key={live.allyHero}
-                          className="flex items-center justify-between text-[10.5px] bg-black/40 rounded px-1.5 py-0.5 border border-white/5"
+                          className="flex items-center justify-between text-[10.5px] bg-white rounded-lg px-2 py-1 border border-sky-200"
                         >
-                          <span className="font-medium text-white">{live.allyHero}</span>
+                          <span className="font-semibold text-slate-800">{live.allyHero}</span>
                           {synergy ? (
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-white/50">{synergy.winRate.toFixed(1)}% WR ({synergy.games}G)</span>
+                              <span className="text-[10px] text-slate-500">{synergy.winRate.toFixed(1)}% WR ({synergy.games}G)</span>
                               <span
-                                className={`font-['Barlow_Condensed'] font-bold text-[11px] ${
-                                  isPos ? 'text-emerald-400' : 'text-amber-400'
+                                className={`font-['Prompt'] font-bold text-[11px] ${
+                                  isPos ? 'text-emerald-700' : 'text-amber-700'
                                 }`}
                               >
                                 {diff > 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-[9.5px] text-white/40 italic">ไม่มีข้อมูลคู่หู</span>
+                            <span className="text-[10px] text-slate-400 italic">ไม่มีข้อมูลคู่หู</span>
                           )}
                         </div>
                       );
@@ -611,29 +611,29 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
             </div>
           </section>
         ) : (
-          <div className="p-4 rounded-xl border border-dashed border-white/20 bg-black/30 text-center space-y-1 text-white/60">
+          <div className="p-4 rounded-xl border border-dashed border-[#F3D5E2] bg-white text-center space-y-1 text-slate-600 shadow-2xs font-['Prompt']">
             <span className="text-xl">🔍</span>
-            <div className="font-bold text-white text-xs">คลิกเลือกฮีโร่เพื่อดู Player Fit & Matchup</div>
-            <div className="text-[10px] text-white/50">
+            <div className="font-bold text-slate-800 text-xs">คลิกเลือกฮีโร่เพื่อดู Player Fit & Matchup</div>
+            <div className="text-[10.5px] text-slate-500">
               คลิกฮีโร่ตัวใดก็ได้ในกระดานดราฟเพื่อวิเคราะห์ความถนัดของนักแข่งและคู่ต่อสู้
             </div>
           </div>
         )}
 
         {/* 5. SUGGESTED PICKS (Decision Aid for Coaches) */}
-        <section className="space-y-2 border-t border-white/10 pt-3">
+        <section className="space-y-2 border-t border-[#F3D5E2] pt-3 font-['Prompt']">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-['Barlow_Condensed'] text-[13px] font-black tracking-wider uppercase text-[#d4a857] flex items-center gap-1">
+                <span className="font-['Prompt'] text-[13px] font-bold tracking-wider uppercase text-[#E91E63] flex items-center gap-1">
                   <span>💡</span>
                   <span>SUGGESTED PICKS (ควรพิจารณา)</span>
                 </span>
-                <span className="text-[9px] px-1 py-0.2 rounded bg-white/10 text-white/80">
+                <span className="text-[9.5px] px-1.5 py-0.2 rounded-md bg-[#FFF0F5] border border-[#F3D5E2] text-[#E91E63] font-bold">
                   DECISION AID
                 </span>
               </div>
-              <p className="text-[9.5px] text-[#a0a0a8]">
+              <p className="text-[10px] text-slate-500 mt-0.5">
                 คำนวณจาก Player Pool + Matchup + ขาดตำแหน่ง + หักตัวแบน/เลือกแล้ว
               </p>
             </div>
@@ -645,11 +645,11 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                 <div
                   key={sug.hero.id}
                   onClick={() => onSelectHeroToInspect(sug.hero.name)}
-                  className="p-2 rounded-xl bg-gradient-to-r from-black/60 to-white/[0.03] hover:to-white/[0.08] border border-white/10 hover:border-[#d4a857]/60 transition-all cursor-pointer shadow-sm group"
+                  className="p-2.5 rounded-xl bg-white hover:bg-[#FFF8FB] border border-[#F3D5E2] hover:border-[#E91E63] transition-all cursor-pointer shadow-xs group"
                 >
                   <div className="flex items-start gap-2.5">
                     {/* Hero Avatar & Rank */}
-                    <div className="relative w-11 h-11 rounded-lg overflow-hidden border border-white/20 flex-shrink-0 group-hover:border-[#d4a857] transition-colors">
+                    <div className="relative w-11 h-11 rounded-lg overflow-hidden border border-[#F3D5E2] flex-shrink-0 group-hover:border-[#E91E63] transition-colors shadow-2xs">
                       <img
                         src={sug.hero.avatarUrl || getHeroImageUrl(sug.hero.name)}
                         alt={sug.hero.name}
@@ -658,10 +658,10 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                           (e.target as HTMLImageElement).src = getHeroImageUrl(sug.hero.name);
                         }}
                       />
-                      <div className="absolute top-0 left-0 bg-black/80 font-['Barlow_Condensed'] text-[8.5px] font-black px-1 text-[#d4a857]">
+                      <div className="absolute top-0 left-0 bg-black/80 font-['Prompt'] text-[8.5px] font-bold px-1 text-[#fbbf24]">
                         #{idx + 1}
                       </div>
-                      <div className="absolute bottom-0 right-0 bg-black/80 font-['Barlow_Condensed'] text-[8px] font-bold px-1 uppercase text-white/80">
+                      <div className="absolute bottom-0 right-0 bg-black/80 font-['Prompt'] text-[8px] font-bold px-1 uppercase text-white">
                         {sug.targetRole}
                       </div>
                     </div>
@@ -670,10 +670,10 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
-                          <span className="font-['Barlow_Condensed'] text-[13.5px] font-black tracking-wide text-white group-hover:text-[#d4a857] transition-colors truncate">
+                          <span className="font-['Prompt'] text-[13.5px] font-bold tracking-wide text-slate-800 group-hover:text-[#E91E63] transition-colors truncate">
                             {sug.hero.name}
                           </span>
-                          <span className="text-[10px] text-[#a0a0a8] truncate">
+                          <span className="text-[10.5px] text-slate-500 truncate">
                             ({sug.hero.nameTh})
                           </span>
                         </div>
@@ -681,10 +681,10 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                         {/* Fit Score Badge */}
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <span
-                            className={`font-['Barlow_Condensed'] text-[9.5px] font-black px-1.5 py-0.5 rounded tracking-wider ${
+                            className={`font-['Prompt'] text-[9.5px] font-bold px-2 py-0.5 rounded-md tracking-wider ${
                               sug.confidence === 'high'
-                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                                : 'bg-blue-500/20 text-blue-300 border border-blue-500/40'
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
+                                : 'bg-sky-50 text-sky-700 border border-sky-300'
                             }`}
                           >
                             SCORE {sug.score}
@@ -697,7 +697,7 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                         {sug.reasons.map((r, i) => (
                           <span
                             key={i}
-                            className="text-[9.5px] px-1.5 py-0.2 rounded bg-white/5 border border-white/10 text-white/90"
+                            className="text-[9.5px] px-1.5 py-0.2 rounded-md bg-[#FFF0F5] border border-[#F3D5E2] text-slate-700"
                           >
                             {r}
                           </span>
@@ -705,7 +705,7 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                         {sug.cautions.map((c, i) => (
                           <span
                             key={`c-${i}`}
-                            className="text-[9.5px] px-1.5 py-0.2 rounded bg-red-950/40 border border-red-500/30 text-red-300"
+                            className="text-[9.5px] px-1.5 py-0.2 rounded-md bg-rose-50 border border-rose-300 text-rose-700"
                           >
                             {c}
                           </span>
@@ -721,7 +721,7 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                               e.stopPropagation();
                               onPickHeroDirectly(sug.hero);
                             }}
-                            className="font-['Barlow_Condensed'] text-[10px] font-black tracking-wider px-2 py-0.5 rounded bg-emerald-600/80 hover:bg-emerald-500 text-white transition-colors cursor-pointer flex items-center gap-1"
+                            className="font-['Prompt'] text-[10px] font-bold tracking-wider px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
                           >
                             <span>✓</span>
                             <span>SELECT FOR {analyzedTeam.toUpperCase()}</span>
@@ -733,7 +733,7 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                 </div>
               ))
             ) : (
-              <div className="p-3 text-center text-white/40 text-xs italic">
+              <div className="p-3 text-center text-slate-400 text-xs italic">
                 ไม่มีข้อมูลฮีโร่แนะนำสำหรับเงื่อนไขปัจจุบัน
               </div>
             )}
@@ -742,14 +742,14 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
       </div>
 
       {/* Footer Note */}
-      <div className="p-2 border-t border-white/10 bg-black/40 text-[9.5px] text-[#a0a0a8] flex items-center justify-between">
+      <div className="p-2.5 border-t border-[#F3D5E2] bg-[#FFF8FB] text-[10px] text-slate-500 font-['Prompt'] flex items-center justify-between">
         <span className="flex items-center gap-1">
           <span>ℹ️</span>
           <span>ข้อมูลเพื่อการตัดสินใจของโค้ช (ไม่บังคับการเลือก)</span>
         </span>
         <button
           onClick={() => onSelectHeroToInspect('Nakroth')}
-          className="text-[#d4a857] hover:underline font-bold"
+          className="text-[#E91E63] hover:underline font-bold"
         >
           รีเซ็ตการตรวจ
         </button>

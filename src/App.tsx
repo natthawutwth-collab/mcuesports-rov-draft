@@ -225,28 +225,28 @@ export default function App() {
   const renderCoachDockBody = () => (
     <div className="flex flex-col h-full min-h-0">
       {/* Dock Mode Switcher - High Contrast Segmented Buttons */}
-      <div className="flex items-center gap-1.5 mb-2.5 p-1.5 bg-[#0a0c14]/95 rounded-xl border-2 border-slate-700/80 shadow-lg">
+      <div className="flex items-center gap-1.5 mb-2.5 p-1.5 bg-white rounded-xl border-2 border-[#F3D5E2] shadow-xs">
         <button
           type="button"
           onClick={() => setSidePanelTab('coach')}
-          className={`flex-1 py-2 px-2 rounded-lg font-['Barlow_Condensed'] text-[11.5px] font-black tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
+          className={`flex-1 py-2 px-2 rounded-lg font-['Prompt'] text-[11.5px] font-bold tracking-wide flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
             sidePanelTab === 'coach'
-              ? 'bg-[#fbbf24] border-[#fde047] text-black shadow-[0_0_14px_rgba(251,191,36,0.6)]'
-              : 'border-transparent text-slate-300 hover:text-white hover:bg-white/5'
+              ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs'
+              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <span>🎯</span>
           <span>COACH ANALYSIS</span>
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="w-2 h-2 rounded-full bg-white animate-pulse"></span>
         </button>
 
         <button
           type="button"
           onClick={() => setSidePanelTab('stats')}
-          className={`flex-1 py-2 px-2 rounded-lg font-['Barlow_Condensed'] text-[11.5px] font-black tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
+          className={`flex-1 py-2 px-2 rounded-lg font-['Prompt'] text-[11.5px] font-bold tracking-wide flex items-center justify-center gap-1.5 transition-all cursor-pointer border ${
             sidePanelTab === 'stats'
-              ? 'bg-[#e11d48] border-[#f43f5e] text-white shadow-[0_0_14px_rgba(244,63,94,0.6)]'
-              : 'border-transparent text-slate-300 hover:text-white hover:bg-white/5'
+              ? 'bg-[#0284C7] border-[#0284C7] text-white shadow-xs'
+              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <span>📊</span>
@@ -599,20 +599,20 @@ export default function App() {
           />
 
           {/* Draft Arena View Mode & Toolbar */}
-          <div className="flex items-center justify-between gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-2 bg-[#0a0c14]/95 border border-slate-700/80 rounded-xl shadow-md">
+          <div className="flex items-center justify-between gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white border border-[#F3D5E2] rounded-xl shadow-xs">
             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="font-['Orbitron'] font-black text-[11px] sm:text-xs text-[#fbbf24] flex items-center gap-1 sm:gap-1.5 tracking-wider flex-shrink-0">
+              <span className="font-['Orbitron'] font-black text-[11px] sm:text-xs text-[#E91E63] flex items-center gap-1 sm:gap-1.5 tracking-wider flex-shrink-0">
                 <span>⚔️</span>
                 <span>DRAFT ARENA</span>
               </span>
               {isMobileScreen ? (
-                <span className="text-[9px] font-['Kanit'] text-emerald-400 bg-emerald-950/70 border border-emerald-500/50 px-1.5 py-0.2 rounded flex items-center gap-1 font-semibold truncate">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+                <span className="text-[9px] font-['Prompt'] text-emerald-700 bg-emerald-50 border border-emerald-300 px-1.5 py-0.2 rounded flex items-center gap-1 font-bold truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
                   <span>3 คอลัมน์</span>
                 </span>
               ) : (
-                <span className="text-[11px] font-['Kanit'] text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-md flex items-center gap-1 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[11px] font-['Prompt'] text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span>3 คอลัมน์พอดีจอคอมพิวเตอร์ (No Scroll)</span>
                 </span>
               )}
@@ -621,14 +621,14 @@ export default function App() {
             {isMobileScreen ? (
               <div className="flex items-center gap-1 ml-auto flex-shrink-0">
                 {/* Mobile Scale/Zoom Toggle */}
-                <div className="flex items-center gap-0.5 bg-black/60 p-0.5 rounded-md border border-slate-700">
+                <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-md border border-slate-300">
                   <button
                     type="button"
                     onClick={() => setMobileZoomMode('fit')}
-                    className={`px-1.5 py-0.5 text-[9.5px] font-['Barlow_Condensed'] font-black tracking-wider rounded transition-all cursor-pointer flex items-center gap-0.5 ${
+                    className={`px-1.5 py-0.5 text-[9.5px] font-['Prompt'] font-bold tracking-wider rounded transition-all cursor-pointer flex items-center gap-0.5 ${
                       mobileZoomMode === 'fit'
-                        ? 'bg-[#10b981] text-black shadow-sm'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-[#10b981] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
                     }`}
                     title="ย่อ 3 คอลัมน์ให้พอดีหน้าจอมือถือ 100% ไม่ต้องเลื่อนข้าง"
                   >
@@ -638,10 +638,10 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setMobileZoomMode('zoom')}
-                    className={`px-1.5 py-0.5 text-[9.5px] font-['Barlow_Condensed'] font-black tracking-wider rounded transition-all cursor-pointer flex items-center gap-0.5 ${
+                    className={`px-1.5 py-0.5 text-[9.5px] font-['Prompt'] font-bold tracking-wider rounded transition-all cursor-pointer flex items-center gap-0.5 ${
                       mobileZoomMode === 'zoom'
-                        ? 'bg-[#0284c7] text-white shadow-sm'
-                        : 'text-slate-400 hover:text-white'
+                        ? 'bg-[#0284c7] text-white shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
                     }`}
                     title="ขยายขนาด 1.25x ให้มองเห็นได้ใหญ่ขึ้น"
                   >
@@ -651,16 +651,16 @@ export default function App() {
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-[11px] font-['Barlow_Condensed'] text-slate-300 ml-auto">
-                <span className="px-2 py-0.5 rounded bg-black/50 border border-slate-700 font-bold text-sky-400">
+              <div className="flex items-center gap-2 text-[11px] font-['Prompt'] text-slate-500 ml-auto">
+                <span className="px-2 py-0.5 rounded bg-sky-50 border border-sky-200 font-bold text-[#0284C7]">
                   🔵 BLUE
                 </span>
                 <span>+</span>
-                <span className="px-2 py-0.5 rounded bg-black/50 border border-slate-700 font-bold text-white">
+                <span className="px-2 py-0.5 rounded bg-[#FCE4EC] border border-[#F48FB1] font-bold text-[#E91E63]">
                   ⚔️ HERO POOL (ตรงกลาง)
                 </span>
                 <span>+</span>
-                <span className="px-2 py-0.5 rounded bg-black/50 border border-slate-700 font-bold text-rose-400">
+                <span className="px-2 py-0.5 rounded bg-rose-50 border border-rose-200 font-bold text-[#E11D48]">
                   🔴 RED
                 </span>
               </div>
@@ -862,19 +862,19 @@ export default function App() {
           {isSidePanelOpen && (
             <div className="xl:hidden fixed inset-0 z-50 flex justify-end">
               <div
-                className="fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+                className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
                 onClick={() => setIsSidePanelOpen(false)}
               />
-              <div className="relative w-full sm:w-[380px] max-w-full h-full bg-[#0a0c14] border-l-2 border-slate-700 shadow-2xl p-3 flex flex-col z-10 overflow-y-auto custom-scrollbar">
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-700/80">
-                  <span className="font-['Orbitron'] font-black text-xs text-[#fbbf24] flex items-center gap-1.5">
+              <div className="relative w-full sm:w-[380px] max-w-full h-full bg-white border-l-2 border-[#F3D5E2] shadow-2xl p-3 flex flex-col z-10 overflow-y-auto custom-scrollbar font-['Prompt']">
+                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#F3D5E2]">
+                  <span className="font-['Prompt'] font-bold text-xs text-[#E91E63] flex items-center gap-1.5 uppercase">
                     <span>🎯</span>
                     <span>COACHING DOCK</span>
                   </span>
                   <button
                     type="button"
                     onClick={() => setIsSidePanelOpen(false)}
-                    className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                    className="p-1 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 cursor-pointer"
                     title="ปิดหน้าต่าง Coaching Dock"
                   >
                     <X size={16} />

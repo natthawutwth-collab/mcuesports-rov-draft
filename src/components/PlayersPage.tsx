@@ -107,21 +107,21 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
   return (
     <div className="flex-1 flex flex-col gap-4 animate-in fade-in duration-200">
       {/* Top Banner & Action Controls */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-[rgba(20,20,26,0.7)] border border-[rgba(255,255,255,0.08)] rounded-xl shadow-lg backdrop-blur-md">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 bg-white border border-[#F3D5E2] rounded-xl shadow-xs">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-['Orbitron'] font-extrabold text-lg tracking-[2px] text-white">
+            <span className="font-['Orbitron'] font-extrabold text-lg tracking-[2px] text-[#1F2937]">
               👥 ROSTER & HERO POOL
             </span>
-            <span className="font-['Orbitron'] text-xs font-bold px-2 py-0.5 rounded bg-[#a82844]/20 border border-[#a82844]/60 text-red-200">
+            <span className="font-['Orbitron'] text-xs font-bold px-2 py-0.5 rounded bg-[#FCE4EC] border border-[#F48FB1] text-[#E91E63]">
               {players.length} PLAYERS
             </span>
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-['Barlow_Condensed'] font-semibold px-2 py-0.5 rounded-md bg-emerald-950/60 text-emerald-300 border border-emerald-500/40">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-['Prompt'] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-300">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               <span>Cross-Device Cloud Sync</span>
             </span>
           </div>
-          <p className="text-xs font-['Kanit'] text-[#a0a0a8] mt-0.5">
+          <p className="text-xs font-['Prompt'] text-slate-500 mt-0.5">
             จัดการรายชื่อผู้เล่น ตำแหน่ง และกำหนดระดับความชำนาญ Hero Pool (⭐ Signature / ★ Comfortable) เพื่อซิงค์ขึ้นหน้าดราฟ
           </p>
         </div>
@@ -135,7 +135,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                 }
               }}
               title="ลบรายชื่อนักแข่งทั้งหมด"
-              className="px-3 py-2 rounded-lg font-['Barlow_Condensed'] font-bold text-xs tracking-wider bg-red-950/40 hover:bg-red-900/60 text-red-300 hover:text-red-100 border border-red-500/30 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-2 rounded-lg font-['Prompt'] font-bold text-xs tracking-wider bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
             >
               <Trash2 size={13} />
               <span className="hidden sm:inline">ลบนักแข่งทั้งหมด</span>
@@ -144,7 +144,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
 
           <button
             onClick={handleAddNew}
-            className="flex-1 sm:flex-none px-4 py-2 rounded-lg font-['Barlow_Condensed'] font-black text-xs uppercase tracking-wider bg-[#a82844] hover:bg-[#c93958] text-white border border-[#a82844]/80 shadow-[0_0_15px_rgba(168,40,68,0.3)] transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+            className="flex-1 sm:flex-none px-4 py-2 rounded-lg font-['Prompt'] font-bold text-xs uppercase tracking-wider bg-[#E91E63] hover:bg-[#D81B60] text-white shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
           >
             <UserPlus size={14} />
             <span>＋ เพิ่มนักแข่งใหม่</span>
@@ -153,13 +153,13 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
       </div>
 
       {/* Supabase Connection Status Bar */}
-      <div className="flex items-center justify-between px-3.5 py-2 bg-emerald-950/20 border border-emerald-500/30 rounded-xl text-xs font-['Kanit']">
+      <div className="flex items-center justify-between px-3.5 py-2 bg-emerald-50 border border-emerald-300 rounded-xl text-xs font-['Prompt']">
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 flex items-center gap-1.5 font-['Orbitron']">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-white text-emerald-800 border border-emerald-300 flex items-center gap-1.5 font-['Orbitron'] shadow-2xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             ⚡ SUPABASE
           </span>
-          <span className="text-emerald-400 font-medium text-xs">
+          <span className="text-emerald-700 font-medium text-xs">
             เชื่อมต่ออยู่
           </span>
         </div>
@@ -167,28 +167,28 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
 
       {/* Sync / Table notice banner */}
       {syncError && (
-        <div className="flex items-center gap-2 px-4 py-2 bg-amber-950/40 border border-amber-500/40 rounded-xl text-amber-200 text-xs animate-in fade-in">
-          <AlertCircle size={15} className="text-amber-400 flex-shrink-0" />
+        <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 border border-amber-300 rounded-xl text-amber-800 text-xs animate-in fade-in font-['Prompt']">
+          <AlertCircle size={15} className="text-amber-600 flex-shrink-0" />
           <span>{syncError}</span>
         </div>
       )}
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-col gap-2.5 p-3 bg-black/40 border border-white/10 rounded-xl backdrop-blur-sm">
+      <div className="flex flex-col gap-2.5 p-3 bg-white border border-[#F3D5E2] rounded-xl shadow-xs">
         {/* Row 1: Category Filter Tabs */}
-        <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-white/5">
+        <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-[#F3D5E2]">
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-['Barlow_Condensed'] font-black text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] font-['Prompt'] font-bold text-slate-500 uppercase tracking-wider">
               หมวดหมู่ทีม:
             </span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => setCatFilter('ALL')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-['Barlow_Condensed'] font-black transition-all ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-['Prompt'] font-bold transition-all ${
                   catFilter === 'ALL'
-                    ? 'bg-white text-black shadow-md'
-                    : 'bg-white/5 text-slate-300 hover:text-white border border-white/10'
+                    ? 'bg-[#E91E63] text-white shadow-xs'
+                    : 'bg-white text-slate-700 hover:border-[#E91E63] border border-[#F3D5E2]'
                 }`}
               >
                 🌐 ทั้งหมด ({players.length})
@@ -196,10 +196,10 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
               <button
                 type="button"
                 onClick={() => setCatFilter('male')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-['Barlow_Condensed'] font-black transition-all flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-['Prompt'] font-bold transition-all flex items-center gap-1 ${
                   catFilter === 'male'
-                    ? 'bg-sky-600 text-white border border-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.4)]'
-                    : 'bg-white/5 text-slate-300 hover:text-white border border-white/10'
+                    ? 'bg-[#0284C7] text-white border border-[#0284C7] shadow-xs'
+                    : 'bg-white text-slate-700 hover:border-[#0284C7] border border-[#F3D5E2]'
                 }`}
               >
                 <span>👨</span>
@@ -208,10 +208,10 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
               <button
                 type="button"
                 onClick={() => setCatFilter('female')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-['Barlow_Condensed'] font-black transition-all flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-['Prompt'] font-bold transition-all flex items-center gap-1 ${
                   catFilter === 'female'
-                    ? 'bg-rose-600 text-white border border-rose-400 shadow-[0_0_10px_rgba(244,63,94,0.4)]'
-                    : 'bg-white/5 text-slate-300 hover:text-white border border-white/10'
+                    ? 'bg-[#E11D48] text-white border border-[#E11D48] shadow-xs'
+                    : 'bg-white text-slate-700 hover:border-[#E11D48] border border-[#F3D5E2]'
                 }`}
               >
                 <span>👩</span>
@@ -220,10 +220,10 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
               <button
                 type="button"
                 onClick={() => setCatFilter('mixed')}
-                className={`px-2.5 py-1 rounded-lg text-xs font-['Barlow_Condensed'] font-black transition-all flex items-center gap-1 ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-['Prompt'] font-bold transition-all flex items-center gap-1 ${
                   catFilter === 'mixed'
-                    ? 'bg-purple-600 text-white border border-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.4)]'
-                    : 'bg-white/5 text-slate-300 hover:text-white border border-white/10'
+                    ? 'bg-[#9333EA] text-white border border-[#9333EA] shadow-xs'
+                    : 'bg-white text-slate-700 hover:border-[#9333EA] border border-[#F3D5E2]'
                 }`}
               >
                 <span>👥</span>
@@ -237,13 +237,13 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Search */}
           <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={13} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="ค้นหาชื่อ, Nickname, หรือ Hero..."
-              className="w-full bg-[rgba(20,20,26,0.8)] border border-white/10 text-white text-xs font-['Kanit'] pl-8 pr-3 py-1.5 rounded-lg outline-none focus:border-[#a82844]"
+              className="w-full bg-white border border-[#F3D5E2] text-[#1F2937] placeholder-slate-400 text-xs font-['Prompt'] pl-8 pr-3 py-1.5 rounded-lg outline-none focus:border-[#E91E63] shadow-xs"
             />
           </div>
 
@@ -255,10 +255,10 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                 <button
                   key={f.key}
                   onClick={() => setPosFilter(f.key)}
-                  className={`px-3 py-1 rounded-lg font-['Barlow_Condensed'] font-bold text-xs tracking-wider transition-all whitespace-nowrap flex items-center gap-1 ${
+                  className={`px-3 py-1 rounded-lg font-['Prompt'] font-bold text-xs tracking-wider transition-all whitespace-nowrap flex items-center gap-1 ${
                     isActive
-                      ? 'bg-[#a82844] text-white shadow-[0_0_10px_rgba(168,40,68,0.4)]'
-                      : `bg-white/5 border border-white/10 text-white/60 hover:text-white ${f.color}`
+                      ? 'bg-[#E91E63] text-white shadow-xs border border-[#E91E63]'
+                      : 'bg-white border border-[#F3D5E2] text-slate-600 hover:border-[#E91E63] hover:text-[#E91E63]'
                   }`}
                 >
                   <span>{f.label}</span>
@@ -271,17 +271,17 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
 
       {/* Players Grid */}
       {filteredPlayers.length === 0 ? (
-        <div className="p-12 text-center bg-black/30 border border-dashed border-white/15 rounded-xl flex flex-col items-center justify-center gap-3">
+        <div className="p-12 text-center bg-white border border-dashed border-[#F3D5E2] rounded-xl flex flex-col items-center justify-center gap-3 shadow-xs">
           <span className="text-3xl">👥</span>
-          <div className="font-['Orbitron'] font-bold text-base text-white">ไม่พบข้อมูลนักแข่ง</div>
-          <p className="text-xs text-white/50 font-['Kanit'] max-w-sm">
+          <div className="font-['Prompt'] font-bold text-base text-[#1F2937]">ไม่พบข้อมูลนักแข่ง</div>
+          <p className="text-xs text-slate-500 font-['Prompt'] max-w-sm">
             {searchQuery
               ? `ไม่มีนักแข่งที่ตรงกับ "${searchQuery}" ในตำแหน่งที่เลือก`
               : 'ยังไม่มีนักแข่งในตำแหน่งนี้ คลิกปุ่มด้านบนเพื่อเพิ่มนักแข่งใหม่'}
           </p>
           <button
             onClick={handleAddNew}
-            className="mt-2 px-4 py-2 rounded-lg bg-[#a82844] text-white font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider"
+            className="mt-2 px-4 py-2 rounded-lg bg-[#E91E63] hover:bg-[#D81B60] text-white font-['Prompt'] font-bold text-xs uppercase tracking-wider shadow-xs cursor-pointer"
           >
             ＋ เพิ่มนักแข่งคนแรก
           </button>
@@ -295,7 +295,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
             return (
               <div
                 key={player.id}
-                className="bg-[rgba(20,20,26,0.8)] border border-white/10 hover:border-white/20 rounded-xl p-4 flex flex-col justify-between gap-3 shadow-lg hover:shadow-2xl transition-all group backdrop-blur-sm relative overflow-hidden"
+                className="bg-white border border-[#F3D5E2] hover:border-[#E91E63] rounded-xl p-4 flex flex-col justify-between gap-3 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
               >
                 {/* Top Profile Card */}
                 <div>
@@ -306,33 +306,33 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                           <img
                             src={player.avatarUrl}
                             alt={player.nickname}
-                            className="w-13 h-13 rounded-full object-cover border-2 border-[#a82844] shadow-md bg-black/60"
+                            className="w-13 h-13 rounded-full object-cover border-2 border-[#E91E63] shadow-xs bg-slate-100"
                             onError={(e) => {
                               (e.target as HTMLElement).style.display = 'none';
                             }}
                           />
                         ) : (
-                          <div className="w-13 h-13 rounded-full border-2 border-[#a82844] shadow-md bg-gradient-to-br from-slate-800 to-black flex items-center justify-center text-white font-['Orbitron'] font-black text-sm tracking-wider">
+                          <div className="w-13 h-13 rounded-full border-2 border-[#E91E63] shadow-xs bg-[#FCE4EC] flex items-center justify-center text-[#E91E63] font-['Orbitron'] font-black text-sm tracking-wider">
                             {player.nickname.slice(0, 2).toUpperCase()}
                           </div>
                         )}
-                        <span className="absolute -bottom-1 -right-1 font-['Orbitron'] text-[9px] font-black px-1.5 py-0.2 rounded bg-black border border-white/20 text-[#d4a857]">
+                        <span className="absolute -bottom-1 -right-1 font-['Orbitron'] text-[9px] font-black px-1.5 py-0.2 rounded bg-white border border-[#F3D5E2] text-[#E91E63] shadow-2xs">
                           {player.position}
                         </span>
                       </div>
 
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <h4 className="font-['Orbitron'] font-extrabold text-base tracking-wider text-white">
+                          <h4 className="font-['Prompt'] font-bold text-base tracking-wide text-[#1F2937]">
                             {player.nickname}
                           </h4>
                           <span
-                            className={`text-[9px] font-['Barlow_Condensed'] font-black px-1.5 py-0.2 rounded border ${
+                            className={`text-[9.5px] font-['Prompt'] font-bold px-1.5 py-0.2 rounded border ${
                               player.category === 'female'
-                                ? 'bg-rose-950/80 text-rose-300 border-rose-600/60'
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
                                 : (player.category || 'male') === 'male'
-                                ? 'bg-sky-950/80 text-sky-300 border-sky-600/60'
-                                : 'bg-purple-950/80 text-purple-300 border-purple-600/60'
+                                ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                : 'bg-purple-50 text-purple-700 border-purple-200'
                             }`}
                           >
                             {player.category === 'female'
@@ -342,8 +342,8 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                               : '👥 ทีมผสม'}
                           </span>
                         </div>
-                        <p className="text-xs text-[#a0a0a8] font-['Kanit']">{player.name}</p>
-                        <span className="inline-block mt-0.5 text-[10px] font-['Barlow_Condensed'] font-bold text-white/50 tracking-wider uppercase">
+                        <p className="text-xs text-slate-500 font-['Prompt']">{player.name}</p>
+                        <span className="inline-block mt-0.5 text-[10px] font-['Prompt'] font-semibold text-slate-400 tracking-wider uppercase">
                           {player.position} LANER
                         </span>
                       </div>
@@ -354,14 +354,14 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                       <button
                         onClick={() => handleEdit(player)}
                         title="แก้ไขข้อมูลนักแข่ง / Hero Pool"
-                        className="p-1.5 rounded-lg bg-white/5 hover:bg-white/15 text-white/70 hover:text-white transition-colors"
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-colors border border-slate-300 cursor-pointer shadow-2xs"
                       >
                         <Edit2 size={13} />
                       </button>
                       <button
                         onClick={() => handleDelete(player.id, player.nickname)}
                         title="ลบนักแข่ง"
-                        className="p-1.5 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-400 hover:text-red-200 transition-colors border border-red-500/20"
+                        className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-800 transition-colors border border-rose-200 cursor-pointer shadow-2xs"
                       >
                         <Trash2 size={13} />
                       </button>
@@ -370,24 +370,24 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                 </div>
 
                 {/* Hero Pool Section */}
-                <div className="space-y-2 pt-2 border-t border-white/5">
+                <div className="space-y-2 pt-2 border-t border-[#F3D5E2]">
                   {/* Signature Heroes (⭐ สีทอง) */}
                   <div>
-                    <div className="flex items-center justify-between text-[10.5px] font-['Barlow_Condensed'] font-extrabold text-[#d4a857] tracking-wider uppercase mb-1">
+                    <div className="flex items-center justify-between text-[10.5px] font-['Prompt'] font-bold text-[#B45309] tracking-wider uppercase mb-1">
                       <span className="flex items-center gap-1">
-                        <Star size={11} className="fill-[#d4a857] text-[#d4a857]" />
+                        <Star size={11} className="fill-[#F59E0B] text-[#F59E0B]" />
                         <span>SIGNATURE HEROES ({signatures.length})</span>
                       </span>
                     </div>
 
                     {signatures.length === 0 ? (
-                      <span className="text-[11px] text-white/30 font-['Kanit'] italic">ไม่มี Signature</span>
+                      <span className="text-[11px] text-slate-400 font-['Prompt'] italic">ไม่มี Signature</span>
                     ) : (
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {signatures.map((h) => (
                           <div
                             key={h.heroName}
-                            className="flex items-center gap-1 pl-1 pr-1.5 py-0.5 rounded bg-[#d4a857]/15 border border-[#d4a857]/40 text-[#d4a857] font-['Barlow_Condensed'] font-bold text-xs shadow-sm"
+                            className="flex items-center gap-1 pl-1 pr-1.5 py-0.5 rounded bg-[#FEF3C7] border border-[#F59E0B] text-[#B45309] font-['Prompt'] font-bold text-xs shadow-2xs"
                             title={`Signature Hero: ${h.heroName}`}
                           >
                             <img
@@ -404,21 +404,21 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
 
                   {/* Comfortable Heroes (★ สีเงิน) */}
                   <div>
-                    <div className="flex items-center justify-between text-[10.5px] font-['Barlow_Condensed'] font-extrabold text-slate-300 tracking-wider uppercase mb-1">
+                    <div className="flex items-center justify-between text-[10.5px] font-['Prompt'] font-bold text-slate-600 tracking-wider uppercase mb-1">
                       <span className="flex items-center gap-1">
-                        <Star size={11} className="fill-slate-300 text-slate-300" />
+                        <Star size={11} className="fill-slate-400 text-slate-400" />
                         <span>COMFORTABLE HEROES ({comfortables.length})</span>
                       </span>
                     </div>
 
                     {comfortables.length === 0 ? (
-                      <span className="text-[11px] text-white/30 font-['Kanit'] italic">ไม่มี Comfortable</span>
+                      <span className="text-[11px] text-slate-400 font-['Prompt'] italic">ไม่มี Comfortable</span>
                     ) : (
                       <div className="flex items-center gap-1.5 flex-wrap">
                         {comfortables.map((h) => (
                           <div
                             key={h.heroName}
-                            className="flex items-center gap-1 pl-1 pr-1.5 py-0.5 rounded bg-white/10 border border-slate-400/40 text-slate-200 font-['Barlow_Condensed'] font-bold text-xs shadow-sm"
+                            className="flex items-center gap-1 pl-1 pr-1.5 py-0.5 rounded bg-slate-100 border border-slate-300 text-slate-700 font-['Prompt'] font-bold text-xs shadow-2xs"
                             title={`Comfortable Hero: ${h.heroName}`}
                           >
                             <img
@@ -435,11 +435,11 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                 </div>
 
                 {/* Footer status link */}
-                <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-[#a0a0a8] font-['Kanit']">
+                <div className="pt-2 border-t border-[#F3D5E2] flex items-center justify-between text-[11px] text-slate-500 font-['Prompt']">
                   <span>เชื่อมกับหน้าดราฟแล้ว</span>
                   <button
                     onClick={onSwitchToDraft}
-                    className="text-[#a82844] hover:text-[#c93958] font-['Barlow_Condensed'] font-bold text-xs uppercase tracking-wider"
+                    className="text-[#E91E63] hover:text-[#D81B60] font-['Prompt'] font-bold text-xs uppercase tracking-wider cursor-pointer"
                   >
                     ดูบนหน้าดราฟ →
                   </button>

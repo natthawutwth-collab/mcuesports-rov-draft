@@ -54,49 +54,49 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
   }
 
   return (
-    <div className="w-full bg-[#080b12]/95 border-2 border-slate-700/80 rounded-xl sm:rounded-2xl shadow-xl backdrop-blur-md overflow-hidden transition-all">
+    <div className="w-full bg-white border-2 border-[#F3D5E2] rounded-xl sm:rounded-2xl shadow-md overflow-hidden transition-all font-['Prompt']">
       {/* Quick Status / Assignment Tip */}
       {canAssign && (
-        <div className="flex items-center justify-between px-3 py-1 bg-amber-950/40 border-b border-amber-600/30 text-[10.5px] font-['Kanit'] text-[#fbbf24]">
-          <span className="flex items-center gap-1 font-semibold animate-pulse">
+        <div className="flex items-center justify-between px-3.5 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] text-xs font-['Prompt'] text-[#E91E63]">
+          <span className="flex items-center gap-1.5 font-bold animate-pulse">
             🎯 คลิก "กำหนดลงช่อง" เพื่อระบุนักแข่งในช่องดราฟ ({currentTurnSlot?.team.toUpperCase()} Pick {currentTurnSlot ? currentTurnSlot.index + 1 : ''})
           </span>
-          <span className="text-[10px] text-amber-300/80 font-['Orbitron']">
+          <span className="text-[10.5px] text-slate-500 font-bold">
             ROSTER POOL ({filteredPlayers.length})
           </span>
         </div>
       )}
 
       {/* 2. Player Roster Cards */}
-      <div className="p-2 sm:p-3 bg-[#070910] overflow-x-auto custom-scrollbar">
+      <div className="p-2 sm:p-3 bg-[#FFF8FB] overflow-x-auto custom-scrollbar">
           {filteredPlayers.length === 0 ? (
-            <div className="text-center py-4 text-slate-400 font-['Kanit'] text-xs">
+            <div className="text-center py-4 text-slate-500 font-['Prompt'] text-xs">
               ไม่พบนักแข่งในหมวดหมู่นี้ คุณสามารถเพิ่มนักแข่งได้ที่หน้า "จัดการนักแข่ง (Players)"
             </div>
           ) : (
-            <div className="flex items-stretch gap-2 min-w-max">
+            <div className="flex items-stretch gap-2.5 min-w-max">
               {filteredPlayers.map((player) => {
                 const isMale = (player.category || 'male') === 'male';
                 const isFemale = player.category === 'female';
 
                 const catBadgeClass = isFemale
-                  ? 'bg-rose-950/80 text-rose-300 border-rose-600/60'
+                  ? 'bg-rose-50 text-rose-700 border-rose-300'
                   : isMale
-                  ? 'bg-sky-950/80 text-sky-300 border-sky-600/60'
-                  : 'bg-purple-950/80 text-purple-300 border-purple-600/60';
+                  ? 'bg-sky-50 text-sky-700 border-sky-300'
+                  : 'bg-purple-50 text-purple-700 border-purple-300';
 
                 const catEmoji = isFemale ? '👩 หญิง' : isMale ? '👨 ชาย' : '👥 ผสม';
 
                 const roleColorClass =
                   player.position === 'DSL'
-                    ? 'border-[#f97316] text-[#f97316]'
+                    ? 'border-[#f97316] text-[#c2410c] bg-orange-50'
                     : player.position === 'Jungle'
-                    ? 'border-[#10b981] text-[#10b981]'
+                    ? 'border-[#10b981] text-[#047857] bg-emerald-50'
                     : player.position === 'Mid'
-                    ? 'border-[#a855f7] text-[#a855f7]'
+                    ? 'border-[#a855f7] text-[#7e22ce] bg-purple-50'
                     : player.position === 'Support'
-                    ? 'border-[#0ea5e9] text-[#0ea5e9]'
-                    : 'border-[#eab308] text-[#eab308]';
+                    ? 'border-[#0ea5e9] text-[#0369a1] bg-sky-50'
+                    : 'border-[#eab308] text-[#a16207] bg-amber-50';
 
                 const signatures = player.heroPool.filter((h) => h.tier === 'signature');
                 const comforts = player.heroPool.filter((h) => h.tier !== 'signature');
@@ -104,7 +104,7 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
                 return (
                   <div
                     key={player.id}
-                    className="w-[170px] sm:w-[220px] flex-shrink-0 flex flex-col justify-between p-2 sm:p-2.5 rounded-lg sm:rounded-xl border border-slate-700/80 bg-[#0d101a] hover:border-slate-500 transition-all shadow-md group"
+                    className="w-[175px] sm:w-[225px] flex-shrink-0 flex flex-col justify-between p-2 sm:p-2.5 rounded-xl border border-[#F3D5E2] hover:border-[#E91E63] bg-white transition-all shadow-xs group"
                   >
                     {/* Top Row: Avatar & Details */}
                     <div>
@@ -114,18 +114,18 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
                             <img
                               src={player.avatarUrl}
                               alt={player.nickname}
-                              className="w-8 h-8 sm:w-11 sm:h-11 rounded-full object-cover border sm:border-2 border-slate-600 shadow-md bg-black/60"
+                              className="w-8 h-8 sm:w-11 sm:h-11 rounded-full object-cover border sm:border-2 border-[#F3D5E2] shadow-2xs bg-slate-100"
                               onError={(e) => {
                                 (e.target as HTMLElement).style.display = 'none';
                               }}
                             />
                           ) : (
-                            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full border sm:border-2 border-slate-600 shadow-md bg-gradient-to-br from-slate-800 to-black flex items-center justify-center text-white font-['Orbitron'] font-black text-[9px] sm:text-xs">
+                            <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-full border sm:border-2 border-[#F3D5E2] shadow-2xs bg-[#FCE4EC] flex items-center justify-center text-[#E91E63] font-['Prompt'] font-bold text-[9px] sm:text-xs">
                               {player.nickname.slice(0, 2).toUpperCase()}
                             </div>
                           )}
                           <span
-                            className={`absolute -bottom-1 -right-1 font-['Barlow_Condensed'] font-black text-[7.5px] sm:text-[8.5px] px-1 py-0.2 rounded bg-black border ${roleColorClass}`}
+                            className={`absolute -bottom-1 -right-1 font-['Prompt'] font-bold text-[7.5px] sm:text-[8.5px] px-1 py-0.2 rounded border shadow-2xs ${roleColorClass}`}
                           >
                             {player.position}
                           </span>
@@ -133,32 +133,32 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-1">
-                            <span className="font-['Orbitron'] font-black text-xs sm:text-sm text-white truncate group-hover:text-[#fbbf24] transition-colors">
+                            <span className="font-['Prompt'] font-bold text-xs sm:text-sm text-slate-800 truncate group-hover:text-[#E91E63] transition-colors">
                               {player.nickname}
                             </span>
                             <span
-                              className={`text-[7.5px] sm:text-[8.5px] font-['Barlow_Condensed'] font-black px-1 sm:px-1.5 py-0.2 rounded border ${catBadgeClass}`}
+                              className={`text-[8px] sm:text-[9px] font-['Prompt'] font-bold px-1 sm:px-1.5 py-0.2 rounded border ${catBadgeClass}`}
                             >
                               {catEmoji}
                             </span>
                           </div>
-                          <div className="text-[9.5px] sm:text-[10.5px] font-['Kanit'] text-slate-400 truncate">
+                          <div className="text-[10px] sm:text-[11px] font-['Prompt'] text-slate-500 truncate">
                             {player.name}
                           </div>
                         </div>
                       </div>
 
                       {/* Hero Pool Highlights */}
-                      <div className="space-y-1 pt-1 border-t border-slate-800">
+                      <div className="space-y-1.5 pt-1.5 border-t border-[#F3D5E2]">
                         {/* Signatures */}
                         <div>
-                          <div className="text-[8.5px] sm:text-[9px] font-['Barlow_Condensed'] font-black text-[#fbbf24] flex items-center gap-1 mb-0.5">
-                            <Star size={9} className="fill-amber-400 text-amber-400" />
+                          <div className="text-[9px] sm:text-[9.5px] font-['Prompt'] font-bold text-[#B45309] flex items-center gap-1 mb-0.5">
+                            <Star size={10} className="fill-[#F59E0B] text-[#F59E0B]" />
                             <span>SIGNATURE HEROES</span>
                           </div>
                           <div className="flex items-center gap-1 flex-wrap">
                             {signatures.length === 0 ? (
-                              <span className="text-[9px] text-slate-500 font-['Kanit']">—</span>
+                              <span className="text-[9.5px] text-slate-400 font-['Prompt'] italic">—</span>
                             ) : (
                               signatures.map((s) => (
                                 <button
@@ -174,12 +174,12 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
                                     }
                                   }}
                                   title={`${s.heroName} (⭐ Signature ของ ${player.nickname}) — คลิกดูสถิติ/ดราฟ`}
-                                  className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 rounded bg-amber-950/60 hover:bg-amber-600/40 border border-amber-500/60 hover:border-amber-400 text-amber-200 text-[9px] sm:text-[10px] font-['Barlow_Condensed'] font-bold cursor-pointer transition-all shadow-sm"
+                                  className="flex items-center gap-0.5 sm:gap-1 px-1.5 py-0.5 rounded bg-[#FEF3C7] hover:bg-[#FDE68A] border border-[#F59E0B] text-[#B45309] text-[9.5px] sm:text-[10.5px] font-['Prompt'] font-bold cursor-pointer transition-all shadow-2xs"
                                 >
                                   <img
                                     src={getHeroImageUrl(s.heroName)}
                                     alt={s.heroName}
-                                    className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full object-cover"
+                                    className="w-3.5 h-3.5 rounded-full object-cover"
                                     onError={(e) => {
                                       (e.target as HTMLElement).style.display = 'none';
                                     }}
@@ -194,7 +194,7 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
                         {/* Comforts */}
                         {comforts.length > 0 && (
                           <div>
-                            <div className="text-[8.5px] sm:text-[9px] font-['Barlow_Condensed'] font-black text-slate-400 flex items-center gap-1 mb-0.5">
+                            <div className="text-[9px] sm:text-[9.5px] font-['Prompt'] font-bold text-slate-500 flex items-center gap-1 mb-0.5">
                               <span>★ COMFORT PICKS</span>
                             </div>
                             <div className="flex items-center gap-1 flex-wrap">
@@ -206,12 +206,12 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
                                     if (onInspectHero) onInspectHero(c.heroName);
                                   }}
                                   title={`${c.heroName} (★ Comfort ของ ${player.nickname})`}
-                                  className="flex items-center gap-0.5 sm:gap-1 px-1 sm:px-1.5 py-0.5 rounded bg-black/60 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[9px] sm:text-[10px] font-['Barlow_Condensed'] font-medium cursor-pointer transition-all"
+                                  className="flex items-center gap-0.5 sm:gap-1 px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 text-[9.5px] sm:text-[10.5px] font-['Prompt'] font-medium cursor-pointer transition-all"
                                 >
                                   <img
                                     src={getHeroImageUrl(c.heroName)}
                                     alt={c.heroName}
-                                    className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full object-cover"
+                                    className="w-3 h-3 rounded-full object-cover"
                                     onError={(e) => {
                                       (e.target as HTMLElement).style.display = 'none';
                                     }}
@@ -220,7 +220,7 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
                                 </button>
                               ))}
                               {comforts.length > 3 && (
-                                <span className="text-[8.5px] text-slate-500 font-bold self-center">
+                                <span className="text-[9px] text-slate-500 font-bold self-center">
                                   +{comforts.length - 3}
                                 </span>
                               )}
@@ -236,14 +236,14 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
                         type="button"
                         onClick={() => onAssignPlayerToActiveSlot(player)}
                         disabled={!canAssign}
-                        className={`mt-1.5 w-full py-0.5 sm:py-1 px-1.5 sm:px-2 rounded-md sm:rounded-lg border text-[9.5px] sm:text-[11px] font-['Kanit'] font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                        className={`mt-2 w-full py-1 px-2 rounded-lg border text-[10px] sm:text-[11.5px] font-['Prompt'] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer ${
                           canAssign
-                            ? 'bg-[#fbbf24]/20 hover:bg-[#fbbf24]/30 border-[#fbbf24] text-[#fbbf24] hover:text-[#fde047] shadow-[0_0_8px_rgba(251,191,36,0.3)]'
-                            : 'bg-black/40 border-slate-800 text-slate-500 cursor-not-allowed'
+                            ? 'bg-[#E91E63] hover:bg-[#D81B60] border-[#E91E63] text-white shadow-xs active:scale-95'
+                            : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
                         }`}
                         title={canAssign ? `กำหนด ${player.nickname} ให้ช่องที่กำลังเลือกอยู่` : 'เลือกช่อง Pick ก่อนเพื่อกำหนดนักแข่ง'}
                       >
-                        <UserCheck size={11} />
+                        <UserCheck size={12} />
                         <span>กำหนดลงช่อง</span>
                       </button>
                     )}

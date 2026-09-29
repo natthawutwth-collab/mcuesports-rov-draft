@@ -74,35 +74,35 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
     <div
       className={`${containerWidthClass} flex flex-col ${
         compact ? 'gap-2 p-2 rounded-xl' : 'gap-2.5 sm:gap-3 p-2.5 sm:p-3 rounded-2xl'
-      } border-2 backdrop-blur-md transition-all shadow-2xl ${
+      } border-2 backdrop-blur-md transition-all shadow-md ${
         isBlue
-          ? 'bg-[#071322]/95 border-[#0284c7]/60 shadow-[0_0_30px_rgba(2,132,199,0.2)]'
-          : 'bg-[#200812]/95 border-[#e11d48]/60 shadow-[0_0_30px_rgba(225,29,72,0.2)]'
+          ? 'bg-[#F0F9FF] border-[#BAE6FD] shadow-[0_4px_20px_rgba(2,132,199,0.08)]'
+          : 'bg-[#FFF1F2] border-[#FECDD3] shadow-[0_4px_20px_rgba(225,29,72,0.08)]'
       }`}
     >
       {/* Header with High-Contrast Side Badge */}
       <div
         className={`flex flex-col items-center justify-center text-center ${
           compact ? 'p-1.5 rounded-lg' : 'p-2 sm:p-2.5 rounded-xl'
-        } border ${
+        } border shadow-xs ${
           isBlue
-            ? 'bg-[#0284c7]/20 border-[#38bdf8]/50 text-white'
-            : 'bg-[#e11d48]/20 border-[#f43f5e]/50 text-white'
+            ? 'bg-[#E0F2FE] border-[#7DD3FC] text-[#0284C7]'
+            : 'bg-[#FFE4E6] border-[#FDA4AF] text-[#E11D48]'
         }`}
       >
         <div
           className={`flex items-center gap-1.5 font-['Orbitron'] font-black ${
             compact ? 'text-[11px] tracking-[1.5px]' : 'text-[12.5px] sm:text-[13.5px] tracking-[2px]'
-          } text-white`}
+          }`}
         >
           <span className={compact ? 'text-xs' : 'text-sm'}>{sideEmoji}</span>
-          <span className={isBlue ? 'text-[#38bdf8]' : 'text-[#f43f5e]'}>{sideTitle}</span>
+          <span className={isBlue ? 'text-[#0284C7]' : 'text-[#E11D48]'}>{sideTitle}</span>
         </div>
         {isCustomName ? (
           <div
             className={`${
               compact ? 'text-[10px]' : 'text-[11px] sm:text-[11.5px]'
-            } font-['Barlow_Condensed'] font-black text-[#fbbf24] tracking-wider truncate max-w-[200px] mt-0.5`}
+            } font-['Prompt'] font-bold text-[#1F2937] tracking-wider truncate max-w-[200px] mt-0.5`}
           >
             {teamName} ({isUs ? 'US' : 'OPP'})
           </div>
@@ -110,7 +110,7 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
           <div
             className={`${
               compact ? 'text-[9px]' : 'text-[9.5px] sm:text-[10px]'
-            } font-['Barlow_Condensed'] font-extrabold text-slate-300 tracking-widest mt-0.5 uppercase`}
+            } font-['Prompt'] font-bold text-slate-500 tracking-widest mt-0.5 uppercase`}
           >
             {isUs ? '— OUR LINEUP —' : '— OPPONENT —'}
           </div>
@@ -119,10 +119,10 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
 
       {/* BANS SECTION — Clearly Partitioned Box */}
       <div
-        className={`${compact ? 'p-1.5 rounded-lg' : 'p-2 sm:p-2.5 rounded-xl'} border shadow-inner ${
+        className={`${compact ? 'p-1.5 rounded-lg' : 'p-2 sm:p-2.5 rounded-xl'} border shadow-xs ${
           isBlue
-            ? 'bg-black/50 border-[#0284c7]/30'
-            : 'bg-black/50 border-[#e11d48]/30'
+            ? 'bg-white/90 border-[#BAE6FD]'
+            : 'bg-white/90 border-[#FECDD3]'
         }`}
       >
         <div className="flex items-center justify-between mb-1.5 px-0.5">
@@ -130,7 +130,7 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
             className={`font-['Orbitron'] ${
               compact ? 'text-[8.5px] tracking-[1px]' : 'text-[9px] sm:text-[9.5px] tracking-[1.5px]'
             } font-black uppercase ${
-              isBlue ? 'text-[#38bdf8]' : 'text-[#f43f5e]'
+              isBlue ? 'text-[#0284C7]' : 'text-[#E11D48]'
             }`}
           >
             🚫 {sideTitle} BANS
@@ -138,7 +138,7 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
           <span
             className={`${
               compact ? 'text-[8px]' : 'text-[8.5px] sm:text-[9px]'
-            } font-['Barlow_Condensed'] font-bold text-slate-400`}
+            } font-['Prompt'] font-bold text-slate-500`}
           >
             4 SLOTS
           </span>
@@ -161,13 +161,15 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                 className={`relative aspect-square rounded-lg overflow-hidden flex flex-col items-center justify-center cursor-pointer transition-all border-2 ${
                   isActive
                     ? isBlue
-                      ? 'border-[#38bdf8] bg-[#0284c7]/30 anim-pulse-blue ring-2 ring-[#38bdf8]/50 shadow-[0_0_12px_rgba(56,189,248,0.5)]'
-                      : 'border-[#f43f5e] bg-[#e11d48]/30 anim-pulse-red ring-2 ring-[#f43f5e]/50 shadow-[0_0_12px_rgba(244,63,94,0.5)]'
+                      ? 'border-[#0284c7] bg-[#E0F2FE] anim-pulse-blue ring-2 ring-[#0284c7]/50 shadow-[0_0_12px_rgba(2,132,199,0.35)]'
+                      : 'border-[#e11d48] bg-[#FFE4E6] anim-pulse-red ring-2 ring-[#e11d48]/50 shadow-[0_0_12px_rgba(225,29,72,0.35)]'
                     : hero
                     ? hero.name.toLowerCase() === inspectedHeroName?.toLowerCase()
-                      ? 'border-[#fbbf24] bg-red-950/60 ring-2 ring-[#fbbf24]/70 shadow-lg'
-                      : 'border-red-600/70 bg-red-950/40 hover:border-red-400 shadow-sm'
-                    : 'border-slate-700/80 border-dashed bg-black/60 hover:border-white/40'
+                      ? 'border-[#E91E63] bg-rose-50 ring-2 ring-[#E91E63]/60 shadow-md'
+                      : 'border-red-400 bg-white hover:border-red-600 shadow-xs'
+                    : isBlue
+                    ? 'border-2 border-dashed border-[#7DD3FC] bg-white hover:border-[#0284C7] shadow-xs'
+                    : 'border-2 border-dashed border-[#FDA4AF] bg-white hover:border-[#E11D48] shadow-xs'
                 }`}
                 title={hero ? `${hero.name} (คลิกดูสถิติ/เปลี่ยนฮีโร่)` : `Ban Slot ${banPrefix}${idx + 1}`}
               >
@@ -176,19 +178,19 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                     <img
                       src={hero.avatarUrl || getHeroImageUrl(hero.name)}
                       alt={hero.name}
-                      className="w-full h-full object-cover opacity-60 grayscale-[0.5] scale-105"
+                      className="w-full h-full object-cover opacity-65 grayscale-[0.35] scale-105"
                       onError={(e) => {
                         (e.target as HTMLElement).style.display = 'none';
                       }}
                     />
                     {/* Red Cross Overlay */}
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-5 h-5 rounded-full bg-red-950/90 border border-red-500 flex items-center justify-center text-red-300 shadow-md">
+                      <div className="w-5 h-5 rounded-full bg-red-600/90 border border-white flex items-center justify-center text-white shadow-sm">
                         <X size={13} strokeWidth={3} />
                       </div>
                     </div>
                     {/* Hero name bar */}
-                    <div className="absolute bottom-0 inset-x-0 bg-black/95 text-[8.5px] font-['Barlow_Condensed'] font-black text-center text-red-200 truncate px-0.5 py-0.5 leading-tight border-t border-red-900/60">
+                    <div className="absolute bottom-0 inset-x-0 bg-white/95 text-[8.5px] font-['Prompt'] font-bold text-center text-red-600 truncate px-0.5 py-0.5 leading-tight border-t border-red-200">
                       {hero.name}
                     </div>
                     {/* Clear Button */}
@@ -198,16 +200,21 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                         e.stopPropagation();
                         onClearSlot('ban', idx);
                       }}
-                      className="absolute top-0.5 right-0.5 w-4 h-4 bg-black/90 hover:bg-red-600 rounded-full text-white flex items-center justify-center transition-all shadow-sm"
+                      className="absolute top-0.5 right-0.5 w-4 h-4 bg-slate-800/90 hover:bg-red-600 rounded-full text-white flex items-center justify-center transition-all shadow-xs"
                       title="ลบตัวแบน"
                     >
                       <X size={10} />
                     </button>
                   </>
                 ) : (
-                  <span className="font-['Orbitron'] font-black text-[11px] tracking-wider text-slate-500">
-                    {banPrefix}{idx + 1}
-                  </span>
+                  <div className="flex flex-col items-center justify-center">
+                    <span className={`font-['Orbitron'] font-black text-[11px] tracking-wider ${isBlue ? 'text-[#0284C7]' : 'text-[#E11D48]'}`}>
+                      {banPrefix}{idx + 1}
+                    </span>
+                    <span className="text-[7.5px] font-['Prompt'] font-bold text-slate-400 uppercase tracking-tighter">
+                      ว่าง
+                    </span>
+                  </div>
                 )}
               </div>
             );
@@ -217,10 +224,10 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
 
       {/* PICKS SECTION — Clearly Partitioned Box */}
       <div
-        className={`flex flex-col ${compact ? 'gap-1.5 p-1.5 rounded-lg' : 'gap-2 p-2 sm:p-2.5 rounded-xl'} border shadow-inner flex-1 ${
+        className={`flex flex-col ${compact ? 'gap-1.5 p-1.5 rounded-lg' : 'gap-2 p-2 sm:p-2.5 rounded-xl'} border shadow-xs flex-1 ${
           isBlue
-            ? 'bg-black/50 border-[#0284c7]/30'
-            : 'bg-black/50 border-[#e11d48]/30'
+            ? 'bg-white/90 border-[#BAE6FD]'
+            : 'bg-white/90 border-[#FECDD3]'
         }`}
       >
         <div className="flex items-center justify-between mb-0.5 px-0.5">
@@ -228,7 +235,7 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
             className={`font-['Orbitron'] ${
               compact ? 'text-[8.5px] tracking-[1px]' : 'text-[9px] sm:text-[9.5px] tracking-[1.5px]'
             } font-black uppercase ${
-              isBlue ? 'text-[#38bdf8]' : 'text-[#f43f5e]'
+              isBlue ? 'text-[#0284C7]' : 'text-[#E11D48]'
             }`}
           >
             ⚔️ {sideTitle} PICKS
@@ -236,7 +243,7 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
           <span
             className={`${
               compact ? 'text-[8px]' : 'text-[8.5px] sm:text-[9px]'
-            } font-['Barlow_Condensed'] font-bold text-slate-400`}
+            } font-['Prompt'] font-bold text-slate-500`}
           >
             5 HEROES
           </span>
@@ -251,14 +258,14 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
           // Role color for border & badge
           const posColorClass =
             pick.pos === 'DSL'
-              ? 'border-[#f97316] text-[#f97316]'
+              ? 'border-[#f97316] text-[#f97316] bg-orange-50'
               : pick.pos === 'JG'
-              ? 'border-[#10b981] text-[#10b981]'
+              ? 'border-[#10b981] text-[#10b981] bg-emerald-50'
               : pick.pos === 'MID'
-              ? 'border-[#a855f7] text-[#a855f7]'
+              ? 'border-[#a855f7] text-[#a855f7] bg-purple-50'
               : pick.pos === 'ROAM'
-              ? 'border-[#0ea5e9] text-[#0ea5e9]'
-              : 'border-[#eab308] text-[#eab308]';
+              ? 'border-[#0ea5e9] text-[#0ea5e9] bg-sky-50'
+              : 'border-[#eab308] text-[#eab308] bg-amber-50';
 
           const isInspected = pick.hero && inspectedHeroName?.toLowerCase() === pick.hero.name.toLowerCase();
 
@@ -274,49 +281,55 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
               } ${
                 isActive
                   ? isBlue
-                    ? 'border-[#38bdf8] bg-[#0284c7]/25 anim-pulse-blue ring-2 ring-[#38bdf8]/50 shadow-[0_0_16px_rgba(56,189,248,0.4)]'
-                    : 'border-[#f43f5e] bg-[#e11d48]/25 anim-pulse-red ring-2 ring-[#f43f5e]/50 shadow-[0_0_16px_rgba(244,63,94,0.4)]'
+                    ? 'border-[#0284c7] bg-[#E0F2FE] anim-pulse-blue ring-2 ring-[#0284c7]/50 shadow-[0_0_16px_rgba(2,132,199,0.35)]'
+                    : 'border-[#e11d48] bg-[#FFE4E6] anim-pulse-red ring-2 ring-[#e11d48]/50 shadow-[0_0_16px_rgba(225,29,72,0.35)]'
                   : isInspected
                   ? isBlue
-                    ? 'border-[#38bdf8] bg-[#0284c7]/30 ring-2 ring-[#38bdf8] shadow-[0_0_12px_rgba(56,189,248,0.4)]'
-                    : 'border-[#f43f5e] bg-[#e11d48]/30 ring-2 ring-[#f43f5e] shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+                    ? 'border-[#0284c7] bg-[#E0F2FE]/70 ring-2 ring-[#0284c7] shadow-sm'
+                    : 'border-[#e11d48] bg-[#FFE4E6]/70 ring-2 ring-[#e11d48] shadow-sm'
                   : pick.hero
                   ? isBlue
-                    ? 'border-sky-900/80 bg-[#0a1b30] hover:border-sky-400 shadow-md'
-                    : 'border-rose-950/80 bg-[#2b0c16] hover:border-rose-400 shadow-md'
-                  : 'border-slate-800 border-dashed bg-black/60 hover:border-slate-600'
+                    ? 'border-sky-200 bg-white hover:border-sky-400 shadow-xs'
+                    : 'border-rose-200 bg-white hover:border-rose-400 shadow-xs'
+                  : isBlue
+                  ? 'border-2 border-dashed border-[#7DD3FC] bg-white hover:border-[#0284C7] shadow-xs'
+                  : 'border-2 border-dashed border-[#FDA4AF] bg-white hover:border-[#E11D48] shadow-xs'
               }`}
             >
               {/* Floating active badge */}
               {isActive && (
                 <div
-                  className={`absolute -top-2 ${
-                    isBlue ? 'left-1.5' : 'right-1.5'
-                  } bg-[#fbbf24] text-black font-['Orbitron'] font-black ${
-                    compact ? 'text-[7px] px-1.5 py-0.2 tracking-[1px]' : 'text-[8px] px-2.5 py-0.5 tracking-[1.5px]'
-                  } rounded-full shadow-[0_0_10px_rgba(251,191,36,0.6)] flex items-center gap-1 z-20 animate-bounce`}
+                  className={`absolute -top-2.5 ${
+                    isBlue ? 'left-2' : 'right-2'
+                  } bg-[#E91E63] text-white font-['Orbitron'] font-black ${
+                    compact ? 'text-[7.5px] px-2 py-0.5 tracking-[1px]' : 'text-[8.5px] px-2.5 py-0.5 tracking-[1.5px]'
+                  } rounded-full shadow-[0_2px_8px_rgba(233,30,99,0.4)] flex items-center gap-1 z-20 animate-bounce`}
                 >
-                  <span>▶</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                   <span>PICKING</span>
                 </div>
               )}
 
               {/* Order number badge */}
               <div
-                className={`absolute top-1 ${
-                  isBlue ? 'right-1.5' : 'left-1.5'
+                className={`absolute top-1.5 ${
+                  isBlue ? 'right-2' : 'left-2'
                 } font-['Orbitron'] font-black ${
-                  compact ? 'text-[8px] px-1 py-0.1' : 'text-[9px] px-1.5 py-0.2'
-                } rounded bg-black/60 border border-slate-700 text-slate-400 pointer-events-none`}
+                  compact ? 'text-[8px] px-1.5 py-0.2' : 'text-[9px] px-2 py-0.5'
+                } rounded-md ${
+                  isBlue
+                    ? 'bg-sky-100 border border-sky-300 text-sky-800'
+                    : 'bg-rose-100 border border-rose-300 text-rose-800'
+                } pointer-events-none shadow-2xs`}
               >
                 #{pick.order}
               </div>
 
-              {/* Avatar Box with high contrast border */}
+              {/* Avatar Box with high contrast role border */}
               <div
                 className={`${
-                  compact ? 'w-[32px] h-[32px] text-[11px]' : 'w-[40px] h-[40px] sm:w-[44px] sm:h-[44px] text-[13px]'
-                } rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center font-['Barlow_Condensed'] font-black bg-black/80 border-2 ${posColorClass.split(' ')[0]} relative shadow-sm`}
+                  compact ? 'w-[34px] h-[34px] text-[11px]' : 'w-[42px] h-[42px] sm:w-[46px] sm:h-[46px] text-[13px]'
+                } rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center font-['Prompt'] font-bold bg-slate-50 border-2 ${posColorClass.split(' ')[0]} relative shadow-xs`}
               >
                 {pick.hero ? (
                   <img
@@ -328,7 +341,11 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                     }}
                   />
                 ) : (
-                  <span className="text-slate-400">P{idx + 1}</span>
+                  <div className="flex flex-col items-center justify-center leading-none">
+                    <span className={`font-['Barlow_Condensed'] font-black text-xs ${posColorClass.split(' ')[1]}`}>
+                      {pick.pos}
+                    </span>
+                  </div>
                 )}
               </div>
 
@@ -340,7 +357,7 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                   }`}
                 >
                   <span
-                    className={`px-1.5 py-0.2 rounded bg-black/60 border text-[9px] ${posColorClass}`}
+                    className={`px-1.5 py-0.2 rounded border text-[9px] font-bold ${posColorClass.split(' ')[0]} ${posColorClass.split(' ')[1]} ${posColorClass.split(' ')[2]}`}
                   >
                     {pick.pos || 'POS'}
                   </span>
@@ -349,9 +366,9 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                 {pick.hero ? (
                   <>
                     <div
-                      className={`font-['Barlow_Condensed'] ${
-                        compact ? 'text-[12px]' : 'text-[13.5px] sm:text-[14px]'
-                      } font-extrabold text-white truncate flex items-center gap-1 mt-0.5`}
+                      className={`font-['Prompt'] ${
+                        compact ? 'text-[12px]' : 'text-[13px] sm:text-[13.5px]'
+                      } font-bold text-[#1F2937] truncate flex items-center gap-1 mt-0.5`}
                     >
                       <span className="truncate">{pick.hero.name}</span>
                       <button
@@ -361,42 +378,50 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                           if (onInspectHero) onInspectHero(pick.hero!.name);
                         }}
                         title={`ดูสถิติ ${pick.hero.name}`}
-                        className="text-[9px] px-1 py-0.2 rounded bg-white/10 hover:bg-[#0284c7] text-white transition-colors cursor-pointer flex-shrink-0 border border-white/20"
+                        className="text-[9.5px] px-1.5 py-0.2 rounded bg-slate-100 hover:bg-[#0284c7] hover:text-white text-slate-600 transition-colors cursor-pointer flex-shrink-0 border border-slate-300 shadow-2xs"
                       >
                         📊
                       </button>
                     </div>
 
                     {!compact && (
-                      <div className="text-[10px] sm:text-[10.5px] font-['Kanit'] text-slate-400 truncate">
+                      <div className="text-[10px] sm:text-[10.5px] font-['Prompt'] text-slate-500 truncate">
                         {pick.hero.nameTh}
                       </div>
                     )}
                   </>
                 ) : (
-                  <div className={compact ? 'h-3.5' : 'h-5'} />
+                  <div className="flex flex-col mt-0.5">
+                    <span className="text-[11px] font-['Prompt'] font-bold text-slate-700 truncate">
+                      {pick.pos === 'DSL' ? 'Dark Slayer' : pick.pos === 'JG' ? 'Jungle' : pick.pos === 'MID' ? 'Mid Lane' : pick.pos === 'ROAM' ? 'Support / Roam' : 'Abyssal Dragon'}
+                    </span>
+                    <span className="text-[9.5px] font-['Prompt'] text-slate-400 flex items-center gap-0.5 font-medium">
+                      <span className="text-amber-500 font-bold">+</span>
+                      <span>เลือกฮีโร่</span>
+                    </span>
+                  </div>
                 )}
 
                 {/* Assigned Player Strip */}
                 <div
-                  className={`mt-1 pt-1 border-t border-white/5 flex items-center gap-1 ${
+                  className={`mt-1 pt-1 border-t border-slate-200/80 flex items-center gap-1 ${
                     isBlue ? 'justify-start' : 'justify-end'
                   }`}
                   onClick={(e) => e.stopPropagation()}
                 >
                   {pick.playerId && pick.playerNickname ? (
-                    <div className="flex items-center gap-1 min-w-0 bg-black/60 px-1.5 py-0.5 rounded-md border border-slate-700/80">
+                    <div className="flex items-center gap-1 min-w-0 bg-slate-100 px-1.5 py-0.5 rounded-md border border-slate-300">
                       {pick.playerAvatar ? (
                         <img
                           src={pick.playerAvatar}
                           alt={pick.playerNickname}
-                          className="w-3.5 h-3.5 rounded-full object-cover border border-white/30 flex-shrink-0"
+                          className="w-3.5 h-3.5 rounded-full object-cover border border-white flex-shrink-0"
                           onError={(e) => {
                             (e.target as HTMLElement).style.display = 'none';
                           }}
                         />
                       ) : null}
-                      <span className={`font-['Orbitron'] font-black ${compact ? 'text-[8.5px] max-w-[50px]' : 'text-[9.5px] max-w-[70px]'} text-[#fbbf24] truncate`}>
+                      <span className={`font-['Orbitron'] font-black ${compact ? 'text-[8.5px] max-w-[50px]' : 'text-[9.5px] max-w-[70px]'} text-[#E91E63] truncate`}>
                         {pick.playerNickname}
                       </span>
 
@@ -408,14 +433,14 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                         );
                         if (matchHero?.tier === 'signature') {
                           return (
-                            <span className="text-[8px] font-['Barlow_Condensed'] font-black px-1 py-0.1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 whitespace-nowrap">
+                            <span className="text-[8px] font-['Prompt'] font-bold px-1 py-0.1 rounded bg-amber-100 text-amber-800 border border-amber-300 whitespace-nowrap">
                               ⭐ SIG
                             </span>
                           );
                         }
                         if (matchHero?.tier === 'comfortable') {
                           return (
-                            <span className="text-[8px] font-['Barlow_Condensed'] font-black px-1 py-0.1 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 whitespace-nowrap">
+                            <span className="text-[8px] font-['Prompt'] font-bold px-1 py-0.1 rounded bg-sky-100 text-sky-800 border border-sky-300 whitespace-nowrap">
                               ★ COM
                             </span>
                           );
@@ -429,7 +454,7 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                           type="button"
                           onClick={() => onAssignPlayer(idx, null)}
                           title="ลบนักแข่งออกจากช่องนี้"
-                          className="text-slate-400 hover:text-red-400 ml-0.5"
+                          className="text-slate-400 hover:text-red-500 ml-0.5 cursor-pointer"
                         >
                           <X size={10} />
                         </button>
@@ -443,28 +468,28 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                           onClick={() =>
                             setActivePlayerPickerSlot((prev) => (prev === idx ? null : idx))
                           }
-                          className="text-[9px] font-['Kanit'] text-slate-400 hover:text-white bg-black/40 hover:bg-slate-800 border border-slate-700/80 px-1.5 py-0.5 rounded flex items-center gap-1 transition-colors cursor-pointer"
+                          className="text-[9px] font-['Prompt'] text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300 px-1.5 py-0.5 rounded flex items-center gap-1 transition-colors cursor-pointer shadow-2xs"
                           title="คลิกเพื่อกำหนดนักแข่งประจำช่องนี้"
                         >
-                          <UserPlus size={10} className="text-[#fbbf24]" />
+                          <UserPlus size={10} className="text-[#E91E63]" />
                           <span>+ นักแข่ง</span>
                         </button>
 
                         {/* Player Picker Dropdown Popover */}
                         {activePlayerPickerSlot === idx && (
-                          <div className="absolute bottom-full mb-1 left-0 z-50 w-44 p-1.5 bg-[#0e111a] border border-slate-600 rounded-xl shadow-2xl backdrop-blur-md flex flex-col gap-1 max-h-48 overflow-y-auto custom-scrollbar">
-                            <div className="text-[9px] font-['Orbitron'] font-bold text-slate-400 px-1.5 py-0.5 border-b border-slate-800 flex items-center justify-between">
+                          <div className="absolute bottom-full mb-1 left-0 z-50 w-44 p-1.5 bg-white border border-[#F3D5E2] rounded-xl shadow-xl flex flex-col gap-1 max-h-48 overflow-y-auto custom-scrollbar">
+                            <div className="text-[9px] font-['Prompt'] font-bold text-slate-700 px-1.5 py-0.5 border-b border-[#F3D5E2] flex items-center justify-between">
                               <span>เลือกนักแข่ง</span>
                               <button
                                 type="button"
                                 onClick={() => setActivePlayerPickerSlot(null)}
-                                className="text-slate-400 hover:text-white"
+                                className="text-slate-400 hover:text-slate-700 cursor-pointer"
                               >
                                 <X size={10} />
                               </button>
                             </div>
                             {filteredPlayers.length === 0 ? (
-                              <div className="text-[9.5px] text-slate-400 p-1 text-center font-['Kanit']">
+                              <div className="text-[9.5px] text-slate-500 p-1 text-center font-['Prompt']">
                                 ไม่มีนักแข่งในหมวดหมู่นี้
                               </div>
                             ) : (
@@ -486,30 +511,30 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                                     }}
                                     className={`w-full flex items-center gap-1.5 p-1 rounded-lg text-left transition-colors cursor-pointer ${
                                       isPosMatch
-                                        ? 'bg-slate-800/80 hover:bg-slate-700 text-white'
-                                        : 'hover:bg-slate-800 text-slate-300'
+                                        ? 'bg-[#FCE4EC] hover:bg-[#F8BBD0] text-slate-900 font-bold'
+                                        : 'hover:bg-slate-100 text-slate-700'
                                     }`}
                                   >
                                     {p.avatarUrl ? (
                                       <img
                                         src={p.avatarUrl}
                                         alt={p.nickname}
-                                        className="w-4 h-4 rounded-full object-cover flex-shrink-0"
+                                        className="w-4 h-4 rounded-full object-cover flex-shrink-0 border border-slate-300"
                                         onError={(e) => {
                                           (e.target as HTMLElement).style.display = 'none';
                                         }}
                                       />
                                     ) : (
-                                      <div className="w-4 h-4 rounded-full bg-slate-700 text-[8px] font-bold text-white flex items-center justify-center flex-shrink-0">
+                                      <div className="w-4 h-4 rounded-full bg-[#E91E63] text-[8px] font-bold text-white flex items-center justify-center flex-shrink-0">
                                         {p.nickname.slice(0, 1).toUpperCase()}
                                       </div>
                                     )}
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center justify-between">
-                                        <span className="font-['Orbitron'] font-bold text-[10px] truncate">
+                                        <span className="font-['Prompt'] font-bold text-[10px] truncate">
                                           {p.nickname}
                                         </span>
-                                        <span className="text-[8px] font-['Barlow_Condensed'] text-slate-400">
+                                        <span className="text-[8px] font-['Prompt'] text-slate-500">
                                           {p.position}
                                         </span>
                                       </div>
@@ -533,13 +558,13 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                 onChange={(e) => onChangePickPos(idx, e.target.value as LaneSelectKey)}
                 className={`absolute bottom-1.5 ${
                   isBlue ? 'right-2' : 'left-2'
-                } bg-[#0e1017] border border-slate-700 hover:border-white/40 text-slate-200 font-['Barlow_Condensed'] font-black text-[9.5px] px-1.5 py-0.5 rounded-md outline-none cursor-pointer tracking-wider shadow-sm`}
+                } bg-white border border-slate-300 hover:border-[#E91E63] text-slate-700 font-['Prompt'] font-bold text-[9.5px] px-1.5 py-0.5 rounded-md outline-none cursor-pointer tracking-wider shadow-2xs`}
               >
-                <option value="DSL" className="bg-[#12141c] text-[#f97316]">DSL (Dark Slayer)</option>
-                <option value="JG" className="bg-[#12141c] text-[#10b981]">JG (Jungle)</option>
-                <option value="MID" className="bg-[#12141c] text-[#a855f7]">MID (Mage)</option>
-                <option value="ROAM" className="bg-[#12141c] text-[#0ea5e9]">ROAM (Support)</option>
-                <option value="ADL" className="bg-[#12141c] text-[#eab308]">ADL (Carry)</option>
+                <option value="DSL">DSL (Dark Slayer)</option>
+                <option value="JG">JG (Jungle)</option>
+                <option value="MID">MID (Mage)</option>
+                <option value="ROAM">ROAM (Support)</option>
+                <option value="ADL">ADL (Carry)</option>
               </select>
             </div>
           );

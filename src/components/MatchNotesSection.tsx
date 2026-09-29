@@ -76,23 +76,23 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
   const oppWins = games.filter((g) => g.winner === 'opp').length;
 
   return (
-    <div className="w-full mt-2.5 sm:mt-4 p-2.5 sm:p-5 rounded-xl sm:rounded-2xl border sm:border-2 border-slate-700/80 bg-[#0a0c14]/95 shadow-xl backdrop-blur-md">
+    <div className="w-full mt-2.5 sm:mt-4 p-3 sm:p-5 rounded-xl sm:rounded-2xl border-2 border-[#F3D5E2] bg-white shadow-md font-['Prompt'] text-[#1F2937]">
       {/* Top Bar */}
-      <div className={`flex items-center justify-between gap-2 sm:gap-3 ${isCollapsed ? '' : 'pb-2 sm:pb-3 mb-3 sm:mb-4 border-b sm:border-b-2 border-slate-700/80'} flex-wrap`}>
+      <div className={`flex items-center justify-between gap-2 sm:gap-3 ${isCollapsed ? '' : 'pb-2 sm:pb-3 mb-3 sm:mb-4 border-b-2 border-[#F3D5E2]'} flex-wrap`}>
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="font-['Orbitron'] font-black text-xs sm:text-base tracking-[1.5px] sm:tracking-[3px] text-white flex items-center gap-1.5 sm:gap-2">
+          <div className="font-['Prompt'] font-bold text-xs sm:text-base tracking-wide text-[#1F2937] flex items-center gap-1.5 sm:gap-2">
             <span className="text-sm sm:text-lg">🎮</span>
             <span>
-              <span className="text-[#38bdf8]">MATCH NOTES</span>{' '}
-              <span className="text-slate-500 hidden sm:inline">—</span>{' '}
-              <span className="text-[#fbbf24] hidden sm:inline">SERIES LOG</span>
+              <span className="text-[#E91E63]">MATCH NOTES</span>{' '}
+              <span className="text-slate-300 hidden sm:inline">—</span>{' '}
+              <span className="text-[#B45309] hidden sm:inline">SERIES LOG</span>
             </span>
           </div>
           {games.length > 0 && (
-            <div className="flex items-center gap-1.5 sm:gap-2 font-['Orbitron'] text-[10.5px] sm:text-xs font-black px-2 sm:px-2.5 py-0.2 sm:py-0.5 rounded-md sm:rounded-lg bg-black/60 border border-slate-700 shadow-inner">
-              <span className="text-[#38bdf8]">{usWins}</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 font-['Prompt'] text-[11px] sm:text-xs font-bold px-2.5 py-0.5 rounded-lg bg-[#FFF0F5] border border-[#F3D5E2] shadow-2xs">
+              <span className="text-[#0284c7]">{usWins}</span>
               <span className="text-slate-400">:</span>
-              <span className="text-[#f43f5e]">{oppWins}</span>
+              <span className="text-[#e11d48]">{oppWins}</span>
             </div>
           )}
         </div>
@@ -101,9 +101,9 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
           {!isCollapsed && games.length > 0 && (
             <button
               onClick={onClearAllGames}
-              className="font-['Barlow_Condensed'] text-[10px] sm:text-[11px] font-black tracking-wider text-rose-300 hover:text-white bg-rose-950/40 hover:bg-rose-900/60 border border-rose-700/50 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg cursor-pointer transition-colors flex items-center gap-1 shadow-sm"
+              className="font-['Prompt'] text-[10.5px] sm:text-[11.5px] font-bold text-rose-700 hover:text-rose-900 bg-rose-50 hover:bg-rose-100 border border-rose-300 px-2.5 py-1 rounded-lg cursor-pointer transition-colors flex items-center gap-1 shadow-2xs"
             >
-              <Trash2 size={11} />
+              <Trash2 size={12} />
               <span>ล้าง</span>
             </button>
           )}
@@ -112,9 +112,9 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
             <button
               onClick={onAddEmptyGame}
               disabled={games.length >= 7}
-              className="font-['Barlow_Condensed'] text-[10px] sm:text-[11.5px] font-black tracking-wider text-black bg-[#fbbf24] hover:bg-[#fde047] disabled:opacity-40 border border-[#fde047] px-2.5 sm:px-4 py-0.5 sm:py-1.5 rounded-md sm:rounded-lg cursor-pointer transition-all flex items-center gap-1 shadow-md active:scale-95"
+              className="font-['Prompt'] text-[10.5px] sm:text-[11.5px] font-bold text-white bg-[#E91E63] hover:bg-[#D81B60] disabled:opacity-40 border border-[#E91E63] px-3 sm:px-4 py-1 sm:py-1.5 rounded-lg cursor-pointer transition-all flex items-center gap-1 shadow-xs active:scale-95"
             >
-              <Plus size={11} className="stroke-[3]" />
+              <Plus size={13} className="stroke-[3]" />
               <span>＋ เพิ่มเกม</span>
             </button>
           )}
@@ -122,10 +122,10 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
           <button
             type="button"
             onClick={() => setIsCollapsed((prev) => !prev)}
-            className="flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg bg-black/50 border border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white text-[10px] sm:text-[11px] font-['Barlow_Condensed'] font-bold cursor-pointer transition-all"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-[#F3D5E2] hover:border-[#E91E63] text-slate-700 hover:text-[#E91E63] text-[10.5px] sm:text-[11.5px] font-['Prompt'] font-bold cursor-pointer transition-all shadow-2xs"
           >
             <span>{isCollapsed ? 'แสดง' : 'ซ่อน'}</span>
-            {isCollapsed ? <ChevronDown size={11} /> : <ChevronUp size={11} />}
+            {isCollapsed ? <ChevronDown size={12} /> : <ChevronUp size={12} />}
           </button>
         </div>
       </div>
@@ -135,11 +135,11 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
           {/* Games List */}
       <div className="flex flex-col gap-3.5">
         {games.length === 0 ? (
-          <div className="p-8 text-center rounded-xl bg-black/40 border border-slate-800 font-['Kanit'] text-sm text-slate-400 shadow-inner">
-            <span className="text-base font-semibold text-slate-300">ยังไม่มีข้อมูลเกมใน Match Notes</span>
-            <div className="text-xs text-slate-400 mt-1">
-              กดปุ่ม <strong className="text-[#fbbf24]">"MATCH NOTE"</strong> บนแถบเครื่องมือดราฟ หรือกด{' '}
-              <strong className="text-[#fbbf24]">"＋ เพิ่มเกมใหม่"</strong> เพื่อบันทึกผลการแข่งขันและแบน/พิคแต่ละเกม
+          <div className="p-8 text-center rounded-xl bg-[#FFF8FB] border border-[#F3D5E2] font-['Prompt'] text-sm text-slate-500 shadow-xs">
+            <span className="text-base font-bold text-slate-800">ยังไม่มีข้อมูลเกมใน Match Notes</span>
+            <div className="text-xs text-slate-500 mt-1">
+              กดปุ่ม <strong className="text-[#E91E63]">"MATCH NOTE"</strong> บนแถบเครื่องมือดราฟ หรือกด{' '}
+              <strong className="text-[#E91E63]">"＋ เพิ่มเกมใหม่"</strong> เพื่อบันทึกผลการแข่งขันและแบน/พิคแต่ละเกม
             </div>
           </div>
         ) : (
@@ -149,15 +149,15 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
             return (
               <div
                 key={g.id}
-                className="relative rounded-2xl overflow-hidden border-2 border-slate-700/80 bg-[#0d101a] hover:border-slate-500 transition-all p-3.5 shadow-lg"
+                className="relative rounded-2xl overflow-hidden border border-[#F3D5E2] bg-white hover:border-[#E91E63] transition-all p-3.5 shadow-xs"
               >
                 {/* Game Top Details */}
-                <div className="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-700/80 flex-wrap">
+                <div className="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-[#F3D5E2] flex-wrap">
                   <div className="flex items-center gap-2.5">
-                    <span className="font-['Orbitron'] font-black text-sm text-[#fbbf24] px-2.5 py-1 rounded-md bg-black/60 border border-[#fbbf24]/50 shadow-sm">
+                    <span className="font-['Prompt'] font-bold text-xs text-[#E91E63] px-2.5 py-1 rounded-md bg-[#FFF0F5] border border-[#F48FB1] shadow-2xs">
                       G{g.gameNum}
                     </span>
-                    <span className="font-['Barlow_Condensed'] font-black text-[13px] text-slate-200">
+                    <span className="font-['Prompt'] font-bold text-[13px] text-slate-800">
                       {isUsBlue ? '🔵 US (BLUE) vs 🔴 OPP (RED)' : '🔴 US (RED) vs 🔵 OPP (BLUE)'}
                     </span>
                   </div>
@@ -166,22 +166,22 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onUpdateWinner(g.id, 'us')}
-                      className={`font-['Barlow_Condensed'] text-xs font-black px-3 py-1 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                      className={`font-['Prompt'] text-xs font-bold px-3 py-1 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs ${
                         g.winner === 'us'
-                          ? 'bg-emerald-500 border-emerald-300 text-black shadow-[0_0_12px_rgba(16,185,129,0.5)]'
-                          : 'bg-black/50 border-slate-700 text-slate-300 hover:text-white hover:bg-white/10'
+                          ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs'
+                          : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
                       }`}
                     >
-                      <Trophy size={13} className={g.winner === 'us' ? 'text-black' : 'text-slate-400'} />
+                      <Trophy size={13} className={g.winner === 'us' ? 'text-white' : 'text-slate-400'} />
                       <span>US WIN (ชนะ)</span>
                     </button>
 
                     <button
                       onClick={() => onUpdateWinner(g.id, 'opp')}
-                      className={`font-['Barlow_Condensed'] text-xs font-black px-3 py-1 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                      className={`font-['Prompt'] text-xs font-bold px-3 py-1 rounded-lg border transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs ${
                         g.winner === 'opp'
-                          ? 'bg-[#e11d48] border-[#f43f5e] text-white shadow-[0_0_12px_rgba(244,63,94,0.5)]'
-                          : 'bg-black/50 border-slate-700 text-slate-300 hover:text-white hover:bg-white/10'
+                          ? 'bg-[#e11d48] border-[#e11d48] text-white shadow-xs'
+                          : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
                       }`}
                     >
                       <Award size={13} className={g.winner === 'opp' ? 'text-white' : 'text-slate-400'} />
@@ -191,7 +191,7 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
                     <button
                       onClick={() => onDeleteGame(g.id)}
                       title="ลบเกมนี้"
-                      className="p-1.5 rounded-lg hover:bg-rose-950/60 border border-transparent hover:border-rose-500/50 text-slate-400 hover:text-rose-300 transition-colors ml-2 cursor-pointer"
+                      className="p-1.5 rounded-lg hover:bg-rose-50 border border-transparent hover:border-rose-300 text-slate-400 hover:text-rose-600 transition-colors ml-2 cursor-pointer shadow-2xs"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -202,24 +202,24 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {/* US Column */}
                   <div
-                    className={`p-3 rounded-xl border-2 flex flex-col gap-2.5 shadow-sm ${
+                    className={`p-3 rounded-xl border-2 flex flex-col gap-2.5 shadow-2xs ${
                       isUsBlue
-                        ? 'bg-[#08182d] border-[#0284c7]/50'
-                        : 'bg-[#290a16] border-[#e11d48]/50'
+                        ? 'bg-sky-50/60 border-sky-300'
+                        : 'bg-rose-50/60 border-rose-300'
                     }`}
                   >
-                    <div className="flex items-center justify-between font-['Barlow_Condensed'] text-[13px] font-black">
-                      <span className={isUsBlue ? 'text-[#38bdf8]' : 'text-[#f43f5e]'}>
+                    <div className="flex items-center justify-between font-['Prompt'] text-[13px] font-bold">
+                      <span className={isUsBlue ? 'text-sky-800' : 'text-rose-800'}>
                         {isUsBlue ? '🔵' : '🔴'} {usLabel}
                       </span>
-                      <span className="text-[10.5px] font-bold text-slate-400 tracking-wider">
+                      <span className="text-[10.5px] font-semibold text-slate-500 tracking-wider">
                         OUR TEAM DRAFT
                       </span>
                     </div>
 
                     {/* Bans */}
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[9.5px] font-['Barlow_Condensed'] font-black text-rose-400 mr-1 uppercase">
+                      <span className="text-[10px] font-['Prompt'] font-bold text-rose-700 mr-1 uppercase">
                         BANS:
                       </span>
                       {([0, 1, 2, 3] as const).map((bIdx) => {
@@ -237,13 +237,13 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
                                 slotKey: String(bIdx),
                               })
                             }
-                            className="w-8 h-8 rounded-lg border-2 border-rose-600/50 bg-black/60 overflow-hidden cursor-pointer flex items-center justify-center relative hover:border-rose-400 transition-all shadow-sm"
+                            className="w-8 h-8 rounded-lg border-2 border-rose-300 bg-white overflow-hidden cursor-pointer flex items-center justify-center relative hover:border-rose-500 transition-all shadow-2xs"
                             title={heroName ? `Ban: ${heroName}` : 'คลิกเพื่อเลือก Ban'}
                           >
                             {heroName && img ? (
-                              <img src={img} alt={heroName} className="w-full h-full object-cover opacity-60 grayscale-[0.5]" />
+                              <img src={img} alt={heroName} className="w-full h-full object-cover opacity-70 grayscale-[0.3]" />
                             ) : (
-                              <span className="text-[9.5px] font-black text-slate-500 font-['Orbitron']">B{bIdx + 1}</span>
+                              <span className="text-[9.5px] font-bold text-slate-400 font-['Prompt']">B{bIdx + 1}</span>
                             )}
                           </div>
                         );
@@ -267,20 +267,20 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
                                 slotKey: pos.key,
                               })
                             }
-                            className={`flex flex-col items-center p-1.5 rounded-lg border-2 bg-black/60 cursor-pointer hover:border-white/60 transition-all shadow-sm ${pos.color}`}
+                            className="flex flex-col items-center p-1.5 rounded-lg border-2 bg-white cursor-pointer hover:border-[#E91E63] transition-all shadow-2xs border-[#F3D5E2]"
                             title={heroName ? `${pos.label}: ${heroName}` : `เลือกฮีโร่ตำแหน่ง ${pos.label}`}
                           >
-                            <span className="text-[8.5px] font-['Barlow_Condensed'] font-black text-slate-300 mb-0.5">
+                            <span className="text-[9px] font-['Prompt'] font-bold text-slate-500 mb-0.5">
                               {pos.label}
                             </span>
-                            <div className="w-8 h-8 rounded-md overflow-hidden bg-black/80 flex items-center justify-center border border-white/10">
+                            <div className="w-8 h-8 rounded-md overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
                               {heroName && img ? (
                                 <img src={img} alt={heroName} className="w-full h-full object-cover" />
                               ) : (
-                                <span className="text-[10px] text-slate-600 font-bold">—</span>
+                                <span className="text-[10px] text-slate-400 font-bold">—</span>
                               )}
                             </div>
-                            <span className="text-[9.5px] font-['Barlow_Condensed'] font-black text-white truncate w-full text-center mt-1">
+                            <span className="text-[9.5px] font-['Prompt'] font-bold text-slate-800 truncate w-full text-center mt-1">
                               {heroName || '—'}
                             </span>
                           </div>
@@ -291,24 +291,24 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
 
                   {/* OPP Column */}
                   <div
-                    className={`p-3 rounded-xl border-2 flex flex-col gap-2.5 shadow-sm ${
+                    className={`p-3 rounded-xl border-2 flex flex-col gap-2.5 shadow-2xs ${
                       !isUsBlue
-                        ? 'bg-[#08182d] border-[#0284c7]/50'
-                        : 'bg-[#290a16] border-[#e11d48]/50'
+                        ? 'bg-sky-50/60 border-sky-300'
+                        : 'bg-rose-50/60 border-rose-300'
                     }`}
                   >
-                    <div className="flex items-center justify-between font-['Barlow_Condensed'] text-[13px] font-black">
-                      <span className={!isUsBlue ? 'text-[#38bdf8]' : 'text-[#f43f5e]'}>
+                    <div className="flex items-center justify-between font-['Prompt'] text-[13px] font-bold">
+                      <span className={!isUsBlue ? 'text-sky-800' : 'text-rose-800'}>
                         {!isUsBlue ? '🔵' : '🔴'} {oppLabel}
                       </span>
-                      <span className="text-[10.5px] font-bold text-slate-400 tracking-wider">
+                      <span className="text-[10.5px] font-semibold text-slate-500 tracking-wider">
                         OPPONENT DRAFT
                       </span>
                     </div>
 
                     {/* Bans */}
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[9.5px] font-['Barlow_Condensed'] font-black text-rose-400 mr-1 uppercase">
+                      <span className="text-[10px] font-['Prompt'] font-bold text-rose-700 mr-1 uppercase">
                         BANS:
                       </span>
                       {([0, 1, 2, 3] as const).map((bIdx) => {
@@ -326,13 +326,13 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
                                 slotKey: String(bIdx),
                               })
                             }
-                            className="w-8 h-8 rounded-lg border-2 border-rose-600/50 bg-black/60 overflow-hidden cursor-pointer flex items-center justify-center relative hover:border-rose-400 transition-all shadow-sm"
+                            className="w-8 h-8 rounded-lg border-2 border-rose-300 bg-white overflow-hidden cursor-pointer flex items-center justify-center relative hover:border-rose-500 transition-all shadow-2xs"
                             title={heroName ? `Ban: ${heroName}` : 'คลิกเพื่อเลือก Ban'}
                           >
                             {heroName && img ? (
-                              <img src={img} alt={heroName} className="w-full h-full object-cover opacity-60 grayscale-[0.5]" />
+                              <img src={img} alt={heroName} className="w-full h-full object-cover opacity-70 grayscale-[0.3]" />
                             ) : (
-                              <span className="text-[9.5px] font-black text-slate-500 font-['Orbitron']">R{bIdx + 1}</span>
+                              <span className="text-[9.5px] font-bold text-slate-400 font-['Prompt']">R{bIdx + 1}</span>
                             )}
                           </div>
                         );
@@ -356,20 +356,20 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
                                 slotKey: pos.key,
                               })
                             }
-                            className={`flex flex-col items-center p-1.5 rounded-lg border-2 bg-black/60 cursor-pointer hover:border-white/60 transition-all shadow-sm ${pos.color}`}
+                            className="flex flex-col items-center p-1.5 rounded-lg border-2 bg-white cursor-pointer hover:border-[#E91E63] transition-all shadow-2xs border-[#F3D5E2]"
                             title={heroName ? `${pos.label}: ${heroName}` : `เลือกฮีโร่ตำแหน่ง ${pos.label}`}
                           >
-                            <span className="text-[8.5px] font-['Barlow_Condensed'] font-black text-slate-300 mb-0.5">
+                            <span className="text-[9px] font-['Prompt'] font-bold text-slate-500 mb-0.5">
                               {pos.label}
                             </span>
-                            <div className="w-8 h-8 rounded-md overflow-hidden bg-black/80 flex items-center justify-center border border-white/10">
+                            <div className="w-8 h-8 rounded-md overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-200">
                               {heroName && img ? (
                                 <img src={img} alt={heroName} className="w-full h-full object-cover" />
                               ) : (
-                                <span className="text-[10px] text-slate-600 font-bold">—</span>
+                                <span className="text-[10px] text-slate-400 font-bold">—</span>
                               )}
                             </div>
-                            <span className="text-[9.5px] font-['Barlow_Condensed'] font-black text-white truncate w-full text-center mt-1">
+                            <span className="text-[9.5px] font-['Prompt'] font-bold text-slate-800 truncate w-full text-center mt-1">
                               {heroName || '—'}
                             </span>
                           </div>
@@ -380,13 +380,13 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
                 </div>
 
                 {/* Notes Input Area for this Game */}
-                <div className="mt-3 pt-2.5 border-t border-slate-700/80">
+                <div className="mt-3 pt-2.5 border-t border-[#F3D5E2]">
                   <input
                     type="text"
                     value={g.note || ''}
                     onChange={(e) => onUpdateNote(g.id, e.target.value)}
                     placeholder={`📝 โน้ตแท็กติก / ข้อผิดพลาด Game ${g.gameNum} (เช่น แพ้เพราะไฟต์เลน Dark Slayer, โดนล้วงแครี่...)`}
-                    className="w-full bg-black/50 border border-slate-700 hover:border-slate-500 focus:border-[#fbbf24] text-white placeholder-slate-400 text-xs font-['Kanit'] px-3 py-1.5 rounded-lg outline-none transition-colors"
+                    className="w-full bg-[#FFF8FB] border border-[#F3D5E2] hover:border-[#E91E63] focus:border-[#E91E63] text-[#1F2937] placeholder-slate-400 text-xs font-['Prompt'] px-3 py-1.5 rounded-lg outline-none transition-colors shadow-2xs"
                   />
                 </div>
               </div>
@@ -396,9 +396,9 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
       </div>
 
       {/* Series Notes: US & OPP */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mt-4 pt-3.5 border-t-2 border-slate-700/80">
-        <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-[#08182d] border-2 border-[#0284c7]/50 shadow-sm">
-          <label className="font-['Barlow_Condensed'] text-xs font-black tracking-wider text-[#38bdf8] flex items-center gap-1.5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mt-4 pt-3.5 border-t-2 border-[#F3D5E2]">
+        <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-sky-50/60 border-2 border-sky-300 shadow-2xs">
+          <label className="font-['Prompt'] text-xs font-bold tracking-wide text-sky-900 flex items-center gap-1.5">
             <span>📝</span>
             <span>SERIES NOTES — {usLabel}</span>
           </label>
@@ -407,12 +407,12 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
             value={blueSeriesNote}
             onChange={(e) => setBlueSeriesNote(e.target.value)}
             placeholder="จดบันทึกภาพรวมทีมเราในซีรีส์นี้ (เช่น ฮีโร่ที่ยังไม่ได้หยิบ, กลยุทธ์เกมถัดไป)..."
-            className="w-full bg-black/60 border border-slate-700 hover:border-[#38bdf8] focus:border-[#38bdf8] text-white placeholder-slate-400 text-xs font-['Kanit'] p-2.5 rounded-lg outline-none transition-colors resize-none shadow-inner"
+            className="w-full bg-white border border-sky-300 hover:border-sky-500 focus:border-[#0284c7] text-[#1F2937] placeholder-slate-400 text-xs font-['Prompt'] p-2.5 rounded-lg outline-none transition-colors resize-none shadow-2xs"
           />
         </div>
 
-        <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-[#290a16] border-2 border-[#e11d48]/50 shadow-sm">
-          <label className="font-['Barlow_Condensed'] text-xs font-black tracking-wider text-[#f43f5e] flex items-center gap-1.5">
+        <div className="flex flex-col gap-1.5 p-3 rounded-xl bg-rose-50/60 border-2 border-rose-300 shadow-2xs">
+          <label className="font-['Prompt'] text-xs font-bold tracking-wide text-rose-900 flex items-center gap-1.5">
             <span>📝</span>
             <span>SERIES NOTES — {oppLabel}</span>
           </label>
@@ -421,7 +421,7 @@ export const MatchNotesSection: React.FC<MatchNotesSectionProps> = ({
             value={redSeriesNote}
             onChange={(e) => setRedSeriesNote(e.target.value)}
             placeholder="จดบันทึกแผนและจุดอ่อนของคู่แข่ง (เช่น ชอบแย่งป่าเกม 1, ระวังฮายาเตะเกมท้าย)..."
-            className="w-full bg-black/60 border border-slate-700 hover:border-[#f43f5e] focus:border-[#f43f5e] text-white placeholder-slate-400 text-xs font-['Kanit'] p-2.5 rounded-lg outline-none transition-colors resize-none shadow-inner"
+            className="w-full bg-white border border-rose-300 hover:border-rose-500 focus:border-[#e11d48] text-[#1F2937] placeholder-slate-400 text-xs font-['Prompt'] p-2.5 rounded-lg outline-none transition-colors resize-none shadow-2xs"
           />
         </div>
       </div>

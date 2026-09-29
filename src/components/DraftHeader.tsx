@@ -77,12 +77,12 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   return (
-    <div className="w-full flex flex-col gap-1.5 sm:gap-2.5 p-2 sm:p-3 bg-[#0a0c14]/95 border border-slate-700/70 rounded-xl sm:rounded-2xl shadow-xl backdrop-blur-md">
-      {/* ROW 1: Team Matchup Card (Symmetrical, Compact, Esports Pro) */}
-      <div className="w-full grid grid-cols-[1fr_auto_1fr] items-center gap-1 sm:gap-2">
+    <div className="w-full flex flex-col gap-1.5 p-2 sm:p-2.5 bg-white border border-[#F3D5E2] rounded-xl sm:rounded-2xl shadow-[0_2px_12px_rgba(233,30,99,0.05)]">
+      {/* ROW 1: Team Matchup Card (Symmetrical, Compact, MCU eSports Light Theme) */}
+      <div className="w-full grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 sm:gap-2">
         {/* Blue Team Box */}
-        <div className="flex items-center gap-1 sm:gap-1.5 bg-[#09182b] p-1 sm:p-2 rounded-lg sm:rounded-xl border border-[#0284c7]/50 shadow-sm min-w-0">
-          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-md sm:rounded-lg bg-[#0284c7]/30 border border-[#38bdf8] flex items-center justify-center text-[10px] sm:text-xs select-none shadow-[0_0_8px_rgba(56,189,248,0.3)] flex-shrink-0">
+        <div className="flex items-center gap-1.5 bg-[#F0F9FF] p-1 sm:p-1.5 rounded-xl border border-[#BAE6FD] shadow-xs min-w-0">
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-[#E0F2FE] border border-[#7DD3FC] flex items-center justify-center text-xs select-none shadow-2xs flex-shrink-0">
             🔵
           </div>
           <input
@@ -90,94 +90,199 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
             value={blueTeamName}
             onChange={(e) => setBlueTeamName(e.target.value)}
             placeholder="BLUE SIDE"
-            className="flex-1 min-w-0 bg-black/50 border border-slate-700 text-white font-['Barlow_Condensed'] font-bold text-[11px] sm:text-[13px] tracking-wider px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md outline-none focus:border-[#38bdf8] focus:ring-1 focus:ring-[#38bdf8]/40 transition-all placeholder-slate-400"
+            className="flex-1 min-w-0 bg-white border border-[#E2E8F0] text-[#1F2937] font-['Prompt'] font-bold text-[11px] sm:text-[12px] tracking-wider px-2 py-0.5 rounded-md outline-none focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7]/30 transition-all placeholder-slate-400 shadow-2xs"
           />
           <button
             type="button"
             onClick={() => setBlueIsUs(!blueIsUs)}
-            className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg font-['Barlow_Condensed'] font-black text-[9px] sm:text-[11px] border cursor-pointer transition-all flex-shrink-0 ${
+            className={`px-1.5 py-0.5 rounded-md font-['Prompt'] font-bold text-[9px] sm:text-[10px] border cursor-pointer transition-all flex-shrink-0 shadow-2xs ${
               blueIsUs
-                ? 'bg-[#0284c7]/30 border-[#38bdf8] text-[#38bdf8] shadow-[0_0_8px_rgba(56,189,248,0.3)]'
-                : 'bg-black/50 border-slate-700 text-slate-400 hover:text-slate-200'
+                ? 'bg-[#0284C7] border-[#0284C7] text-white shadow-2xs'
+                : 'bg-white border-[#CBD5E1] text-[#64748B] hover:text-[#1F2937]'
             }`}
             title="คลิกเพื่อสลับสถานะ ทีมเรา (US) / คู่แข่ง (OPP)"
           >
-            {blueIsUs ? '★ US' : 'OPP'}
+            {blueIsUs ? '★ ทีมเรา' : 'คู่แข่ง'}
           </button>
         </div>
 
-        {/* Center: Swap Button & Match Info */}
-        <div className="flex items-center justify-center gap-1 sm:gap-2 flex-shrink-0">
+        {/* Center: Swap Button & Match Info (Reduced gap 4-6px, tightly clustered) */}
+        <div className="flex items-center justify-center gap-1 sm:gap-1.5 flex-shrink-0 px-0.5">
           <button
             onClick={swapSides}
             title="สลับฝั่ง Blue ↔ Red"
-            className="group inline-flex items-center gap-1 bg-gradient-to-r from-[#0284c7]/20 via-purple-600/20 to-[#e11d48]/20 hover:from-[#0284c7]/35 hover:to-[#e11d48]/35 border border-slate-600 hover:border-white/50 text-white font-['Orbitron'] text-[9px] sm:text-[11px] font-black tracking-[0.5px] sm:tracking-[1.5px] px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl cursor-pointer transition-all active:scale-95 shadow-sm"
+            className="group inline-flex items-center gap-1 bg-[#FCE4EC] hover:bg-[#F8BBD0] border border-[#F48FB1] text-[#E91E63] font-['Prompt'] text-[9.5px] sm:text-[10.5px] font-bold px-2 py-0.5 rounded-lg cursor-pointer transition-all active:scale-95 shadow-2xs"
           >
-            <span className="inline-block transition-transform duration-300 group-hover:rotate-180 text-xs sm:text-sm leading-none text-[#fbbf24]">
+            <span className="inline-block transition-transform duration-300 group-hover:rotate-180 text-xs leading-none text-[#E91E63]">
               ⇄
             </span>
-            <span className="font-['Orbitron'] hidden xs:inline">SWAP</span>
+            <span className="hidden xs:inline">สลับฝั่ง</span>
           </button>
 
           {matchMetadata && (
             <button
               onClick={onOpenSetupModal}
               title="คลิกเพื่อแก้ไขข้อมูลแมตช์การแข่งขัน"
-              className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md sm:rounded-lg bg-black/60 border border-slate-700 hover:border-[#fbbf24] text-[9.5px] sm:text-[11px] text-slate-200 hover:text-white transition-all cursor-pointer shadow-sm"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white border border-[#E2E8F0] hover:border-[#F48FB1] text-[9.5px] sm:text-[10.5px] font-['Prompt'] text-[#1F2937] transition-all cursor-pointer shadow-2xs"
             >
-              <span className="text-[#fbbf24] font-black">G{matchMetadata.gameNumber}</span>
-              <span className="max-w-[70px] sm:max-w-[130px] truncate font-medium hidden sm:inline">{matchMetadata.match}</span>
+              <span className="text-[#E91E63] font-black">G{matchMetadata.gameNumber}</span>
+              <span className="max-w-[70px] sm:max-w-[110px] truncate font-medium hidden sm:inline text-[#64748B]">{matchMetadata.match}</span>
             </button>
           )}
         </div>
 
         {/* Red Team Box */}
-        <div className="flex items-center gap-1 sm:gap-1.5 bg-[#260914] p-1 sm:p-2 rounded-lg sm:rounded-xl border border-[#e11d48]/50 shadow-sm min-w-0">
+        <div className="flex items-center gap-1.5 bg-[#FFF1F2] p-1 sm:p-1.5 rounded-xl border border-[#FECDD3] shadow-xs min-w-0">
           <button
             type="button"
             onClick={() => setBlueIsUs(!blueIsUs)}
-            className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg font-['Barlow_Condensed'] font-black text-[9px] sm:text-[11px] border cursor-pointer transition-all flex-shrink-0 ${
+            className={`px-1.5 py-0.5 rounded-md font-['Prompt'] font-bold text-[9px] sm:text-[10px] border cursor-pointer transition-all flex-shrink-0 shadow-2xs ${
               !blueIsUs
-                ? 'bg-[#e11d48]/30 border-[#f43f5e] text-[#f43f5e] shadow-[0_0_8px_rgba(244,63,94,0.3)]'
-                : 'bg-black/50 border-slate-700 text-slate-400 hover:text-slate-200'
+                ? 'bg-[#E11D48] border-[#E11D48] text-white shadow-2xs'
+                : 'bg-white border-[#CBD5E1] text-[#64748B] hover:text-[#1F2937]'
             }`}
             title="คลิกเพื่อสลับสถานะ ทีมเรา (US) / คู่แข่ง (OPP)"
           >
-            {!blueIsUs ? '★ US' : 'OPP'}
+            {!blueIsUs ? '★ ทีมเรา' : 'คู่แข่ง'}
           </button>
           <input
             type="text"
             value={redTeamName}
             onChange={(e) => setRedTeamName(e.target.value)}
             placeholder="RED SIDE"
-            className="flex-1 min-w-0 bg-black/50 border border-slate-700 text-white font-['Barlow_Condensed'] font-bold text-[11px] sm:text-[13px] tracking-wider px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-md outline-none text-right focus:border-[#f43f5e] focus:ring-1 focus:ring-[#f43f5e]/40 transition-all placeholder-slate-400"
+            className="flex-1 min-w-0 bg-white border border-[#E2E8F0] text-[#1F2937] font-['Prompt'] font-bold text-[11px] sm:text-[12px] tracking-wider px-2 py-0.5 rounded-md outline-none text-right focus:border-[#E11D48] focus:ring-1 focus:ring-[#E11D48]/30 transition-all placeholder-slate-400 shadow-2xs"
           />
-          <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-md sm:rounded-lg bg-[#e11d48]/30 border border-[#f43f5e] flex items-center justify-center text-[10px] sm:text-xs select-none shadow-[0_0_8px_rgba(244,63,94,0.3)] flex-shrink-0">
+          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-md bg-[#FFE4E6] border border-[#FDA4AF] flex items-center justify-center text-xs select-none shadow-2xs flex-shrink-0">
             🔴
           </div>
         </div>
       </div>
 
-      {/* ROW 2: Phase Badge & Action Buttons Cluster */}
-      <div className="w-full flex items-center justify-between gap-1.5 sm:gap-2 pt-1 border-t border-slate-800/80">
-        {/* Phase Indicator */}
-        <div className="flex items-center gap-1.5 font-['Barlow_Condensed'] text-[10px] sm:text-[12px] text-slate-200 tracking-wider font-bold px-2 py-0.5 bg-black/50 border border-slate-800 rounded-md sm:rounded-lg max-w-full">
-          <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#fbbf24] animate-pulse flex-shrink-0" />
-          <span className="truncate">{phaseLabel}</span>
+      {/* ROW 2: Unified Control Toolbar (Phase, Categories, Roster Toggle & Action Buttons in ONE Combined Row) */}
+      <div className="w-full flex items-center justify-between gap-1.5 sm:gap-2 pt-1 border-t border-[#F3D5E2] overflow-x-auto no-scrollbar">
+        {/* Left Section: Phase Status Indicator & Category Selector */}
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+          {/* Phase Indicator */}
+          <div className="flex items-center gap-1 font-['Prompt'] text-[10px] sm:text-[11px] text-[#1F2937] font-semibold px-2 py-0.5 bg-[#FFF5F9] border border-[#F3D5E2] rounded-lg shadow-2xs whitespace-nowrap">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#E91E63] animate-pulse flex-shrink-0" />
+            <span className="truncate max-w-[130px] sm:max-w-none">{phaseLabel}</span>
+          </div>
+
+          {/* Vertical Divider */}
+          {onChangeTeamCategory && (
+            <div className="h-3.5 w-px bg-[#F3D5E2] flex-shrink-0" />
+          )}
+
+          {/* Category Selector Pills (ชาย, หญิง, ผสม, ทั้งหมด) */}
+          {onChangeTeamCategory && (
+            <div className="flex items-center gap-0.5 bg-[#FFF5F9] p-0.5 rounded-lg border border-[#F3D5E2] shadow-2xs">
+              <button
+                type="button"
+                onClick={() => onChangeTeamCategory('male')}
+                className={`font-['Prompt'] text-[9.5px] sm:text-[10.5px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-md border transition-all cursor-pointer flex items-center gap-1 ${
+                  selectedTeamCategory === 'male'
+                    ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs font-bold'
+                    : 'border-transparent bg-transparent text-[#64748B] hover:text-[#1F2937] hover:bg-white/60'
+                }`}
+              >
+                <span>👨</span>
+                <span className="hidden xs:inline">ทีมชาย</span>
+                <span className="xs:hidden">ชาย</span>
+                {playerCounts !== undefined && (
+                  <span className={`text-[8.5px] px-1 py-0 rounded font-bold ${selectedTeamCategory === 'male' ? 'bg-white/25 text-white' : 'bg-white text-[#64748B] border border-[#E2E8F0]'}`}>
+                    {playerCounts.male}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeTeamCategory('female')}
+                className={`font-['Prompt'] text-[9.5px] sm:text-[10.5px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-md border transition-all cursor-pointer flex items-center gap-1 ${
+                  selectedTeamCategory === 'female'
+                    ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs font-bold'
+                    : 'border-transparent bg-transparent text-[#64748B] hover:text-[#1F2937] hover:bg-white/60'
+                }`}
+              >
+                <span>👩</span>
+                <span className="hidden xs:inline">ทีมหญิง</span>
+                <span className="xs:hidden">หญิง</span>
+                {playerCounts !== undefined && (
+                  <span className={`text-[8.5px] px-1 py-0 rounded font-bold ${selectedTeamCategory === 'female' ? 'bg-white/25 text-white' : 'bg-white text-[#64748B] border border-[#E2E8F0]'}`}>
+                    {playerCounts.female}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeTeamCategory('mixed')}
+                className={`font-['Prompt'] text-[9.5px] sm:text-[10.5px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-md border transition-all cursor-pointer flex items-center gap-1 ${
+                  selectedTeamCategory === 'mixed'
+                    ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs font-bold'
+                    : 'border-transparent bg-transparent text-[#64748B] hover:text-[#1F2937] hover:bg-white/60'
+                }`}
+              >
+                <span>👥</span>
+                <span className="hidden xs:inline">ทีมผสม</span>
+                <span className="xs:hidden">ผสม</span>
+                {playerCounts !== undefined && (
+                  <span className={`text-[8.5px] px-1 py-0 rounded font-bold ${selectedTeamCategory === 'mixed' ? 'bg-white/25 text-white' : 'bg-white text-[#64748B] border border-[#E2E8F0]'}`}>
+                    {playerCounts.mixed}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeTeamCategory('all')}
+                className={`font-['Prompt'] text-[9.5px] sm:text-[10.5px] font-semibold px-1.5 sm:px-2 py-0.5 rounded-md border transition-all cursor-pointer flex items-center gap-1 ${
+                  selectedTeamCategory === 'all'
+                    ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs font-bold'
+                    : 'border-transparent bg-transparent text-[#64748B] hover:text-[#1F2937] hover:bg-white/60'
+                }`}
+              >
+                <span>🌐</span>
+                <span>ทั้งหมด</span>
+                {playerCounts !== undefined && (
+                  <span className={`text-[8.5px] px-1 py-0 rounded font-bold ${selectedTeamCategory === 'all' ? 'bg-white/25 text-white' : 'bg-white text-[#64748B] border border-[#E2E8F0]'}`}>
+                    {playerCounts.all}
+                  </span>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-1 sm:gap-1.5 ml-auto">
-          {/* Undo */}
+        {/* Right Section: Roster Toggle & Lifecycle Action Buttons */}
+        <div className="flex items-center gap-1 sm:gap-1.5 ml-auto flex-shrink-0">
+          {/* Roster Bar Toggle Button */}
+          {onToggleRosterBar && (
+            <button
+              type="button"
+              onClick={onToggleRosterBar}
+              title={isRosterBarOpen ? 'ซ่อนแถบข้อมูลนักแข่ง' : 'แสดงแถบข้อมูลนักแข่ง'}
+              className={`font-['Prompt'] text-[9.5px] sm:text-[10.5px] font-semibold px-2 py-0.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
+                isRosterBarOpen
+                  ? 'bg-[#FCE4EC] border-[#F48FB1] text-[#E91E63] font-bold'
+                  : 'bg-white border-[#CBD5E1] text-[#64748B] hover:text-[#E91E63] hover:bg-[#FFF0F5]'
+              }`}
+            >
+              <Users size={12} className={isRosterBarOpen ? 'text-[#E91E63]' : 'text-[#94A3B8]'} />
+              <span>{isRosterBarOpen ? 'ซ่อนนักแข่ง' : 'แสดงนักแข่ง'}</span>
+            </button>
+          )}
+
+          {/* Vertical Divider */}
+          <div className="h-3.5 w-px bg-[#F3D5E2] flex-shrink-0" />
+
+          {/* Undo Action */}
           <button
             type="button"
             onClick={onUndo}
             disabled={!canUndo}
             title="ย้อนกลับการกระทำล่าสุด"
-            className="font-['Barlow_Condensed'] text-[9.5px] sm:text-[11px] font-extrabold tracking-wider uppercase bg-black/60 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed border border-slate-700 text-slate-200 hover:text-white px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg cursor-pointer transition-all flex items-center gap-1 shadow-sm"
+            className="font-['Prompt'] text-[9.5px] sm:text-[10.5px] font-semibold tracking-wide bg-white hover:bg-[#F8FAFC] disabled:opacity-40 disabled:cursor-not-allowed border border-[#CBD5E1] text-[#475569] hover:text-[#1F2937] px-2 py-0.5 rounded-lg cursor-pointer transition-all flex items-center gap-1 shadow-2xs"
           >
             <Undo2 size={11} />
-            <span className="hidden xs:inline">Undo</span>
+            <span className="hidden xs:inline">ย้อนกลับ</span>
           </button>
 
           {/* Save Draft */}
@@ -186,14 +291,14 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
               type="button"
               onClick={onOpenSaveDraft}
               title="บันทึกผลดราฟต์ลงคลังประวัติ (Draft History)"
-              className={`font-['Barlow_Condensed'] text-[9.5px] sm:text-[11px] font-black tracking-wider uppercase border px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg cursor-pointer transition-all flex items-center gap-1 shadow-sm ${
+              className={`font-['Prompt'] text-[9.5px] sm:text-[10.5px] font-bold tracking-wide border px-2 py-0.5 rounded-lg cursor-pointer transition-all flex items-center gap-1 shadow-2xs ${
                 isDraftComplete
-                  ? 'bg-emerald-600 border-emerald-400 text-white shadow-[0_0_12px_rgba(16,185,129,0.5)] animate-pulse'
-                  : 'bg-emerald-950/60 hover:bg-emerald-900/60 border-emerald-700/60 text-emerald-300 hover:text-white'
+                  ? 'bg-emerald-600 border-emerald-500 text-white shadow-xs animate-pulse'
+                  : 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-700'
               }`}
             >
-              <Save size={11} className="text-emerald-300" />
-              <span>SAVE</span>
+              <Save size={11} className={isDraftComplete ? 'text-white' : 'text-emerald-600'} />
+              <span>บันทึกผล</span>
             </button>
           )}
 
@@ -201,14 +306,10 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
           <button
             type="button"
             onClick={onStartNewDraft}
-            className={`font-['Barlow_Condensed'] text-[10px] sm:text-[11.5px] font-black tracking-wider uppercase px-2 sm:px-3 py-0.5 sm:py-1 rounded-md sm:rounded-lg cursor-pointer transition-all flex items-center gap-1 shadow-md ${
-              draftActive
-                ? 'bg-[#e11d48] border border-[#f43f5e] text-white hover:bg-[#be123c]'
-                : 'bg-emerald-500 hover:bg-emerald-400 border border-emerald-300 text-black font-black'
-            }`}
+            className="font-['Prompt'] text-[10px] sm:text-[11px] font-bold tracking-wide px-2.5 py-0.5 rounded-lg cursor-pointer transition-all flex items-center gap-1 shadow-xs text-white bg-[#E91E63] hover:bg-[#D81B60] border border-[#C2185B] active:scale-95"
           >
-            <Play size={10} className={draftActive ? 'text-white' : 'fill-black text-black'} />
-            <span>{draftActive ? 'Restart' : '▶ NEW'}</span>
+            <Play size={10} className="fill-white text-white" />
+            <span>{draftActive ? 'เริ่มใหม่' : 'เริ่มดราฟต์'}</span>
           </button>
 
           {/* More Menu Dropdown for Secondary Actions */}
@@ -217,9 +318,9 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
               type="button"
               onClick={() => setIsMoreMenuOpen((prev) => !prev)}
               title="เมนูเพิ่มเติม (Match Notes, Data Layer, Setup, Reset)"
-              className="p-1 rounded-md sm:rounded-lg bg-black/60 hover:bg-white/10 border border-slate-700 text-slate-300 hover:text-white cursor-pointer transition-all flex items-center justify-center"
+              className="p-1 rounded-lg bg-white hover:bg-[#FFF0F5] border border-[#CBD5E1] text-[#64748B] hover:text-[#E91E63] cursor-pointer transition-all flex items-center justify-center shadow-2xs"
             >
-              <MoreHorizontal size={14} />
+              <MoreHorizontal size={13} />
             </button>
 
             {isMoreMenuOpen && (
@@ -228,7 +329,7 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
                   className="fixed inset-0 z-40"
                   onClick={() => setIsMoreMenuOpen(false)}
                 />
-                <div className="absolute right-0 top-full mt-1.5 w-48 bg-[#0a0c14] border border-slate-700 rounded-xl shadow-2xl p-1.5 z-50 flex flex-col gap-1 text-[11px] font-['Barlow_Condensed'] font-bold">
+                <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-[#F3D5E2] rounded-xl shadow-xl p-1.5 z-50 flex flex-col gap-1 text-[11px] font-['Prompt'] font-semibold">
                   {onOpenSetupModal && (
                     <button
                       type="button"
@@ -236,9 +337,9 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
                         setIsMoreMenuOpen(false);
                         onOpenSetupModal();
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-lg text-left text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2 cursor-pointer"
+                      className="w-full px-2.5 py-1.5 rounded-lg text-left text-[#1F2937] hover:text-[#E91E63] hover:bg-[#FFF0F5] flex items-center gap-2 cursor-pointer transition-colors"
                     >
-                      <Settings size={12} className="text-[#fbbf24]" />
+                      <Settings size={12} className="text-[#E91E63]" />
                       <span>ตั้งค่าแมตช์ (Setup)</span>
                     </button>
                   )}
@@ -249,9 +350,9 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
                       setIsMoreMenuOpen(false);
                       onSaveMatchNote();
                     }}
-                    className="w-full px-2.5 py-1.5 rounded-lg text-left text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2 cursor-pointer"
+                    className="w-full px-2.5 py-1.5 rounded-lg text-left text-[#1F2937] hover:text-purple-600 hover:bg-purple-50 flex items-center gap-2 cursor-pointer transition-colors"
                   >
-                    <FileText size={12} className="text-purple-400" />
+                    <FileText size={12} className="text-purple-500" />
                     <span>บันทึก Match Note</span>
                   </button>
 
@@ -262,14 +363,14 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
                         setIsMoreMenuOpen(false);
                         onOpenDataModal();
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-lg text-left text-slate-300 hover:text-white hover:bg-white/10 flex items-center gap-2 cursor-pointer"
+                      className="w-full px-2.5 py-1.5 rounded-lg text-left text-[#1F2937] hover:text-[#0284C7] hover:bg-sky-50 flex items-center gap-2 cursor-pointer transition-colors"
                     >
-                      <Database size={12} className="text-sky-400" />
+                      <Database size={12} className="text-sky-500" />
                       <span>Data Layer (JSON/CSV)</span>
                     </button>
                   )}
 
-                  <div className="h-px bg-slate-800 my-0.5" />
+                  <div className="h-px bg-[#F3D5E2] my-0.5" />
 
                   <button
                     type="button"
@@ -277,7 +378,7 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
                       setIsMoreMenuOpen(false);
                       onReset();
                     }}
-                    className="w-full px-2.5 py-1.5 rounded-lg text-left text-rose-300 hover:text-white hover:bg-rose-950/50 flex items-center gap-2 cursor-pointer"
+                    className="w-full px-2.5 py-1.5 rounded-lg text-left text-rose-600 hover:bg-rose-50 flex items-center gap-2 cursor-pointer transition-colors"
                   >
                     <RotateCcw size={12} />
                     <span>รีเซ็ตดราฟต์ (Reset)</span>
@@ -287,100 +388,6 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
             )}
           </div>
         </div>
-      </div>
-
-      {/* ROW 3: Team Division Selector & Roster Bar Toggle */}
-      <div className="w-full flex items-center justify-between gap-1 sm:gap-2 pt-1 border-t border-slate-800/80">
-        {/* Category Pills */}
-        {onChangeTeamCategory && (
-          <div className="flex items-center gap-0.5 sm:gap-1 bg-black/60 p-0.5 rounded-lg sm:rounded-xl border border-slate-800 shadow-inner overflow-x-auto no-scrollbar">
-            <button
-              type="button"
-              onClick={() => onChangeTeamCategory('male')}
-              className={`font-['Barlow_Condensed'] text-[9.5px] sm:text-[11px] font-black tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md sm:rounded-lg border transition-all cursor-pointer flex items-center gap-0.5 sm:gap-1 ${
-                selectedTeamCategory === 'male'
-                  ? 'bg-sky-600 border-sky-400 text-white shadow-[0_0_8px_rgba(56,189,248,0.4)]'
-                  : 'border-transparent bg-transparent text-slate-400 hover:text-white'
-              }`}
-            >
-              <span>👨</span>
-              <span>ชาย</span>
-              {playerCounts !== undefined && (
-                <span className={`text-[8.5px] sm:text-[9.5px] px-1 py-0.1 rounded font-normal ${selectedTeamCategory === 'male' ? 'bg-black/30' : 'bg-slate-800 text-slate-400'}`}>
-                  {playerCounts.male}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => onChangeTeamCategory('female')}
-              className={`font-['Barlow_Condensed'] text-[9.5px] sm:text-[11px] font-black tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md sm:rounded-lg border transition-all cursor-pointer flex items-center gap-0.5 sm:gap-1 ${
-                selectedTeamCategory === 'female'
-                  ? 'bg-rose-600 border-rose-400 text-white shadow-[0_0_8px_rgba(244,63,94,0.4)]'
-                  : 'border-transparent bg-transparent text-slate-400 hover:text-white'
-              }`}
-            >
-              <span>👩</span>
-              <span>หญิง</span>
-              {playerCounts !== undefined && (
-                <span className={`text-[8.5px] sm:text-[9.5px] px-1 py-0.1 rounded font-normal ${selectedTeamCategory === 'female' ? 'bg-black/30' : 'bg-slate-800 text-slate-400'}`}>
-                  {playerCounts.female}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => onChangeTeamCategory('mixed')}
-              className={`font-['Barlow_Condensed'] text-[9.5px] sm:text-[11px] font-black tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md sm:rounded-lg border transition-all cursor-pointer flex items-center gap-0.5 sm:gap-1 ${
-                selectedTeamCategory === 'mixed'
-                  ? 'bg-purple-600 border-purple-400 text-white shadow-[0_0_8px_rgba(168,85,247,0.4)]'
-                  : 'border-transparent bg-transparent text-slate-400 hover:text-white'
-              }`}
-            >
-              <span>👥</span>
-              <span>ผสม</span>
-              {playerCounts !== undefined && (
-                <span className={`text-[8.5px] sm:text-[9.5px] px-1 py-0.1 rounded font-normal ${selectedTeamCategory === 'mixed' ? 'bg-black/30' : 'bg-slate-800 text-slate-400'}`}>
-                  {playerCounts.mixed}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => onChangeTeamCategory('all')}
-              className={`font-['Barlow_Condensed'] text-[9.5px] sm:text-[11px] font-black tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md sm:rounded-lg border transition-all cursor-pointer flex items-center gap-0.5 sm:gap-1 ${
-                selectedTeamCategory === 'all'
-                  ? 'bg-white border-white text-black shadow-sm'
-                  : 'border-transparent bg-transparent text-slate-400 hover:text-white'
-              }`}
-            >
-              <span>🌐</span>
-              <span>ทั้งหมด</span>
-              {playerCounts !== undefined && (
-                <span className={`text-[8.5px] sm:text-[9.5px] px-1 py-0.1 rounded font-normal ${selectedTeamCategory === 'all' ? 'bg-black/30 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                  {playerCounts.all}
-                </span>
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* Roster Bar Toggle Button */}
-        {onToggleRosterBar && (
-          <button
-            type="button"
-            onClick={onToggleRosterBar}
-            title={isRosterBarOpen ? 'ซ่อนแถบข้อมูลนักแข่ง' : 'แสดงแถบข้อมูลนักแข่ง'}
-            className={`font-['Barlow_Condensed'] text-[9.5px] sm:text-[11px] font-black tracking-wider px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg border transition-all cursor-pointer flex items-center gap-1 shadow-sm ml-auto ${
-              isRosterBarOpen
-                ? 'bg-[#fbbf24]/20 border-[#fbbf24] text-[#fbbf24] shadow-[0_0_8px_rgba(251,191,36,0.3)]'
-                : 'bg-black/60 border-slate-700 text-slate-300 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <Users size={11} className="text-[#fbbf24]" />
-            <span>{isRosterBarOpen ? 'ซ่อนนักแข่ง' : 'แสดงนักแข่ง'}</span>
-          </button>
-        )}
       </div>
     </div>
   );
