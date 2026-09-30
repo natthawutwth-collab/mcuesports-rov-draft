@@ -155,7 +155,6 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
               <div
                 key={`ban-${side}-${idx}`}
                 onClick={() => {
-                  if (hero && onInspectHero) onInspectHero(hero.name);
                   onSlotClick('ban', idx);
                 }}
                 className={`relative aspect-square rounded-lg overflow-hidden flex flex-col items-center justify-center cursor-pointer transition-all border-2 ${
@@ -273,7 +272,6 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
             <div
               key={`pick-${side}-${idx}`}
               onClick={() => {
-                if (pick.hero && onInspectHero) onInspectHero(pick.hero.name);
                 onSlotClick('pick', idx);
               }}
               className={`relative flex items-center ${compact ? 'gap-1.5 p-1.5' : 'gap-2 sm:gap-2.5 p-2'} rounded-xl border-2 cursor-pointer transition-all ${

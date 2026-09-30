@@ -465,37 +465,36 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                   key={hero.id}
                   className="relative group/card flex flex-col"
                 >
-                  <button
-                    type="button"
-                    disabled={isUnavailable}
+                  <div
                     onClick={() => {
-                      if (onInspectHero) onInspectHero(hero.name);
-                      onSelectHero(hero);
+                      if (!isUnavailable) {
+                        onSelectHero(hero);
+                      }
                     }}
-                    className={`w-full relative flex flex-col items-center rounded-xl overflow-hidden border-2 p-1.5 transition-all cursor-pointer select-none text-left ${
+                    className={`w-full relative flex flex-col items-center rounded-xl overflow-hidden border-2 p-1.5 transition-all select-none text-left ${
                       isInspected
                         ? 'border-[#E91E63] ring-2 ring-[#E91E63] shadow-[0_0_14px_rgba(233,30,99,0.3)] bg-[#FCE4EC]/50 scale-102'
                         : isBanned
                         ? 'border-red-300 bg-red-50/50 opacity-40 cursor-not-allowed'
                         : isPicked
                         ? 'border-slate-300 bg-slate-100/60 opacity-35 cursor-not-allowed'
-                        : 'border-[#E2E8F0] bg-white hover:border-[#E91E63] hover:shadow-md hover:scale-105 active:scale-95 shadow-xs'
+                        : 'border-[#E2E8F0] bg-white hover:border-[#E91E63] hover:shadow-md hover:scale-105 active:scale-95 shadow-xs cursor-pointer'
                     }`}
                   >
                     {/* Position Tag */}
-                    <div className="absolute top-1.5 left-1.5 z-10 text-[8.5px] font-['Barlow_Condensed'] font-black px-1.5 py-0.2 rounded bg-white/95 text-slate-800 tracking-wider border border-slate-300 uppercase shadow-2xs">
+                    <div className="absolute top-1.5 left-1.5 z-10 text-[8.5px] font-['Barlow_Condensed'] font-black px-1.5 py-0.2 rounded bg-white/95 text-slate-800 tracking-wider border border-slate-300 uppercase shadow-2xs pointer-events-none">
                       {hero.primaryPos}
                     </div>
 
                     {/* Role Color Dot */}
-                    <div className={`absolute top-2 right-2 z-10 w-2.5 h-2.5 rounded-full ${posColor} ring-1 ring-white shadow-2xs`} />
+                    <div className={`absolute top-2 right-2 z-10 w-2.5 h-2.5 rounded-full ${posColor} ring-1 ring-white shadow-2xs pointer-events-none`} />
 
                     {/* Hero Portrait */}
                     <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-slate-100 mb-1 border border-slate-200">
                       <img
                         src={hero.avatarUrl || getHeroImageUrl(hero.name)}
                         alt={hero.name}
-                        className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-300 pointer-events-none"
                         loading="lazy"
                         onError={(e) => {
                           (e.target as HTMLElement).style.display = 'none';
@@ -503,20 +502,22 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                       />
 
                       {/* Quick Inspect Button (Accessible even when banned/picked) */}
-                      <div
+                      <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
+                          e.preventDefault();
                           if (onInspectHero) onInspectHero(hero.name);
                         }}
                         title={`ดูสถิติและคู่ต่อสู้ ${hero.name}`}
-                        className="absolute bottom-1 right-1 z-30 w-6 h-6 rounded-md bg-white/95 hover:bg-[#0284c7] hover:text-white text-slate-700 flex items-center justify-center text-[11px] border border-slate-300 transition-all opacity-0 group-hover/card:opacity-100 shadow-sm cursor-pointer"
+                        className="absolute bottom-1 right-1 z-30 w-6 h-6 rounded-md bg-white hover:bg-[#0284c7] hover:text-white text-slate-700 flex items-center justify-center text-[12px] border border-slate-300 transition-all shadow-md cursor-pointer active:scale-90"
                       >
                         📊
-                      </div>
+                      </button>
 
                       {/* Banned Overlay */}
                       {isBanned && (
-                        <div className="absolute inset-0 bg-rose-950/80 flex flex-col items-center justify-center text-white z-20">
+                        <div className="absolute inset-0 bg-rose-950/80 flex flex-col items-center justify-center text-white z-20 pointer-events-none">
                           <Ban size={20} strokeWidth={2.5} className="text-rose-200" />
                           <span className="text-[8px] font-['Orbitron'] font-black mt-0.5 tracking-wider text-rose-100">BANNED</span>
                         </div>
@@ -524,7 +525,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
 
                       {/* Picked Overlay */}
                       {isPicked && (
-                        <div className="absolute inset-0 bg-slate-900/75 flex flex-col items-center justify-center text-emerald-300 z-20">
+                        <div className="absolute inset-0 bg-slate-900/75 flex flex-col items-center justify-center text-emerald-300 z-20 pointer-events-none">
                           <Check size={20} strokeWidth={2.5} className="text-emerald-300" />
                           <span className="text-[8px] font-['Orbitron'] font-black mt-0.5 tracking-wider text-emerald-200">PICKED</span>
                         </div>
@@ -572,7 +573,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                         )}
                       </div>
                     )}
-                  </button>
+                  </div>
 
                   {/* HOVER TOOLTIP: Shows Player Name and Proficiency Details */}
                   {playerBadges.length > 0 && (

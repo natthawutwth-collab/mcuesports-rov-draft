@@ -16,6 +16,7 @@ import { DraftHistoryPage } from './components/DraftHistoryPage';
 import { PreDraftModal } from './components/PreDraftModal';
 import { SaveDraftModal } from './components/SaveDraftModal';
 import { DraftPlayerRosterBar } from './components/DraftPlayerRosterBar';
+import { DraftTacticalRadar } from './components/DraftTacticalRadar';
 import { Toast } from './components/Toast';
 import { statsDataProvider } from './services/statsDataProvider';
 import { Hero } from './types/draft';
@@ -463,6 +464,7 @@ export default function App() {
 
   const handleInspectHero = (heroName: string) => {
     setInspectedHeroName(heroName);
+    handleSetSidePanelTab('stats');
     handleSetSidePanelOpen(true);
   };
 
@@ -966,6 +968,24 @@ export default function App() {
               </main>
             )}
           </div>
+
+          {/* Real-time Draft Tactical Radar: Ban Intents, Pick Combos, Counter Recommendations */}
+          <DraftTacticalRadar
+            blueBans={blueBans}
+            redBans={redBans}
+            bluePicks={bluePicks}
+            redPicks={redPicks}
+            bannedHeroNames={bannedHeroNames}
+            pickedHeroNames={pickedHeroNames}
+            onInspectHero={handleInspectHero}
+            onPickHeroDirectly={(heroName) => {
+              const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
+              if (h) handleSelectHero(h);
+            }}
+            isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
+            blueTeamName={blueTeamName}
+            redTeamName={redTeamName}
+          />
 
           {/* Slide-out Coach Drawer overlay for screens < 1280px & mobile */}
           {isSidePanelOpen && (
