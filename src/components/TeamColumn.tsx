@@ -18,7 +18,7 @@ interface TeamColumnProps {
   } | null;
   onSlotClick: (phase: 'ban' | 'pick', index: number) => void;
   onClearSlot: (phase: 'ban' | 'pick', index: number) => void;
-  onChangePickPos: (index: number, pos: LaneSelectKey) => void;
+  onChangePickPos?: (index: number, pos: LaneSelectKey) => void;
   onInspectHero?: (heroName: string) => void;
   inspectedHeroName?: string | null;
   players?: Player[];
@@ -254,17 +254,22 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
             currentTurnSlot?.phase === 'pick' &&
             currentTurnSlot?.index === idx;
 
-          // Role color for border & badge
+          // If hero is picked, use the hero's actual primary position, otherwise neutral slot styling
+          const heroPos = pick.hero ? pick.hero.primaryPos.toUpperCase() : null;
           const posColorClass =
-            pick.pos === 'DSL'
+            heroPos === 'DSL'
               ? 'border-[#f97316] text-[#f97316] bg-orange-50'
-              : pick.pos === 'JG'
+              : heroPos === 'JG'
               ? 'border-[#10b981] text-[#10b981] bg-emerald-50'
-              : pick.pos === 'MID'
+              : heroPos === 'MID'
               ? 'border-[#a855f7] text-[#a855f7] bg-purple-50'
-              : pick.pos === 'ROAM'
+              : heroPos === 'ROAM'
               ? 'border-[#0ea5e9] text-[#0ea5e9] bg-sky-50'
-              : 'border-[#eab308] text-[#eab308] bg-amber-50';
+              : heroPos === 'ADL'
+              ? 'border-[#eab308] text-[#eab308] bg-amber-50'
+              : isBlue
+              ? 'border-sky-300 text-[#0284C7] bg-sky-50/50'
+              : 'border-rose-300 text-[#E11D48] bg-rose-50/50';
 
           const isInspected = pick.hero && inspectedHeroName?.toLowerCase() === pick.hero.name.toLowerCase();
 
@@ -327,7 +332,9 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
               <div
                 className={`${
                   compact ? 'w-[34px] h-[34px] text-[11px]' : 'w-[42px] h-[42px] sm:w-[46px] sm:h-[46px] text-[13px]'
-                } rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center font-['Prompt'] font-bold bg-slate-50 border-2 ${posColorClass.split(' ')[0]} relative shadow-xs`}
+                } rounded-lg overflow-hidden flex-shrink-0 flex items-center justify-center font-['Prompt'] font-bold ${
+                  pick.hero ? `bg-slate-50 border-2 ${posColorClass.split(' ')[0]}` : 'bg-slate-50/80 border-2 border-dashed border-slate-300'
+                } relative shadow-xs`}
               >
                 {pick.hero ? (
                   <img
@@ -340,8 +347,8 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center leading-none">
-                    <span className={`font-['Barlow_Condensed'] font-black text-xs ${posColorClass.split(' ')[1]}`}>
-                      {pick.pos}
+                    <span className="font-['Orbitron'] font-black text-xs text-slate-400">
+                      P{idx + 1}
                     </span>
                   </div>
                 )}
@@ -354,11 +361,23 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                     isBlue ? 'justify-start' : 'justify-end'
                   }`}
                 >
-                  <span
-                    className={`px-1.5 py-0.2 rounded border text-[9px] font-bold ${posColorClass.split(' ')[0]} ${posColorClass.split(' ')[1]} ${posColorClass.split(' ')[2]}`}
-                  >
-                    {pick.pos || 'POS'}
-                  </span>
+                  {pick.hero ? (
+                    <span
+                      className={`px-1.5 py-0.2 rounded border text-[9px] font-bold ${posColorClass.split(' ')[0]} ${posColorClass.split(' ')[1]} ${posColorClass.split(' ')[2]}`}
+                    >
+                      {heroPos || 'FLEX'}
+                    </span>
+                  ) : (
+                    <span
+                      className={`px-1.5 py-0.2 rounded border text-[8.5px] font-bold ${
+                        isBlue
+                          ? 'border-sky-200 text-[#0284C7] bg-sky-50'
+                          : 'border-rose-200 text-[#E11D48] bg-rose-50'
+                      }`}
+                    >
+                      PICK #{idx + 1}
+                    </span>
+                  )}
                 </div>
 
                 {pick.hero ? (
@@ -390,8 +409,8 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                   </>
                 ) : (
                   <div className="flex flex-col mt-0.5">
-                    <span className="text-[11px] font-['Prompt'] font-bold text-slate-700 truncate">
-                      {pick.pos === 'DSL' ? 'Dark Slayer' : pick.pos === 'JG' ? 'Jungle' : pick.pos === 'MID' ? 'Mid Lane' : pick.pos === 'ROAM' ? 'Support / Roam' : 'Abyssal Dragon'}
+                    <span className="text-[11.5px] sm:text-[12px] font-['Prompt'] font-bold text-slate-700 truncate">
+                      {isBlue ? 'Blue' : 'Red'} Pick {idx + 1}
                     </span>
                     <span className="text-[9.5px] font-['Prompt'] text-slate-400 flex items-center gap-0.5 font-medium">
                       <span className="text-amber-500 font-bold">+</span>
@@ -548,22 +567,6 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
                   )}
                 </div>
               </div>
-
-              {/* Position Select Dropdown */}
-              <select
-                value={pick.pos}
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => onChangePickPos(idx, e.target.value as LaneSelectKey)}
-                className={`absolute bottom-1.5 ${
-                  isBlue ? 'right-2' : 'left-2'
-                } bg-white border border-slate-300 hover:border-[#E91E63] text-slate-700 font-['Prompt'] font-bold text-[9.5px] px-1.5 py-0.5 rounded-md outline-none cursor-pointer tracking-wider shadow-2xs`}
-              >
-                <option value="DSL">DSL (Dark Slayer)</option>
-                <option value="JG">JG (Jungle)</option>
-                <option value="MID">MID (Mage)</option>
-                <option value="ROAM">ROAM (Support)</option>
-                <option value="ADL">ADL (Carry)</option>
-              </select>
             </div>
           );
         })}
