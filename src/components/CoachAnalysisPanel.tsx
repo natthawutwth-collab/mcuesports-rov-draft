@@ -10,6 +10,8 @@ import {
   SuggestedPickItem,
 } from '../services/coachAnalysisService';
 import { getHeroImageUrl } from '../data/heroes';
+import { RPL_2026_PRO_COMPS } from '../data/proMetaComps';
+import { ProCompsModal } from './ProCompsModal';
 
 interface CoachAnalysisPanelProps {
   isOpen: boolean;
@@ -31,6 +33,7 @@ interface CoachAnalysisPanelProps {
   onSelectHeroToInspect: (heroName: string) => void;
   onPickHeroDirectly?: (hero: Hero) => void;
   isPickTurn?: boolean;
+  isBanTurn?: boolean;
 }
 
 export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
@@ -50,9 +53,11 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
   onSelectHeroToInspect,
   onPickHeroDirectly,
   isPickTurn = false,
+  isBanTurn = false,
 }) => {
   // Perspective Team: defaults to current turn team, but coach can toggle
   const [analyzedTeam, setAnalyzedTeam] = useState<'blue' | 'red'>(activeTurnTeam);
+  const [isProCompsOpen, setIsProCompsOpen] = useState(false);
 
   // Sync with turn team when turn changes if user hasn't explicitly locked
   React.useEffect(() => {
@@ -68,6 +73,45 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
       ) || null
     );
   }, [inspectedHeroName, allHeroes]);
+
+  const isBlue = analyzedTeam === 'blue';
+
+  // Hero name sets for matching pro comps
+  const myPicksHeroNames = useMemo(() => {
+    const list = isBlue ? bluePicks : redPicks;
+    return new Set(list.map((p) => p.hero?.name).filter(Boolean) as string[]);
+  }, [isBlue, bluePicks, redPicks]);
+
+  const oppPicksHeroNames = useMemo(() => {
+    const list = isBlue ? redPicks : bluePicks;
+    return new Set(list.map((p) => p.hero?.name).filter(Boolean) as string[]);
+  }, [isBlue, bluePicks, redPicks]);
+
+  // Match active picks against RPL 2026 Pro Comps
+  const matchingProComps = useMemo(() => {
+    return RPL_2026_PRO_COMPS.map((comp) => {
+      const picked = comp.coreHeroes.filter((h) => myPicksHeroNames.has(h));
+      const missing = comp.coreHeroes.filter((h) => !myPicksHeroNames.has(h));
+      const blocked = missing.filter(
+        (h) => oppPicksHeroNames.has(h) || bannedHeroNames.has(h)
+      );
+      const available = missing.filter(
+        (h) => !oppPicksHeroNames.has(h) && !bannedHeroNames.has(h)
+      );
+      return {
+        comp,
+        pickedCount: picked.length,
+        totalCount: comp.coreHeroes.length,
+        picked,
+        missing,
+        blocked,
+        available,
+        isComplete: picked.length === comp.coreHeroes.length,
+      };
+    })
+      .filter((item) => item.pickedCount >= 1)
+      .sort((a, b) => b.pickedCount / b.totalCount - a.pickedCount / a.totalCount);
+  }, [myPicksHeroNames, oppPicksHeroNames, bannedHeroNames]);
 
   // Run Coach Analysis Engine
   const analysis: CoachAnalysisResult = useMemo(() => {
@@ -106,7 +150,6 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
 
   if (!isOpen) return null;
 
-  const isBlue = analyzedTeam === 'blue';
   const teamColor = isBlue ? '#6b8fb8' : '#a82844';
   const teamBg = isBlue ? 'bg-[#6b8fb8]/10' : 'bg-[#a82844]/10';
   const teamBorder = isBlue ? 'border-[#6b8fb8]/40' : 'border-[#a82844]/40';
@@ -179,10 +222,188 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
             )}
           </button>
         </div>
+
+        {/* Quick button to open RPL 2026 Pro Comps Modal */}
+        <button
+          type="button"
+          onClick={() => setIsProCompsOpen(true)}
+          className="w-full py-1.5 px-2.5 rounded-xl border border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 text-amber-900 font-['Prompt'] text-[11px] font-bold flex items-center justify-between cursor-pointer transition-all shadow-2xs"
+          title="เปิดดูคอมพ์ยอดฮิตที่นักแข่งใช้ใน RoV Pro League 2026 Summer (Group Stage & Playoffs)"
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm">🏆</span>
+            <span className="font-['Orbitron'] font-bold text-[10.5px]">RPL 2026 META COMPS</span>
+          </div>
+          <span className="text-[9.5px] bg-amber-500 text-white font-black px-2 py-0.5 rounded-full">
+            {RPL_2026_PRO_COMPS.length} คอมพ์แข่งจริง ➔
+          </span>
+        </button>
       </div>
 
       {/* Main Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-3 space-y-3.5 custom-scrollbar text-xs">
+        {/* RPL PRO COMPS MATCHING TRACKER */}
+        {matchingProComps.length > 0 && (
+          <section className="p-2.5 rounded-xl border border-amber-300 bg-amber-50/70 space-y-2 shadow-xs">
+            <div className="flex items-center justify-between">
+              <span className="font-['Prompt'] text-[11px] font-bold tracking-wider uppercase text-amber-900 flex items-center gap-1">
+                <span>🏆</span>
+                <span>RPL COMPS DETECTED ({matchingProComps.length})</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsProCompsOpen(true)}
+                className="text-[10px] text-amber-800 font-bold hover:underline cursor-pointer"
+              >
+                ดูทั้งหมด ➔
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {matchingProComps.slice(0, 2).map((item) => {
+                const percent = Math.round((item.pickedCount / item.totalCount) * 100);
+                return (
+                  <div
+                    key={item.comp.id}
+                    className="p-2 bg-white rounded-lg border border-amber-200 shadow-2xs space-y-1.5"
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="font-bold text-[11px] text-slate-800 truncate" title={item.comp.name}>
+                        {item.comp.nameTh}
+                      </div>
+                      <span className="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
+                        {item.pickedCount}/{item.totalCount} ({percent}%)
+                      </span>
+                    </div>
+
+                    {/* Core Heroes Status */}
+                    <div className="flex items-center gap-1 flex-wrap">
+                      {item.comp.coreHeroes.map((hName) => {
+                        const isPicked = item.picked.includes(hName);
+                        const isBlocked = item.blocked.includes(hName);
+                        return (
+                          <button
+                            key={hName}
+                            type="button"
+                            onClick={() => onSelectHeroToInspect(hName)}
+                            className={`px-1.5 py-0.5 rounded text-[9.5px] font-bold flex items-center gap-1 border transition-all cursor-pointer ${
+                              isPicked
+                                ? 'bg-emerald-100 border-emerald-300 text-emerald-800'
+                                : isBlocked
+                                ? 'bg-rose-50 border-rose-200 text-rose-600 line-through opacity-70'
+                                : 'bg-slate-50 border-slate-300 text-slate-700 hover:border-amber-400 hover:text-amber-800'
+                            }`}
+                            title={
+                              isPicked
+                                ? `หยิบแล้ว: ${hName}`
+                                : isBlocked
+                                ? `ถูกตัดตัว/แบน: ${hName}`
+                                : `ยังว่างอยู่: คลิกเพื่อตรวจหรือเลือก ${hName}`
+                            }
+                          >
+                            <img
+                              src={getHeroImageUrl(hName)}
+                              alt={hName}
+                              className="w-3.5 h-3.5 rounded-full object-cover"
+                            />
+                            <span>{hName}</span>
+                            {isPicked && <span>✓</span>}
+                            {isBlocked && <span>✕</span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Recommendation note */}
+                    {item.available.length > 0 && (
+                      <div className="text-[10px] text-amber-900 bg-amber-50/80 px-2 py-1 rounded border border-amber-200/60 flex items-center justify-between">
+                        <span>
+                          💡 แนะนำหยิบต่อให้ครบสูตร: <strong>{item.available.join(', ')}</strong>
+                        </span>
+                        {isPickTurn && onPickHeroDirectly && item.available[0] && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const heroObj = allHeroes.find((h) => h.name === item.available[0]);
+                              if (heroObj) onPickHeroDirectly(heroObj);
+                            }}
+                            className="ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white cursor-pointer transition-colors shadow-2xs whitespace-nowrap"
+                          >
+                            หยิบ {item.available[0]}
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Priority Ban recommendation for this comp */}
+                    {item.comp.priorityBans && item.comp.priorityBans.length > 0 && (
+                      <div className="pt-1.5 border-t border-amber-200/80">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[9.5px] font-bold text-rose-800 flex items-center gap-1">
+                            <span>🚫</span>
+                            <span>ตัวที่โปรแบนเมื่อเล่นคอมพ์นี้:</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {item.comp.priorityBans.map((banItem) => {
+                            const isAlreadyBanned = bannedHeroNames.has(banItem.hero);
+                            const isPickedByOpp = oppPicksHeroNames.has(banItem.hero);
+                            const isAvailable = !isAlreadyBanned && !isPickedByOpp;
+                            return (
+                              <div
+                                key={banItem.hero}
+                                className={`px-1.5 py-0.5 rounded text-[9px] font-bold flex items-center gap-1 border transition-all ${
+                                  isAlreadyBanned
+                                    ? 'bg-slate-100 border-slate-300 text-slate-500 opacity-75'
+                                    : isPickedByOpp
+                                    ? 'bg-rose-100 border-rose-300 text-rose-800 animate-pulse font-black'
+                                    : 'bg-rose-50 border-rose-200 text-rose-700'
+                                }`}
+                                title={`${banItem.hero} (${banItem.phase}): ${banItem.reason}`}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => onSelectHeroToInspect(banItem.hero)}
+                                  className="hover:underline cursor-pointer"
+                                >
+                                  {banItem.hero}
+                                </button>
+                                {isAlreadyBanned ? (
+                                  <span className="text-emerald-700 font-normal">✓ แบนแล้ว</span>
+                                ) : isPickedByOpp ? (
+                                  <span className="text-rose-700">🚨 ศัตรูหยิบแล้ว!</span>
+                                ) : (
+                                  <>
+                                    <span className="text-rose-600 font-black">
+                                      {banItem.priority === 'must_ban' ? '🔥 ต้องแบน' : '⚠️ ควรแบน'}
+                                    </span>
+                                    {isBanTurn && onPickHeroDirectly && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const heroObj = allHeroes.find((h) => h.name === banItem.hero);
+                                          if (heroObj) onPickHeroDirectly(heroObj);
+                                        }}
+                                        className="ml-0.5 px-1 py-0.2 bg-rose-600 hover:bg-rose-700 text-white rounded text-[8.5px] cursor-pointer"
+                                        title={`แบน ${banItem.hero} ตอนนี้`}
+                                      >
+                                        แบน
+                                      </button>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
         {/* 2. DRAFT WARNINGS & ALERTS (Real-time) */}
         {analysis.warnings.length > 0 && (
           <section className="space-y-1.5">
@@ -753,6 +974,36 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
           รีเซ็ตการตรวจ
         </button>
       </div>
+
+      {/* Pro Comps Modal */}
+      <ProCompsModal
+        isOpen={isProCompsOpen}
+        onClose={() => setIsProCompsOpen(false)}
+        bannedHeroNames={bannedHeroNames}
+        pickedHeroNames={pickedHeroNames}
+        bluePicks={bluePicks}
+        redPicks={redPicks}
+        activeTeam={analyzedTeam}
+        onInspectHero={onSelectHeroToInspect}
+        onPickHeroDirectly={
+          onPickHeroDirectly
+            ? (hName) => {
+                const found = allHeroes.find((h) => h.name === hName);
+                if (found) onPickHeroDirectly(found);
+              }
+            : undefined
+        }
+        onBanHeroDirectly={
+          onPickHeroDirectly
+            ? (hName) => {
+                const found = allHeroes.find((h) => h.name === hName);
+                if (found) onPickHeroDirectly(found);
+              }
+            : undefined
+        }
+        isPickTurn={isPickTurn}
+        isBanTurn={isBanTurn}
+      />
     </aside>
   );
 };

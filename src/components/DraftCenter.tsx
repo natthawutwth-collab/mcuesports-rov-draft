@@ -39,6 +39,8 @@ interface DraftCenterProps {
   onOpenCoachPanel?: () => void;
   selectedTeamCategory?: TeamCategory;
   onChangeTeamCategory?: (cat: TeamCategory) => void;
+  bluePicks?: { hero: Hero | null }[];
+  redPicks?: { hero: Hero | null }[];
 }
 
 export type PlayerPoolFilter = 'all' | 'player_all' | 'signature' | 'comfortable';
@@ -81,6 +83,8 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
   onOpenCoachPanel,
   selectedTeamCategory = 'male',
   onChangeTeamCategory,
+  bluePicks = [],
+  redPicks = [],
 }) => {
   const currentTurn = DRAFT_TURNS[draftTurnIdx];
 

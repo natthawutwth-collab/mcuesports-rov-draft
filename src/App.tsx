@@ -384,6 +384,7 @@ export default function App() {
           onSelectHeroToInspect={handleInspectHero}
           onPickHeroDirectly={handleSelectHero}
           isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
+          isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
         />
       ) : (
         /* Tab 2: Tournament Stats & Matchups Panel */
@@ -853,6 +854,8 @@ export default function App() {
                         onOpenCoachPanel={handleToggleCoachPanel}
                         selectedTeamCategory={selectedTeamCategory}
                         onChangeTeamCategory={changeTeamCategory}
+                        bluePicks={bluePicks}
+                        redPicks={redPicks}
                       />
                     </div>
 
@@ -983,6 +986,12 @@ export default function App() {
               if (h) handleSelectHero(h);
             }}
             isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
+            isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
+            activeTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
+            onBanHeroDirectly={(heroName) => {
+              const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
+              if (h) handleSelectHero(h);
+            }}
             blueTeamName={blueTeamName}
             redTeamName={redTeamName}
             blueScore={draftScore}
