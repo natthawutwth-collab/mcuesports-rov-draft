@@ -14,17 +14,26 @@ const DEFAULT_TEAM_ID = 'main_team';
 // Validate player structure, ensuring user players (regardless of nickname) are preserved
 function sanitizePlayers(list: any[]): Player[] {
   if (!Array.isArray(list)) return [];
-  return list.filter(
-    (p) =>
-      p &&
-      typeof p === 'object' &&
-      typeof p.nickname === 'string' &&
-      p.nickname.trim().length > 0 &&
-      p.id !== 'legacy_mock_seed_1'
-  ).map((p) => ({
-    ...p,
-    category: p.category || 'male',
-  }));
+  return list
+    .filter(
+      (p) =>
+        p &&
+        typeof p === 'object' &&
+        typeof p.nickname === 'string' &&
+        p.nickname.trim().length > 0 &&
+        p.id !== 'legacy_mock_seed_1'
+    )
+    .map((p) => {
+      const cats: PlayerCategory[] =
+        Array.isArray(p.categories) && p.categories.length > 0
+          ? p.categories
+          : [p.category || 'male'];
+      return {
+        ...p,
+        categories: cats,
+        category: p.category || cats[0] || 'male',
+      };
+    });
 }
 
 export function usePlayers() {
@@ -351,10 +360,16 @@ export function usePlayers() {
       avatarUrl?: string;
       heroPool: PlayerHeroPoolItem[];
       category?: PlayerCategory;
+      categories?: PlayerCategory[];
     }) => {
+      const cats: PlayerCategory[] =
+        Array.isArray(newPlayerData.categories) && newPlayerData.categories.length > 0
+          ? newPlayerData.categories
+          : [newPlayerData.category || 'male'];
       const newPlayer: Player = {
         ...newPlayerData,
-        category: newPlayerData.category || 'male',
+        categories: cats,
+        category: newPlayerData.category || cats[0] || 'male',
         id: 'player_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
         createdAt: Date.now(),
       };
@@ -396,6 +411,11 @@ export function usePlayers() {
     const map: Record<string, HeroPlayerBadge[]> = {};
 
     players.forEach((player) => {
+      const cats: PlayerCategory[] =
+        Array.isArray(player.categories) && player.categories.length > 0
+          ? player.categories
+          : [player.category || 'male'];
+
       player.heroPool.forEach((item) => {
         if (!map[item.heroName]) {
           map[item.heroName] = [];
@@ -407,7 +427,8 @@ export function usePlayers() {
           position: player.position,
           tier: item.tier,
           playerAvatar: (player.avatarUrl && player.avatarUrl.trim()) ? player.avatarUrl.trim() : '',
-          category: player.category || 'male',
+          category: player.category || cats[0] || 'male',
+          categories: cats,
         });
       });
     });

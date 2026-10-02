@@ -13,6 +13,7 @@ interface PlayerModalProps {
     avatarUrl?: string;
     heroPool: PlayerHeroPoolItem[];
     category?: PlayerCategory;
+    categories?: PlayerCategory[];
   }) => void;
   initialPlayer?: Player | null;
 }
@@ -43,7 +44,51 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
   const [name, setName] = useState(initialPlayer?.name || '');
   const [nickname, setNickname] = useState(initialPlayer?.nickname || '');
   const [position, setPosition] = useState<PlayerPosition>(initialPlayer?.position || 'DSL');
-  const [category, setCategory] = useState<PlayerCategory>(initialPlayer?.category || 'male');
+
+  // Categories state: array supporting up to 2 categories (Male+Mixed or Female+Mixed)
+  const [categories, setCategories] = useState<PlayerCategory[]>(() => {
+    if (initialPlayer?.categories && initialPlayer.categories.length > 0) {
+      return initialPlayer.categories;
+    }
+    if (initialPlayer?.category) {
+      return [initialPlayer.category];
+    }
+    return ['male'];
+  });
+
+  const handleToggleCategory = (cat: PlayerCategory) => {
+    setCategories((prev) => {
+      const isAlready = prev.includes(cat);
+
+      if (isAlready) {
+        // Keep at least 1 category selected
+        if (prev.length > 1) {
+          return prev.filter((c) => c !== cat);
+        }
+        return prev;
+      }
+
+      // If choosing 'male', remove 'female' because male & female cannot be selected together
+      if (cat === 'male') {
+        const withoutFemale = prev.filter((c) => c !== 'female');
+        return [...withoutFemale, 'male'];
+      }
+
+      // If choosing 'female', remove 'male' because male & female cannot be selected together
+      if (cat === 'female') {
+        const withoutMale = prev.filter((c) => c !== 'male');
+        return [...withoutMale, 'female'];
+      }
+
+      // If choosing 'mixed', it can combine with male OR female (up to 2 teams)
+      if (cat === 'mixed') {
+        return [...prev, 'mixed'];
+      }
+
+      return prev;
+    });
+  };
+
   const [heroPool, setHeroPool] = useState<PlayerHeroPoolItem[]>(
     initialPlayer?.heroPool || []
   );
@@ -106,7 +151,8 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
       name: cleanName || effectiveNick,
       nickname: effectiveNick.toUpperCase(),
       position,
-      category,
+      category: categories[0] || 'male',
+      categories,
       avatarUrl: initialPlayer?.avatarUrl || '',
       heroPool,
     });
@@ -180,48 +226,110 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
             </div>
           )}
 
-          {/* Row 2: Team Division / Category */}
-          <div>
-            <label className="block text-xs font-['Prompt'] font-bold tracking-wider text-slate-700 uppercase mb-1.5">
-              หมวดหมู่ทีม (Team Category) *
-            </label>
-            <div className="grid grid-cols-3 gap-2">
+          {/* Row 2: Team Division / Categories (Max 2: Male+Mixed or Female+Mixed) */}
+          <div className="bg-[#FFF8FB] border border-[#F3D5E2] rounded-xl p-3">
+            <div className="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+              <label className="text-xs font-['Prompt'] font-bold tracking-wider text-slate-800 uppercase flex items-center gap-1.5">
+                <span>🛡️</span>
+                <span>หมวดหมู่ทีมที่สังกัด (Team Categories) *</span>
+              </label>
+              <span className="text-[10px] sm:text-[10.5px] font-['Prompt'] font-bold text-[#E91E63] bg-[#FCE4EC] px-2 py-0.5 rounded-full border border-[#F48FB1]">
+                เลือกได้สูงสุด 2 ทีม: ชาย+ผสม หรือ หญิง+ผสม
+              </span>
+            </div>
+
+            <p className="text-[11px] text-slate-500 mb-2 font-['Prompt']">
+              นักกีฬา 1 คนสามารถสังกัดได้สูงสุด 2 ทีม เช่น เล่นได้ทั้งทีมชายและทีมผสม หรือทีมหญิงและทีมผสม
+              <span className="text-rose-600 font-semibold ml-1">(ไม่อนุญาตให้เลือกทีมชายและทีมหญิงพร้อมกัน)</span>
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {/* Male */}
               <button
                 type="button"
-                onClick={() => setCategory('male')}
-                className={`py-2 px-3 rounded-lg border font-['Prompt'] font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  category === 'male'
-                    ? 'bg-sky-50 border-[#0284C7] text-[#0284C7] shadow-xs'
-                    : 'border-[#F3D5E2] bg-white text-slate-600 hover:text-slate-900 hover:border-slate-400'
+                onClick={() => handleToggleCategory('male')}
+                className={`py-2 px-3 rounded-lg border font-['Prompt'] font-bold text-xs tracking-wider transition-all flex items-center justify-between gap-1.5 cursor-pointer ${
+                  categories.includes('male')
+                    ? 'bg-sky-50 border-[#0284C7] text-[#0284C7] shadow-xs ring-1 ring-[#0284C7]'
+                    : 'border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:border-slate-400'
                 }`}
               >
-                <span>👨</span>
-                <span>ทีมชาย (Men)</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">👨</span>
+                  <span>ทีมชาย (Men)</span>
+                </div>
+                <div
+                  className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] font-bold ${
+                    categories.includes('male')
+                      ? 'bg-[#0284C7] border-[#0284C7] text-white'
+                      : 'border-slate-300 bg-white'
+                  }`}
+                >
+                  {categories.includes('male') && '✓'}
+                </div>
               </button>
+
+              {/* Female */}
               <button
                 type="button"
-                onClick={() => setCategory('female')}
-                className={`py-2 px-3 rounded-lg border font-['Prompt'] font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  category === 'female'
-                    ? 'bg-rose-50 border-[#E11D48] text-[#E11D48] shadow-xs'
-                    : 'border-[#F3D5E2] bg-white text-slate-600 hover:text-slate-900 hover:border-slate-400'
+                onClick={() => handleToggleCategory('female')}
+                className={`py-2 px-3 rounded-lg border font-['Prompt'] font-bold text-xs tracking-wider transition-all flex items-center justify-between gap-1.5 cursor-pointer ${
+                  categories.includes('female')
+                    ? 'bg-rose-50 border-[#E11D48] text-[#E11D48] shadow-xs ring-1 ring-[#E11D48]'
+                    : 'border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:border-slate-400'
                 }`}
               >
-                <span>👩</span>
-                <span>ทีมหญิง (Women)</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">👩</span>
+                  <span>ทีมหญิง (Women)</span>
+                </div>
+                <div
+                  className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] font-bold ${
+                    categories.includes('female')
+                      ? 'bg-[#E11D48] border-[#E11D48] text-white'
+                      : 'border-slate-300 bg-white'
+                  }`}
+                >
+                  {categories.includes('female') && '✓'}
+                </div>
               </button>
+
+              {/* Mixed */}
               <button
                 type="button"
-                onClick={() => setCategory('mixed')}
-                className={`py-2 px-3 rounded-lg border font-['Prompt'] font-bold text-xs tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-                  category === 'mixed'
-                    ? 'bg-purple-50 border-purple-500 text-purple-700 shadow-xs'
-                    : 'border-[#F3D5E2] bg-white text-slate-600 hover:text-slate-900 hover:border-slate-400'
+                onClick={() => handleToggleCategory('mixed')}
+                className={`py-2 px-3 rounded-lg border font-['Prompt'] font-bold text-xs tracking-wider transition-all flex items-center justify-between gap-1.5 cursor-pointer ${
+                  categories.includes('mixed')
+                    ? 'bg-purple-50 border-purple-500 text-purple-700 shadow-xs ring-1 ring-purple-500'
+                    : 'border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:border-slate-400'
                 }`}
               >
-                <span>👥</span>
-                <span>ทีมผสม (Mixed)</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm">👥</span>
+                  <span>ทีมผสม (Mixed)</span>
+                </div>
+                <div
+                  className={`w-4 h-4 rounded border flex items-center justify-center text-[10px] font-bold ${
+                    categories.includes('mixed')
+                      ? 'bg-purple-600 border-purple-600 text-white'
+                      : 'border-slate-300 bg-white'
+                  }`}
+                >
+                  {categories.includes('mixed') && '✓'}
+                </div>
               </button>
+            </div>
+
+            {/* Selection Status Summary */}
+            <div className="mt-2 flex items-center justify-between text-[11px] font-['Prompt'] text-slate-600 pt-1.5 border-t border-[#F3D5E2]/80">
+              <span className="font-semibold text-slate-500">สถานะสังกัดทีม:</span>
+              <span className="font-bold text-[#E91E63]">
+                {categories.includes('male') && categories.includes('mixed') && '✓ สังกัด 2 ทีม: ทีมชาย + ทีมผสม'}
+                {categories.includes('female') && categories.includes('mixed') && '✓ สังกัด 2 ทีม: ทีมหญิง + ทีมผสม'}
+                {categories.includes('male') && !categories.includes('mixed') && '✓ สังกัด 1 ทีม: ทีมชาย (แตะ "+ ทีมผสม" เพื่อเล่น 2 ทีมได้)'}
+                {categories.includes('female') && !categories.includes('mixed') && '✓ สังกัด 1 ทีม: ทีมหญิง (แตะ "+ ทีมผสม" เพื่อเล่น 2 ทีมได้)'}
+                {!categories.includes('male') && !categories.includes('female') && categories.includes('mixed') && '✓ สังกัด 1 ทีม: ทีมผสม (แตะ "+ ชาย" หรือ "+ หญิง" ได้)'}
+              </span>
             </div>
           </div>
 

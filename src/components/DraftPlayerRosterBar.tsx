@@ -37,7 +37,10 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
   const filteredPlayers = React.useMemo(() => {
     let list = players;
     if (selectedCategory !== 'all') {
-      list = players.filter((p) => (p.category || 'male') === selectedCategory);
+      list = players.filter((p) => {
+        const cats = p.categories || [p.category || 'male'];
+        return cats.includes(selectedCategory);
+      });
     }
     // Sort by role order
     return [...list].sort((a, b) => {
@@ -136,11 +139,28 @@ export const DraftPlayerRosterBar: React.FC<DraftPlayerRosterBarProps> = ({
                             <span className="font-['Prompt'] font-bold text-xs sm:text-sm text-slate-800 truncate group-hover:text-[#E91E63] transition-colors">
                               {player.nickname}
                             </span>
-                            <span
-                              className={`text-[8px] sm:text-[9px] font-['Prompt'] font-bold px-1 sm:px-1.5 py-0.2 rounded border ${catBadgeClass}`}
-                            >
-                              {catEmoji}
-                            </span>
+                            <div className="flex items-center gap-0.5 flex-shrink-0">
+                              {(player.categories && player.categories.length > 0
+                                ? player.categories
+                                : [player.category || 'male']
+                              ).map((cat) => {
+                                const badgeClass =
+                                  cat === 'female'
+                                    ? 'bg-rose-50 text-rose-700 border-rose-300'
+                                    : cat === 'male'
+                                    ? 'bg-sky-50 text-sky-700 border-sky-300'
+                                    : 'bg-purple-50 text-purple-700 border-purple-300';
+                                const emoji = cat === 'female' ? '👩 หญิง' : cat === 'male' ? '👨 ชาย' : '👥 ผสม';
+                                return (
+                                  <span
+                                    key={cat}
+                                    className={`text-[7.5px] sm:text-[8px] font-['Prompt'] font-bold px-1 py-0.2 rounded border ${badgeClass}`}
+                                  >
+                                    {emoji}
+                                  </span>
+                                );
+                              })}
+                            </div>
                           </div>
                           <div className="text-[10px] sm:text-[11px] font-['Prompt'] text-slate-500 truncate">
                             {player.name}

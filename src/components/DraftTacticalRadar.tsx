@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Hero, TeamSide } from '../types/draft';
 import { getHeroImageUrl } from '../data/heroes';
+import { DraftScoreResult } from '../data/metaData';
 import {
   DraftPredictionService,
   DraftTacticalIntelligence,
@@ -22,6 +23,8 @@ interface DraftTacticalRadarProps {
   isPickTurn?: boolean;
   blueTeamName?: string;
   redTeamName?: string;
+  blueScore?: DraftScoreResult;
+  redScore?: DraftScoreResult;
 }
 
 type TabMode = 'all' | 'bans' | 'synergies' | 'counters';
@@ -39,10 +42,33 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
   isPickTurn = false,
   blueTeamName = 'Blue Team',
   redTeamName = 'Red Team',
+  blueScore,
+  redScore,
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(true);
   const [activeTab, setActiveTab] = useState<TabMode>('all');
   const [teamFilter, setTeamFilter] = useState<TeamFilter>('all');
+
+  // Compute Advantage Percentage
+  const hasScore = (blueScore && blueScore.score > 0) || (redScore && redScore.score > 0);
+  let bluePercent = 50;
+  let redPercent = 50;
+
+  if (blueScore && redScore && blueScore.score > 0 && redScore.score > 0) {
+    const total = blueScore.score + redScore.score;
+    bluePercent = Math.max(15, Math.min(85, Math.round((blueScore.score / total) * 100)));
+    redPercent = 100 - bluePercent;
+  } else if (blueScore && blueScore.score > 0 && (!redScore || redScore.score === 0)) {
+    bluePercent = Math.max(52, Math.min(65, Math.round(50 + (blueScore.score - 50) * 0.4)));
+    redPercent = 100 - bluePercent;
+  } else if (redScore && redScore.score > 0 && (!blueScore || blueScore.score === 0)) {
+    redPercent = Math.max(52, Math.min(65, Math.round(50 + (redScore.score - 50) * 0.4)));
+    bluePercent = 100 - redPercent;
+  }
+
+  const percentDiff = bluePercent - redPercent;
+  const advantageSide: 'blue' | 'red' | 'balanced' =
+    Math.abs(percentDiff) < 2 ? 'balanced' : percentDiff > 0 ? 'blue' : 'red';
 
   // Compute live intelligence in real-time
   const intelligence: DraftTacticalIntelligence = useMemo(() => {
@@ -130,6 +156,77 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
 
       {isOpen && (
         <div className="p-2 sm:p-4 flex flex-col gap-2.5 sm:gap-3">
+          {/* Live Draft Advantage Banner (% Display) */}
+          {hasScore && (
+            <div className="p-2.5 sm:p-3 bg-gradient-to-r from-sky-50/80 via-white to-rose-50/80 rounded-xl border border-[#F3D5E2] flex flex-col gap-1.5 shadow-2xs">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[13px]">📊</span>
+                  <span className="font-['Orbitron'] font-black text-[10.5px] sm:text-[11.5px] text-slate-800 tracking-wider uppercase">
+                    LIVE DRAFT ADVANTAGE
+                  </span>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-[9.5px] sm:text-[10px] font-bold shadow-2xs ${
+                      advantageSide === 'blue'
+                        ? 'bg-sky-100 text-[#0284C7] border border-sky-300'
+                        : advantageSide === 'red'
+                        ? 'bg-rose-100 text-[#E11D48] border border-rose-300'
+                        : 'bg-slate-100 text-slate-700 border border-slate-300'
+                    }`}
+                  >
+                    {advantageSide === 'blue'
+                      ? `🔵 ฝั่งน้ำเงินได้เปรียบ ${bluePercent}%`
+                      : advantageSide === 'red'
+                      ? `🔴 ฝั่งแดงได้เปรียบ ${redPercent}%`
+                      : `≈ สูสีสมดุล 50% : 50%`}
+                  </span>
+                </div>
+
+                <div className="text-[9.5px] sm:text-[10.5px] font-['Prompt'] font-bold text-slate-500">
+                  {advantageSide === 'blue'
+                    ? `🔵 ${blueTeamName} ได้เปรียบนำอยู่ +${percentDiff}%`
+                    : advantageSide === 'red'
+                    ? `🔴 ${redTeamName} ได้เปรียบนำอยู่ +${Math.abs(percentDiff)}%`
+                    : 'อัตราความได้เปรียบของทั้งสองฝั่งสูสีกัน'}
+                </div>
+              </div>
+
+              {/* Real-time Percentage Bar */}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 min-w-[50px]">
+                  <span className="text-[10px] font-bold text-[#0284C7] truncate max-w-[60px] hidden sm:inline">
+                    {blueTeamName}
+                  </span>
+                  <span className="font-['Orbitron'] font-black text-xs sm:text-[13px] text-[#0284C7]">
+                    {bluePercent}%
+                  </span>
+                </div>
+
+                <div className="flex-1 h-3 bg-slate-200/80 border border-slate-300 rounded-full overflow-hidden flex shadow-inner">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#0284c7] to-[#38bdf8] transition-all duration-500"
+                    style={{ width: `${bluePercent}%` }}
+                    title={`Blue: ${bluePercent}%`}
+                  />
+                  <div
+                    className="h-full bg-gradient-to-l from-[#e11d48] to-[#f43f5e] transition-all duration-500"
+                    style={{ width: `${redPercent}%` }}
+                    title={`Red: ${redPercent}%`}
+                  />
+                </div>
+
+                <div className="flex items-center gap-1 min-w-[50px] justify-end flex-row-reverse">
+                  <span className="text-[10px] font-bold text-[#E11D48] truncate max-w-[60px] hidden sm:inline">
+                    {redTeamName}
+                  </span>
+                  <span className="font-['Orbitron'] font-black text-xs sm:text-[13px] text-[#E11D48] text-right">
+                    {redPercent}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Controls Bar: Mode Switcher & Team Filter */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 pb-2 border-b border-[#F3D5E2]">
             {/* Tab Filter Pills (All / Ban Intent / Combo / Counter) - single horizontal scrolling row on mobile */}

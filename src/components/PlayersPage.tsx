@@ -69,7 +69,10 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
   const filteredPlayers = useMemo(() => {
     return players.filter((p) => {
       // Category filter
-      if (catFilter !== 'ALL' && (p.category || 'male') !== catFilter) return false;
+      if (catFilter !== 'ALL') {
+        const cats = p.categories || [p.category || 'male'];
+        if (!cats.includes(catFilter as any)) return false;
+      }
 
       // Pos filter
       if (posFilter !== 'ALL' && p.position !== posFilter) return false;
@@ -203,7 +206,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                 }`}
               >
                 <span>👨</span>
-                <span>ทีมชาย ({players.filter((p) => (p.category || 'male') === 'male').length})</span>
+                <span>ทีมชาย ({players.filter((p) => (p.categories || [p.category || 'male']).includes('male')).length})</span>
               </button>
               <button
                 type="button"
@@ -215,7 +218,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                 }`}
               >
                 <span>👩</span>
-                <span>ทีมหญิง ({players.filter((p) => p.category === 'female').length})</span>
+                <span>ทีมหญิง ({players.filter((p) => (p.categories || [p.category || 'male']).includes('female')).length})</span>
               </button>
               <button
                 type="button"
@@ -227,7 +230,7 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                 }`}
               >
                 <span>👥</span>
-                <span>ทีมผสม ({players.filter((p) => p.category === 'mixed').length})</span>
+                <span>ทีมผสม ({players.filter((p) => (p.categories || [p.category || 'male']).includes('mixed')).length})</span>
               </button>
             </div>
           </div>
@@ -322,25 +325,31 @@ export const PlayersPage: React.FC<PlayersPageProps> = ({
                       </div>
 
                       <div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <h4 className="font-['Prompt'] font-bold text-base tracking-wide text-[#1F2937]">
                             {player.nickname}
                           </h4>
-                          <span
-                            className={`text-[9.5px] font-['Prompt'] font-bold px-1.5 py-0.2 rounded border ${
-                              player.category === 'female'
-                                ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                : (player.category || 'male') === 'male'
-                                ? 'bg-sky-50 text-sky-700 border-sky-200'
-                                : 'bg-purple-50 text-purple-700 border-purple-200'
-                            }`}
-                          >
-                            {player.category === 'female'
-                              ? '👩 ทีมหญิง'
-                              : (player.category || 'male') === 'male'
-                              ? '👨 ทีมชาย'
-                              : '👥 ทีมผสม'}
-                          </span>
+                          {(player.categories && player.categories.length > 0
+                            ? player.categories
+                            : [player.category || 'male']
+                          ).map((cat) => (
+                            <span
+                              key={cat}
+                              className={`text-[9.5px] font-['Prompt'] font-bold px-1.5 py-0.2 rounded border ${
+                                cat === 'female'
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                  : cat === 'male'
+                                  ? 'bg-sky-50 text-sky-700 border-sky-200'
+                                  : 'bg-purple-50 text-purple-700 border-purple-200'
+                              }`}
+                            >
+                              {cat === 'female'
+                                ? '👩 ทีมหญิง'
+                                : cat === 'male'
+                                ? '👨 ทีมชาย'
+                                : '👥 ทีมผสม'}
+                            </span>
+                          ))}
                         </div>
                         <p className="text-xs text-slate-500 font-['Prompt']">{player.name}</p>
                         <span className="inline-block mt-0.5 text-[10px] font-['Prompt'] font-semibold text-slate-400 tracking-wider uppercase">

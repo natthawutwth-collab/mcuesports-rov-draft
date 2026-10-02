@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Hero, PositionKey, TeamSide, SlotType } from '../types/draft';
 import { HeroPlayerBadge, TeamCategory } from '../types/player';
 import { DRAFT_TURNS } from '../data/draftSteps';
@@ -41,6 +41,8 @@ interface DraftCenterProps {
   onChangeTeamCategory?: (cat: TeamCategory) => void;
 }
 
+export type PlayerPoolFilter = 'all' | 'player_all' | 'signature' | 'comfortable';
+
 const ROLES: { key: PositionKey; label: string; colorClass: string; activeClass: string }[] = [
   { key: 'all', label: 'ALL', colorClass: 'text-slate-700 hover:text-[#E91E63] hover:border-[#E91E63]', activeClass: 'bg-[#E91E63] text-white font-bold border-[#E91E63] shadow-xs' },
   { key: 'dsl', label: 'DSL', colorClass: 'text-[#f97316] hover:bg-orange-50', activeClass: 'bg-[#f97316] text-white font-bold border-[#f97316] shadow-xs' },
@@ -82,6 +84,31 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
 }) => {
   const currentTurn = DRAFT_TURNS[draftTurnIdx];
 
+  // Player Hero Pool Filter state (Signature / Comfortable / All in Pool / All RoV)
+  const [playerPoolFilter, setPlayerPoolFilter] = useState<PlayerPoolFilter>('all');
+
+  // Compute counts of heroes in our player pool
+  const poolHeroCounts = useMemo(() => {
+    let sigCount = 0;
+    let comfCount = 0;
+    let totalPoolCount = 0;
+
+    HEROES.forEach((hero) => {
+      const rawBadges = heroToPlayersMap[hero.name] || [];
+      const badges = selectedTeamCategory && selectedTeamCategory !== 'all'
+        ? rawBadges.filter((b) => (b.category || 'male') === selectedTeamCategory)
+        : rawBadges;
+
+      if (badges.length > 0) {
+        totalPoolCount++;
+        if (badges.some((b) => b.tier === 'signature')) sigCount++;
+        if (badges.some((b) => b.tier === 'comfortable')) comfCount++;
+      }
+    });
+
+    return { total: totalPoolCount, signature: sigCount, comfortable: comfCount };
+  }, [heroToPlayersMap, selectedTeamCategory]);
+
   // Turn title & subtitle
   let turnBadgeText = 'BAN';
   let turnBadgeClass = 'bg-[#FCE4EC] border-[#F48FB1] text-[#E91E63] font-bold';
@@ -116,12 +143,12 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
   // Filtered Heroes
   const filteredHeroes = useMemo(() => {
     return HEROES.filter((hero) => {
-      // Role filter
+      // 1. Role filter (DSL, JG, MAGE, SUPPORT, ADL)
       if (roleFilter !== 'all') {
         if (!hero.pos.includes(roleFilter)) return false;
       }
 
-      // Search Query
+      // 2. Search Query
       if (searchQuery.trim().length > 0) {
         const q = searchQuery.trim().toLowerCase();
         const matchesName = hero.name.toLowerCase().includes(q);
@@ -130,16 +157,48 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
         if (!matchesName && !matchesThai && !matchesTags) return false;
       }
 
+      // 3. Player Hero Pool Filter (Our Pool / Signature / Comfortable)
+      if (playerPoolFilter !== 'all') {
+        const rawBadges = heroToPlayersMap[hero.name] || [];
+        const badges = selectedTeamCategory && selectedTeamCategory !== 'all'
+          ? rawBadges.filter((b) => (b.category || 'male') === selectedTeamCategory)
+          : rawBadges;
+
+        if (badges.length === 0) return false;
+
+        if (playerPoolFilter === 'signature') {
+          if (!badges.some((b) => b.tier === 'signature')) return false;
+        } else if (playerPoolFilter === 'comfortable') {
+          if (!badges.some((b) => b.tier === 'comfortable')) return false;
+        }
+      }
+
       return true;
     });
-  }, [roleFilter, searchQuery]);
+  }, [roleFilter, searchQuery, playerPoolFilter, heroToPlayersMap, selectedTeamCategory]);
 
-  // Score Calculations
-  const showScoreBar = blueScore.score > 0 || redScore.score > 0;
-  const totalScore = (blueScore.score + redScore.score) || 100;
-  const bluePercent = Math.max(10, Math.min(90, Math.round((blueScore.score / totalScore) * 100)));
-  const redPercent = 100 - bluePercent;
-  const scoreDiff = blueScore.score - redScore.score;
+  // Score & Win Advantage Calculations
+  const hasAnyPicks = blueScore.score > 0 || redScore.score > 0;
+  const showScoreBar = draftActive || hasAnyPicks;
+
+  let bluePercent = 50;
+  let redPercent = 50;
+
+  if (blueScore.score > 0 && redScore.score > 0) {
+    const totalScore = blueScore.score + redScore.score;
+    bluePercent = Math.max(15, Math.min(85, Math.round((blueScore.score / totalScore) * 100)));
+    redPercent = 100 - bluePercent;
+  } else if (blueScore.score > 0 && redScore.score === 0) {
+    bluePercent = Math.max(52, Math.min(65, Math.round(50 + (blueScore.score - 50) * 0.4)));
+    redPercent = 100 - bluePercent;
+  } else if (redScore.score > 0 && blueScore.score === 0) {
+    redPercent = Math.max(52, Math.min(65, Math.round(50 + (redScore.score - 50) * 0.4)));
+    bluePercent = 100 - redPercent;
+  }
+
+  const percentDiff = bluePercent - redPercent;
+  const advantageSide: 'blue' | 'red' | 'balanced' =
+    Math.abs(percentDiff) < 2 ? 'balanced' : percentDiff > 0 ? 'blue' : 'red';
 
   // SVG Circular Arc
   const radius = 20;
@@ -306,65 +365,159 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
           )}
           <span className="text-[10.5px] sm:text-[11px] font-['Prompt'] font-bold text-slate-500 whitespace-nowrap px-1.5 sm:px-2 py-0.5 rounded bg-white border border-[#F3D5E2] shadow-2xs">
             {filteredHeroes.length} HEROES
+            {playerPoolFilter === 'signature' && ' (⭐ SIGNATURE)'}
+            {playerPoolFilter === 'comfortable' && ' (★ COMFORTABLE)'}
+            {playerPoolFilter === 'player_all' && ' (👥 OUR POOL)'}
           </span>
         </div>
       </div>
 
-      {/* 3. DRAFT SCORE BAR (Live Synergy & Advantage with High Contrast) */}
+      {/* 2.5 PLAYER HERO POOL FILTER BAR (⭐ SIGNATURE / ★ COMFORTABLE / OUR POOL) */}
+      <div className="flex items-center justify-between gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-[#FFF0F5]/80 border-b border-[#F3D5E2] overflow-x-auto no-scrollbar flex-wrap">
+        <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar flex-nowrap py-0.5">
+          <span className="text-[10px] font-['Prompt'] font-bold text-[#E91E63] uppercase whitespace-nowrap flex items-center gap-1 mr-0.5 flex-shrink-0">
+            <span>👤</span>
+            <span className="hidden sm:inline">พูลนักกีฬา:</span>
+          </span>
+
+          {/* All RoV Heroes */}
+          <button
+            type="button"
+            onClick={() => setPlayerPoolFilter('all')}
+            className={`px-2 sm:px-2.5 py-0.5 rounded-lg text-[9.5px] sm:text-[10.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-1 flex-shrink-0 shadow-2xs ${
+              playerPoolFilter === 'all'
+                ? 'bg-slate-800 border-slate-800 text-white shadow-xs'
+                : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <span>🌐 ทั้งหมด ({HEROES.length})</span>
+          </button>
+
+          {/* All Our Pool */}
+          <button
+            type="button"
+            onClick={() => setPlayerPoolFilter('player_all')}
+            className={`px-2 sm:px-2.5 py-0.5 rounded-lg text-[9.5px] sm:text-[10.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-1 flex-shrink-0 shadow-2xs ${
+              playerPoolFilter === 'player_all'
+                ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs ring-2 ring-[#E91E63]/40'
+                : 'bg-white border-[#F3D5E2] text-slate-700 hover:border-[#E91E63] hover:text-[#E91E63]'
+            }`}
+            title="แสดงฮีโร่ทั้งหมดที่นักกีฬาของเราบันทึกไว้ในพูล (ทั้ง Signature และ Comfortable)"
+          >
+            <span>👥 พูลนักกีฬาเรา ({poolHeroCounts.total})</span>
+          </button>
+
+          {/* Signature Heroes (⭐) */}
+          <button
+            type="button"
+            onClick={() => setPlayerPoolFilter('signature')}
+            className={`px-2 sm:px-2.5 py-0.5 rounded-lg text-[9.5px] sm:text-[10.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-1 flex-shrink-0 shadow-2xs ${
+              playerPoolFilter === 'signature'
+                ? 'bg-[#D97706] border-[#B45309] text-white shadow-xs ring-2 ring-amber-400'
+                : 'bg-[#FFFBEB] border-[#FDE68A] text-[#B45309] hover:bg-[#FEF3C7]'
+            }`}
+            title="แสดงเฉพาะ SIGNATURE HEROES (⭐ ตัวถนัดพิเศษ 100%) ของนักกีฬาเรา"
+          >
+            <span>⭐ SIGNATURE ({poolHeroCounts.signature})</span>
+          </button>
+
+          {/* Comfortable Heroes (★) */}
+          <button
+            type="button"
+            onClick={() => setPlayerPoolFilter('comfortable')}
+            className={`px-2 sm:px-2.5 py-0.5 rounded-lg text-[9.5px] sm:text-[10.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-1 flex-shrink-0 shadow-2xs ${
+              playerPoolFilter === 'comfortable'
+                ? 'bg-[#0284C7] border-[#0369A1] text-white shadow-xs ring-2 ring-sky-400'
+                : 'bg-[#F0F9FF] border-[#BAE6FD] text-[#0369A1] hover:bg-[#E0F2FE]'
+            }`}
+            title="แสดงเฉพาะ COMFORTABLE HEROES (★ ตัวเล่นได้ดี) ของนักกีฬาเรา"
+          >
+            <span>★ COMFORTABLE ({poolHeroCounts.comfortable})</span>
+          </button>
+        </div>
+
+        {/* Clear Filter Button */}
+        {playerPoolFilter !== 'all' && (
+          <button
+            type="button"
+            onClick={() => setPlayerPoolFilter('all')}
+            className="text-[9.5px] font-['Prompt'] font-bold text-slate-500 hover:text-red-500 flex items-center gap-0.5 cursor-pointer ml-auto flex-shrink-0"
+          >
+            <span>✕ ล้างตัวกรองพูล</span>
+          </button>
+        )}
+      </div>
+
+      {/* 3. DRAFT SCORE BAR (Live Synergy & Advantage with % Display) */}
       {showScoreBar && (
-        <div className="px-4 py-2 bg-[#FFF0F5] border-b-2 border-[#F3D5E2] flex flex-col gap-1.5 transition-all">
-          <div className="flex items-center justify-between gap-3 text-[12px]">
+        <div className="px-3 sm:px-4 py-2 bg-[#FFF0F5] border-b-2 border-[#F3D5E2] flex flex-col gap-1.5 transition-all">
+          <div className="flex items-center justify-between gap-2 sm:gap-3 text-[12px]">
             {/* Blue Side */}
-            <div className="flex items-center gap-2.5 flex-1">
-              <span className="font-['Prompt'] font-bold text-[#0284C7] tracking-wider text-[12px] sm:text-[13px]">
+            <div className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0">
+              <span className="font-['Prompt'] font-bold text-[#0284C7] tracking-wider text-[11.5px] sm:text-[13px] truncate">
                 🔵 {blueTeamName || 'BLUE SIDE'}
               </span>
-              <div className="flex-1 h-2.5 bg-white border border-sky-200 rounded-full overflow-hidden shadow-2xs">
+              <div className="flex-1 h-2.5 bg-white border border-sky-200 rounded-full overflow-hidden shadow-2xs min-w-[30px]">
                 <div
                   className="h-full bg-gradient-to-r from-[#0284c7] to-[#38bdf8] rounded-full transition-all duration-500 shadow-2xs"
                   style={{ width: `${bluePercent}%` }}
                 />
               </div>
-              <span className="font-['Orbitron'] font-black text-[#0284C7] text-xs min-w-[36px]">
-                {blueScore.score.toFixed(1)}
+              <span className="font-['Orbitron'] font-black text-[#0284C7] text-xs sm:text-[13px] min-w-[36px]">
+                {bluePercent}%
               </span>
             </div>
 
             {/* Advantage center */}
-            <div className="px-2.5 py-0.5 bg-white rounded-lg border border-[#F3D5E2] text-center min-w-[95px] shadow-2xs">
-              <div className="text-[8px] font-['Orbitron'] font-black text-slate-400 tracking-widest">
-                DRAFT SCORE
+            <div className="px-2.5 sm:px-3 py-1 bg-white rounded-xl border border-[#F3D5E2] text-center min-w-[125px] sm:min-w-[145px] shadow-2xs flex flex-col items-center justify-center flex-shrink-0">
+              <div className="text-[7.5px] sm:text-[8px] font-['Orbitron'] font-black text-slate-400 tracking-wider uppercase">
+                WIN ADVANTAGE
               </div>
               <div
-                className={`font-['Prompt'] font-bold text-[11.5px] leading-tight ${
-                  Math.abs(scoreDiff) < 2
-                    ? 'text-slate-600'
-                    : scoreDiff > 0
+                className={`font-['Prompt'] font-black text-[11px] sm:text-[12px] leading-tight flex items-center gap-1 ${
+                  advantageSide === 'blue'
                     ? 'text-[#0284C7]'
-                    : 'text-[#E11D48]'
+                    : advantageSide === 'red'
+                    ? 'text-[#E11D48]'
+                    : 'text-slate-600'
                 }`}
               >
-                {Math.abs(scoreDiff) < 2
-                  ? '≈ สมดุล (BALANCED)'
-                  : scoreDiff > 0
-                  ? `🔵 +${scoreDiff.toFixed(1)} ADV`
-                  : `🔴 +${Math.abs(scoreDiff).toFixed(1)} ADV`}
+                {advantageSide === 'blue' ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0284C7] animate-pulse flex-shrink-0" />
+                    <span className="truncate">น้ำเงินได้เปรียบ {bluePercent}%</span>
+                  </>
+                ) : advantageSide === 'red' ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E11D48] animate-pulse flex-shrink-0" />
+                    <span className="truncate">แดงได้เปรียบ {redPercent}%</span>
+                  </>
+                ) : (
+                  <span>≈ สูสีสมดุล 50%:50%</span>
+                )}
+              </div>
+              <div className="text-[8.5px] font-['Prompt'] font-semibold text-slate-400 leading-none mt-0.5">
+                {advantageSide === 'blue'
+                  ? `🔵 นำอยู่ +${percentDiff}%`
+                  : advantageSide === 'red'
+                  ? `🔴 นำอยู่ +${Math.abs(percentDiff)}%`
+                  : 'โอกาสชนะใกล้เคียงกัน'}
               </div>
             </div>
 
             {/* Red Side */}
-            <div className="flex items-center gap-2.5 flex-1 justify-end flex-row-reverse">
-              <span className="font-['Prompt'] font-bold text-[#E11D48] tracking-wider text-[12px] sm:text-[13px]">
+            <div className="flex items-center gap-2 sm:gap-2.5 flex-1 justify-end flex-row-reverse min-w-0">
+              <span className="font-['Prompt'] font-bold text-[#E11D48] tracking-wider text-[11.5px] sm:text-[13px] truncate">
                 🔴 {redTeamName || 'RED SIDE'}
               </span>
-              <div className="flex-1 h-2.5 bg-white border border-rose-200 rounded-full overflow-hidden shadow-2xs">
+              <div className="flex-1 h-2.5 bg-white border border-rose-200 rounded-full overflow-hidden shadow-2xs min-w-[30px]">
                 <div
                   className="h-full bg-gradient-to-l from-[#e11d48] to-[#f43f5e] rounded-full transition-all duration-500 shadow-2xs"
                   style={{ width: `${redPercent}%` }}
                 />
               </div>
-              <span className="font-['Orbitron'] font-black text-[#E11D48] text-xs min-w-[36px] text-right">
-                {redScore.score.toFixed(1)}
+              <span className="font-['Orbitron'] font-black text-[#E11D48] text-xs sm:text-[13px] min-w-[36px] text-right">
+                {redPercent}%
               </span>
             </div>
           </div>
@@ -431,9 +584,28 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
       {/* 5. HERO GRID */}
       <div className="flex-1 overflow-y-auto p-3 custom-scrollbar min-h-[320px] max-h-[580px] bg-[#FFF8FB]/30">
         {filteredHeroes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-slate-500 font-['Prompt'] text-sm">
-            <span>ไม่พบฮีโร่ที่ค้นหา</span>
-            <span className="text-xs text-slate-400 mt-1">ลองเปลี่ยนคำค้นหาหรือตัวกรองตำแหน่ง</span>
+          <div className="flex flex-col items-center justify-center h-48 text-slate-500 font-['Prompt'] text-sm px-4 text-center">
+            <span>ไม่พบฮีโร่ที่ตรงกับเงื่อนไข</span>
+            <span className="text-xs text-slate-400 mt-1 max-w-[420px]">
+              {playerPoolFilter !== 'all'
+                ? `ไม่พบฮีโร่ในหมวด ${
+                    playerPoolFilter === 'signature'
+                      ? '⭐ SIGNATURE HEROES'
+                      : playerPoolFilter === 'comfortable'
+                      ? '★ COMFORTABLE HEROES'
+                      : 'พูลนักกีฬา'
+                  } สำหรับตำแหน่งที่เลือก`
+                : 'ลองเปลี่ยนคำค้นหาหรือตัวกรองตำแหน่ง'}
+            </span>
+            {playerPoolFilter !== 'all' && (
+              <button
+                type="button"
+                onClick={() => setPlayerPoolFilter('all')}
+                className="mt-2.5 px-3 py-1 bg-white border border-[#E91E63] text-[#E91E63] rounded-lg text-xs font-bold hover:bg-[#FCE4EC] cursor-pointer shadow-xs transition-colors"
+              >
+                🌐 แสดงฮีโร่ทั้งหมดในเกม
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2">

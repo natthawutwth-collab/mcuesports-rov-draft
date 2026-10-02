@@ -57,7 +57,10 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
   // Filter players by team category
   const filteredPlayers = React.useMemo(() => {
     if (teamCategory === 'all') return players;
-    return players.filter((p) => (p.category || 'male') === teamCategory);
+    return players.filter((p) => {
+      const cats = p.categories || [p.category || 'male'];
+      return cats.includes(teamCategory);
+    });
   }, [players, teamCategory]);
 
   // Subtitle: only show if user entered a custom name different from default

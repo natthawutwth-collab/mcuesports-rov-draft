@@ -17,7 +17,8 @@ export interface Player {
   position: PlayerPosition;
   avatarUrl?: string;
   heroPool: PlayerHeroPoolItem[];
-  category?: PlayerCategory; // 'male' | 'female' | 'mixed'
+  category?: PlayerCategory; // backward compat: 'male' | 'female' | 'mixed'
+  categories?: PlayerCategory[]; // Up to 2 teams: ['male', 'mixed'] or ['female', 'mixed']
   createdAt: number;
 }
 
@@ -29,4 +30,5 @@ export interface HeroPlayerBadge {
   tier: HeroProficiency;
   playerAvatar?: string;
   category?: PlayerCategory;
+  categories?: PlayerCategory[];
 }

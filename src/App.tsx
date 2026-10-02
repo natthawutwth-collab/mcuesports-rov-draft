@@ -251,9 +251,9 @@ export default function App() {
   // Category player counts for DraftHeader
   const playerCounts = useMemo(() => ({
     all: players.length,
-    male: players.filter((p) => (p.category || 'male') === 'male').length,
-    female: players.filter((p) => p.category === 'female').length,
-    mixed: players.filter((p) => p.category === 'mixed').length,
+    male: players.filter((p) => (p.categories || [p.category || 'male']).includes('male')).length,
+    female: players.filter((p) => (p.categories || [p.category || 'male']).includes('female')).length,
+    mixed: players.filter((p) => (p.categories || [p.category || 'male']).includes('mixed')).length,
   }), [players]);
 
   // Screen width and mobile detection
@@ -985,6 +985,8 @@ export default function App() {
             isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
             blueTeamName={blueTeamName}
             redTeamName={redTeamName}
+            blueScore={draftScore}
+            redScore={redDraftScore}
           />
 
           {/* Slide-out Coach Drawer overlay for screens < 1280px & mobile */}
