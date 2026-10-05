@@ -4,7 +4,7 @@ import { HeroPlayerBadge, TeamCategory } from '../types/player';
 import { DRAFT_TURNS } from '../data/draftSteps';
 import { HEROES, getHeroImageUrl } from '../data/heroes';
 import { DraftScoreResult } from '../data/metaData';
-import { Search, Pause, Play, Ban, Check, Sparkles } from 'lucide-react';
+import { Search, Pause, Play, Ban, Check, Sparkles, BarChart2 } from 'lucide-react';
 
 interface DraftCenterProps {
   draftActive: boolean;
@@ -48,10 +48,10 @@ export type PlayerPoolFilter = 'all' | 'player_all' | 'signature' | 'comfortable
 const ROLES: { key: PositionKey; label: string; colorClass: string; activeClass: string }[] = [
   { key: 'all', label: 'ALL', colorClass: 'text-slate-700 hover:text-[#E91E63] hover:border-[#E91E63]', activeClass: 'bg-[#E91E63] text-white font-bold border-[#E91E63] shadow-xs' },
   { key: 'dsl', label: 'DSL', colorClass: 'text-[#f97316] hover:bg-orange-50', activeClass: 'bg-[#f97316] text-white font-bold border-[#f97316] shadow-xs' },
-  { key: 'jg', label: 'JUNGLE', colorClass: 'text-[#10b981] hover:bg-emerald-50', activeClass: 'bg-[#10b981] text-white font-bold border-[#10b981] shadow-xs' },
-  { key: 'mid', label: 'MAGE', colorClass: 'text-[#a855f7] hover:bg-purple-50', activeClass: 'bg-[#a855f7] text-white font-bold border-[#a855f7] shadow-xs' },
-  { key: 'roam', label: 'SUPPORT', colorClass: 'text-[#0ea5e9] hover:bg-sky-50', activeClass: 'bg-[#0ea5e9] text-white font-bold border-[#0ea5e9] shadow-xs' },
+  { key: 'jg', label: 'JG', colorClass: 'text-[#10b981] hover:bg-emerald-50', activeClass: 'bg-[#10b981] text-white font-bold border-[#10b981] shadow-xs' },
+  { key: 'mid', label: 'MID', colorClass: 'text-[#a855f7] hover:bg-purple-50', activeClass: 'bg-[#a855f7] text-white font-bold border-[#a855f7] shadow-xs' },
   { key: 'adl', label: 'ADL', colorClass: 'text-[#eab308] hover:bg-amber-50', activeClass: 'bg-[#eab308] text-white font-bold border-[#eab308] shadow-xs' },
+  { key: 'roam', label: 'SP', colorClass: 'text-[#0ea5e9] hover:bg-sky-50', activeClass: 'bg-[#0ea5e9] text-white font-bold border-[#0ea5e9] shadow-xs' },
 ];
 
 export const DraftCenter: React.FC<DraftCenterProps> = ({
@@ -226,35 +226,29 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
 
   return (
     <div className="flex-1 min-w-0 w-full h-full min-h-0 flex flex-col bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-sm overflow-hidden">
-      {/* 1. TOP DRAFT STATUS BAR (Compact Single-line) */}
-      <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2]">
-        {/* Left: Turn Badge & Team Details */}
-        <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
-          <div
-            className={`font-['Orbitron'] font-black text-[9px] tracking-wider px-2 py-0.5 rounded-md border uppercase transition-all shadow-2xs ${turnBadgeClass}`}
-          >
-            {turnBadgeText}
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span
-              className={`font-['Prompt'] font-bold text-[12px] sm:text-[13px] tracking-wide truncate leading-tight ${
-                currentTurn?.team === 'blue'
-                  ? 'text-[#0284C7]'
-                  : currentTurn?.team === 'red'
-                  ? 'text-[#E11D48]'
-                  : 'text-[#1F2937]'
-              }`}
+      {/* 1. TOP BAR: หมวดทีม & ค้นหา Hero */}
+      <div className="flex items-center justify-between gap-2.5 px-3 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2]">
+        {/* Left: หมวดทีม (Team Category) */}
+        {onChangeTeamCategory && (
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-[10.5px] font-['Prompt'] font-bold text-slate-600 uppercase flex items-center gap-1">
+              <span>หมวดทีม:</span>
+            </span>
+            <select
+              value={selectedTeamCategory}
+              onChange={(e) => onChangeTeamCategory(e.target.value as any)}
+              className="bg-white border border-[#F3D5E2] hover:border-[#E91E63] text-slate-800 text-[11px] font-['Prompt'] font-bold px-2 py-1 rounded-lg outline-none cursor-pointer shadow-2xs transition-all"
             >
-              {activeTeamTitle}
-            </span>
-            <span className="text-[9.5px] font-['Prompt'] font-semibold text-slate-500 tracking-tight truncate leading-none mt-0.5 max-w-[200px] sm:max-w-[280px]">
-              {phaseText}
-            </span>
+              <option value="male">👨 ทีมชาย</option>
+              <option value="female">👩 ทีมหญิง</option>
+              <option value="mixed">👥 ทีมผสม</option>
+              <option value="all">🌐 ทั้งหมด</option>
+            </select>
           </div>
-        </div>
+        )}
 
-        {/* Center: Search input (Compact) */}
-        <div className="relative flex-1 max-w-[170px] min-w-[110px] mx-1">
+        {/* Center: ค้นหา Hero (Search) */}
+        <div className="relative flex-1 max-w-[240px] min-w-[120px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
           <input
             type="text"
@@ -265,95 +259,82 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
           />
         </div>
 
-        {/* Right: Timer pill (Compact) */}
-        <div className="flex items-center gap-2 bg-white px-2.5 py-0.5 rounded-lg border border-[#F3D5E2] shadow-2xs flex-shrink-0">
-          <div className="flex flex-col items-end leading-none">
-            <span className="font-['Prompt'] text-[8px] font-bold tracking-wider text-slate-400 uppercase">
-              {currentTurn?.phase === 'pick' ? 'PICK' : 'BAN'}
-            </span>
-            <span
-              className="font-['Orbitron'] font-black text-[13px] leading-tight"
-              style={{ color: timerColor }}
-            >
-              {draftActive ? timerSec : '—'}
-            </span>
-          </div>
+        {/* Right: Timer pill (active during draft) */}
+        {draftActive && (
+          <div className="flex items-center gap-2 bg-white px-2.5 py-0.5 rounded-lg border border-[#F3D5E2] shadow-2xs flex-shrink-0 ml-auto">
+            <div className="flex flex-col items-end leading-none">
+              <span className="font-['Prompt'] text-[8px] font-bold tracking-wider text-slate-400 uppercase">
+                {currentTurn?.phase === 'pick' ? 'PICK' : 'BAN'}
+              </span>
+              <span
+                className="font-['Orbitron'] font-black text-[13px] leading-tight"
+                style={{ color: timerColor }}
+              >
+                {timerSec}
+              </span>
+            </div>
 
-          <div className="relative w-[24px] h-[24px] flex items-center justify-center flex-shrink-0">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 48 48">
-              <circle
-                cx="24"
-                cy="24"
-                r={radius}
-                className="text-[#FCE4EC]"
-                strokeWidth="5"
-                stroke="currentColor"
-                fill="transparent"
-              />
-              <circle
-                cx="24"
-                cy="24"
-                r={radius}
-                stroke={timerColor}
-                strokeWidth="5"
-                strokeDasharray={circumference}
-                strokeDashoffset={draftActive ? strokeDashoffset : 0}
-                strokeLinecap="round"
-                fill="transparent"
-                className="transition-all duration-500 ease-linear"
-              />
-            </svg>
-            <button
-              onClick={toggleTimerPause}
-              disabled={!draftActive}
-              title={isTimerPaused ? 'ดำเนินการจับเวลาต่อ' : 'หยุดเวลาชั่วคราว'}
-              className="absolute inset-0 flex items-center justify-center text-slate-700 hover:text-[#E91E63] disabled:opacity-40 transition-colors cursor-pointer"
-            >
-              {isTimerPaused ? <Play size={8} className="fill-current ml-0.5" /> : <Pause size={8} />}
-            </button>
+            <div className="relative w-[24px] h-[24px] flex items-center justify-center flex-shrink-0">
+              <svg className="w-full h-full -rotate-90" viewBox="0 0 48 48">
+                <circle
+                  cx="24"
+                  cy="24"
+                  r={radius}
+                  className="text-[#FCE4EC]"
+                  strokeWidth="5"
+                  stroke="currentColor"
+                  fill="transparent"
+                />
+                <circle
+                  cx="24"
+                  cy="24"
+                  r={radius}
+                  stroke={timerColor}
+                  strokeWidth="5"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                  fill="transparent"
+                  className="transition-all duration-500 ease-linear"
+                />
+              </svg>
+              <button
+                onClick={toggleTimerPause}
+                title={isTimerPaused ? 'ดำเนินการจับเวลาต่อ' : 'หยุดเวลาชั่วคราว'}
+                className="absolute inset-0 flex items-center justify-center text-slate-700 hover:text-[#E91E63] transition-colors cursor-pointer"
+              >
+                {isTimerPaused ? <Play size={8} className="fill-current ml-0.5" /> : <Pause size={8} />}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* 2. ROLE FILTER BUTTONS — Distinct segmented control */}
-      <div className="flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-1.5 sm:py-2 bg-[#FFF8FB] border-b border-[#F3D5E2] overflow-x-auto no-scrollbar">
-        {ROLES.map((r) => {
-          const isActive = roleFilter === r.key;
-          return (
-            <button
-              key={r.key}
-              onClick={() => setRoleFilter(r.key)}
-              className={`font-['Prompt'] text-[10.5px] sm:text-[11px] font-bold tracking-wider px-2.5 sm:px-3 py-1 rounded-lg border transition-all cursor-pointer whitespace-nowrap shadow-xs ${
-                isActive ? r.activeClass : `border-[#F3D5E2] bg-white ${r.colorClass}`
-              }`}
-            >
-              {r.label}
-            </button>
-          );
-        })}
-        {/* Category Indicator in Filter Bar */}
-        {onChangeTeamCategory && (
-          <div className="flex items-center gap-1 pl-1.5 border-l border-[#F3D5E2]">
-            <span className="text-[10px] font-['Prompt'] font-bold text-slate-500 uppercase hidden sm:inline">หมวดทีม:</span>
-            <select
-              value={selectedTeamCategory}
-              onChange={(e) => onChangeTeamCategory(e.target.value as any)}
-              className="bg-white border border-[#F3D5E2] hover:border-[#E91E63] text-slate-700 text-[10.5px] sm:text-[11px] font-['Prompt'] font-bold px-2 py-0.5 rounded-lg outline-none cursor-pointer shadow-xs transition-all"
-            >
-              <option value="male">👨 ทีมชาย</option>
-              <option value="female">👩 ทีมหญิง</option>
-              <option value="mixed">👥 ทีมผสม</option>
-              <option value="all">🌐 ทั้งหมด</option>
-            </select>
-          </div>
-        )}
+      <div className="flex items-center justify-between gap-1.5 px-3 py-1.5 bg-[#FFF8FB] border-b border-[#F3D5E2] overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap flex-shrink-0">
+          {ROLES.map((r) => {
+            const isActive = roleFilter === r.key;
+            return (
+              <button
+                key={r.key}
+                onClick={() => setRoleFilter(r.key)}
+                className={`font-['Prompt'] text-[10.5px] sm:text-[11px] font-bold tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                  isActive ? r.activeClass : `border-[#F3D5E2] bg-white ${r.colorClass}`
+                }`}
+              >
+                {r.label}
+              </button>
+            );
+          })}
+        </div>
 
-        <div className="ml-auto flex items-center gap-1 sm:gap-1.5 pl-1.5">
-          <span className="text-[10.5px] sm:text-[11px] font-['Prompt'] font-bold text-slate-500 whitespace-nowrap px-1.5 sm:px-2 py-0.5 rounded bg-white border border-[#F3D5E2] shadow-2xs">
+        <div className="flex items-center gap-1 pl-1 flex-shrink-0 ml-auto">
+          <span className="text-[10px] sm:text-[11px] font-['Prompt'] font-bold text-slate-500 whitespace-nowrap px-2 py-0.5 rounded-lg bg-white border border-[#F3D5E2] shadow-2xs flex-shrink-0">
             {filteredHeroes.length} HEROES
-            {playerPoolFilter === 'signature' && ' (⭐ SIGNATURE)'}
-            {playerPoolFilter === 'comfortable' && ' (★ COMFORTABLE)'}
-            {playerPoolFilter === 'player_all' && ' (👥 OUR POOL)'}
+            {playerPoolFilter === 'signature' && ' (⭐ SIG)'}
+            {playerPoolFilter === 'comfortable' && ' (★ COMF)'}
+            {playerPoolFilter === 'player_all' && ' (👥 POOL)'}
           </span>
         </div>
       </div>
@@ -659,7 +640,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                         }}
                       />
 
-                      {/* Quick Inspect Button (Accessible even when banned/picked) */}
+                      {/* Quick Inspect Button (Compact, doesn't block character artwork) */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -668,9 +649,9 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                           if (onInspectHero) onInspectHero(hero.name);
                         }}
                         title={`ดูสถิติและคู่ต่อสู้ ${hero.name}`}
-                        className="absolute bottom-1 right-1 z-30 w-6 h-6 rounded-md bg-white hover:bg-[#0284c7] hover:text-white text-slate-700 flex items-center justify-center text-[12px] border border-slate-300 transition-all shadow-md cursor-pointer active:scale-90"
+                        className="absolute bottom-0.5 right-0.5 z-30 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded bg-white/90 hover:bg-[#0284c7] text-[#0284c7] hover:text-white flex items-center justify-center border border-slate-300/80 transition-all shadow-2xs cursor-pointer active:scale-90"
                       >
-                        📊
+                        <BarChart2 size={9} strokeWidth={2.5} />
                       </button>
 
                       {/* Banned Overlay */}
