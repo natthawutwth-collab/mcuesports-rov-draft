@@ -1,17 +1,52 @@
 import React, { useState, useMemo } from 'react';
-import { Hero, TeamSide } from '../types/draft';
-import { getHeroImageUrl } from '../data/heroes';
+import { Hero, TeamSide, PositionKey } from '../types/draft';
+import { Player, HeroPlayerBadge } from '../types/player';
+import { HEROES, getHeroImageUrl } from '../data/heroes';
 import { DraftScoreResult } from '../data/metaData';
+import {
+  RPL_2026_HEROES_DATA,
+  RPL_2026_PLAYED_AGAINST_DATA,
+  RPL_2026_PLAYED_WITH_DATA,
+  RPL_2026_SUMMER_DATASET,
+} from '../data/rpl2026SummerStats';
 import {
   DraftPredictionService,
   DraftTacticalIntelligence,
-  BanPredictionItem,
-  PickSynergyPredictionItem,
-  CounterPredictionItem,
 } from '../services/draftPredictionService';
-import { Sparkles, ChevronDown, ChevronUp, Eye, ShieldAlert, Zap, Ban, CheckCircle2 } from 'lucide-react';
 import { ProCompsModal } from './ProCompsModal';
 import { RPL_2026_PRO_COMPS } from '../data/proMetaComps';
+import {
+  getRecommendedBans,
+  getTopProLeagueBans,
+  getBlueSideRecommendedBans,
+  getRedSideRecommendedBans,
+  BanRecommendationItem,
+} from '../services/banRecommendationService';
+import {
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+  ShieldAlert,
+  Zap,
+  Ban,
+  CheckCircle2,
+  Swords,
+  TrendingUp,
+  BarChart3,
+  Layers,
+  Award,
+  Info,
+  Clock,
+  Target,
+  Shield,
+  Flame,
+  ArrowUpRight,
+  ArrowDownRight,
+  Filter,
+  Check,
+  Search,
+  ExternalLink,
+} from 'lucide-react';
 
 interface DraftTacticalRadarProps {
   blueBans: (Hero | null)[];
@@ -30,9 +65,13 @@ interface DraftTacticalRadarProps {
   redTeamName?: string;
   blueScore?: DraftScoreResult;
   redScore?: DraftScoreResult;
+  players?: Player[];
+  heroToPlayersMap?: Record<string, HeroPlayerBadge[]>;
+  inspectedHeroName?: string | null;
+  className?: string;
 }
 
-type TabMode = 'all' | 'bans' | 'synergies' | 'counters';
+type DashboardTab = 'overview' | 'recommendations' | 'synergy' | 'hero_analysis' | 'predictions';
 type TeamFilter = 'all' | 'blue' | 'red';
 
 export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
@@ -52,11 +91,46 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
   redTeamName = 'Red Team',
   blueScore,
   redScore,
+  players = [],
+  heroToPlayersMap = {},
+  inspectedHeroName = null,
+  className,
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<TabMode>('all');
+  const [activeDashboardTab, setActiveDashboardTab] = useState<DashboardTab>('overview');
   const [teamFilter, setTeamFilter] = useState<TeamFilter>('all');
   const [isProCompsOpen, setIsProCompsOpen] = useState<boolean>(false);
+  const [recommendationLaneFilter, setRecommendationLaneFilter] = useState<string>('all');
+  const [banCategoryTab, setBanCategoryTab] = useState<'pro_league' | 'blue' | 'red'>('pro_league');
+  const [selectedHeroForAnalysis, setSelectedHeroForAnalysis] = useState<string>('Toro');
+  const [heroSearchQuery, setHeroSearchQuery] = useState<string>('');
+  const [recommendationMode, setRecommendationMode] = useState<'picks' | 'bans'>(() => (isBanTurn ? 'bans' : 'picks'));
+
+  // Auto-switch recommendation mode to bans during Ban Phase, picks during Pick Phase
+  React.useEffect(() => {
+    if (isBanTurn) {
+      setRecommendationMode('bans');
+    } else if (isPickTurn) {
+      setRecommendationMode('picks');
+    }
+  }, [isBanTurn, isPickTurn]);
+
+  // Sync selected hero for analysis if prop changes
+  React.useEffect(() => {
+    if (inspectedHeroName) {
+      setSelectedHeroForAnalysis(inspectedHeroName);
+    }
+  }, [inspectedHeroName]);
+
+  // Valid picked hero names
+  const bluePickNames = useMemo(
+    () => bluePicks.map((p) => p.hero?.name).filter(Boolean) as string[],
+    [bluePicks]
+  );
+  const redPickNames = useMemo(
+    () => redPicks.map((p) => p.hero?.name).filter(Boolean) as string[],
+    [redPicks]
+  );
 
   // Compute Advantage Percentage
   const hasScore = (blueScore && blueScore.score > 0) || (redScore && redScore.score > 0);
@@ -79,7 +153,7 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
   const advantageSide: 'blue' | 'red' | 'balanced' =
     Math.abs(percentDiff) < 2 ? 'balanced' : percentDiff > 0 ? 'blue' : 'red';
 
-  // Compute live intelligence in real-time
+  // Compute real-time tactical predictions from service
   const intelligence: DraftTacticalIntelligence = useMemo(() => {
     return DraftPredictionService.generateRealtimePredictions(
       blueBans,
@@ -100,565 +174,412 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
     );
   }, [blueBans, redBans, bluePicks, redPicks]);
 
-  // Segmented bans
-  const blueBanPredictions = useMemo(() => intelligence.banPredictions.filter((item) => item.team === 'blue'), [intelligence.banPredictions]);
-  const redBanPredictions = useMemo(() => intelligence.banPredictions.filter((item) => item.team === 'red'), [intelligence.banPredictions]);
+  // ==========================================
+  // 1. TACTICAL OVERVIEW: Counters & Combos Counts
+  // ==========================================
+  const tacticalOverviewMetrics = useMemo(() => {
+    let blueCounterWins = 0; // Blue counters Red
+    let redCounterWins = 0;  // Red counters Blue
+    let blueDisadvantages = 0;
+    let redDisadvantages = 0;
 
-  // Segmented synergies
-  const blueSynergies = useMemo(() => intelligence.pickSynergies.filter((item) => item.team === 'blue'), [intelligence.pickSynergies]);
-  const redSynergies = useMemo(() => intelligence.pickSynergies.filter((item) => item.team === 'red'), [intelligence.pickSynergies]);
+    // Check head-to-head records in RPL_2026_PLAYED_AGAINST_DATA
+    bluePickNames.forEach((bHero) => {
+      const matchData = RPL_2026_PLAYED_AGAINST_DATA[bHero] || [];
+      redPickNames.forEach((rHero) => {
+        const found = matchData.find((m) => m.opponentHero === rHero);
+        if (found) {
+          if (found.winRate > 52) {
+            blueCounterWins++;
+            redDisadvantages++;
+          } else if (found.winRate < 48) {
+            redCounterWins++;
+            blueDisadvantages++;
+          }
+        }
+      });
+    });
 
-  // Segmented counters:
-  // For Blue team: recommendations to counter enemy Red picks
-  // For Red team: recommendations to counter enemy Blue picks
-  const blueCounters = useMemo(() => intelligence.counterSuggestions.filter((item) => item.targetTeam === 'red'), [intelligence.counterSuggestions]);
-  const redCounters = useMemo(() => intelligence.counterSuggestions.filter((item) => item.targetTeam === 'blue'), [intelligence.counterSuggestions]);
+    // Count active combos
+    let blueCombosCount = 0;
+    for (let i = 0; i < bluePickNames.length; i++) {
+      const allyData = RPL_2026_PLAYED_WITH_DATA[bluePickNames[i]] || [];
+      for (let j = i + 1; j < bluePickNames.length; j++) {
+        const found = allyData.find((a) => a.allyHero === bluePickNames[j]);
+        if (found && (found.winRate >= 52 || (found.diff && found.diff > 0))) {
+          blueCombosCount++;
+        }
+      }
+    }
 
-  // Filtered ban predictions for counts
-  const filteredBans = useMemo(() => {
-    if (teamFilter === 'all') return intelligence.banPredictions;
-    return intelligence.banPredictions.filter((item) => item.team === teamFilter);
-  }, [intelligence.banPredictions, teamFilter]);
+    let redCombosCount = 0;
+    for (let i = 0; i < redPickNames.length; i++) {
+      const allyData = RPL_2026_PLAYED_WITH_DATA[redPickNames[i]] || [];
+      for (let j = i + 1; j < redPickNames.length; j++) {
+        const found = allyData.find((a) => a.allyHero === redPickNames[j]);
+        if (found && (found.winRate >= 52 || (found.diff && found.diff > 0))) {
+          redCombosCount++;
+        }
+      }
+    }
 
-  // Filtered synergy predictions for counts
-  const filteredSynergies = useMemo(() => {
-    if (teamFilter === 'all') return intelligence.pickSynergies;
-    return intelligence.pickSynergies.filter((item) => item.team === teamFilter);
-  }, [intelligence.pickSynergies, teamFilter]);
+    return {
+      blueCounterWins,
+      redCounterWins,
+      blueDisadvantages,
+      redDisadvantages,
+      blueCombosCount,
+      redCombosCount,
+      totalCombosDiscovered: blueCombosCount + redCombosCount,
+    };
+  }, [bluePickNames, redPickNames]);
 
-  // Filtered counters for counts
-  const filteredCounters = useMemo(() => {
-    if (teamFilter === 'all') return intelligence.counterSuggestions;
-    if (teamFilter === 'blue') return blueCounters;
-    return redCounters;
-  }, [intelligence.counterSuggestions, teamFilter, blueCounters, redCounters]);
+  // ==========================================
+  // 2. SMART PICK RECOMMENDATION ENGINE
+  // ==========================================
+  const smartPickRecommendations = useMemo(() => {
+    const friendlyPicks = activeTeam === 'blue' ? bluePickNames : redPickNames;
+    const enemyPicks = activeTeam === 'blue' ? redPickNames : bluePickNames;
 
-  const blueTotalCount = useMemo(() => {
-    if (activeTab === 'all') return blueBanPredictions.length + blueSynergies.length + blueCounters.length;
-    if (activeTab === 'bans') return blueBanPredictions.length;
-    if (activeTab === 'synergies') return blueSynergies.length;
-    return blueCounters.length;
-  }, [activeTab, blueBanPredictions.length, blueSynergies.length, blueCounters.length]);
+    // Check which positions friendly team still lacks
+    const friendlyRolesTaken = new Set<string>();
+    const friendlySlots = activeTeam === 'blue' ? bluePicks : redPicks;
+    friendlySlots.forEach((slot) => {
+      if (slot.hero) {
+        slot.hero.pos?.forEach((p) => friendlyRolesTaken.add(p));
+      }
+    });
 
-  const redTotalCount = useMemo(() => {
-    if (activeTab === 'all') return redBanPredictions.length + redSynergies.length + redCounters.length;
-    if (activeTab === 'bans') return redBanPredictions.length;
-    if (activeTab === 'synergies') return redSynergies.length;
-    return redCounters.length;
-  }, [activeTab, redBanPredictions.length, redSynergies.length, redCounters.length]);
-
-  const totalInsightsCount = filteredBans.length + filteredSynergies.length + filteredCounters.length;
-
-  // Helper to render a ban prediction card
-  const renderBanCard = (item: BanPredictionItem) => (
-    <div
-      key={item.id}
-      className={`p-2.5 rounded-xl border-2 transition-all flex flex-col justify-between gap-2 shadow-2xs ${
-        !item.isAvailable
-          ? 'bg-slate-50 border-slate-200 opacity-60'
-          : item.team === 'blue'
-          ? 'bg-gradient-to-r from-sky-50/70 to-white border-sky-200 hover:border-sky-400'
-          : 'bg-gradient-to-r from-rose-50/70 to-white border-rose-200 hover:border-rose-400'
-      }`}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-rose-300 flex-shrink-0 grayscale">
-            <img
-              src={getHeroImageUrl(item.bannedHero)}
-              alt={item.bannedHero}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-red-950/40 flex items-center justify-center">
-              <Ban size={14} className="text-red-300" />
-            </div>
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-[9px] font-bold text-slate-400 uppercase">
-              {item.team === 'blue' ? '🔵 น้ำเงินแบน' : '🔴 แดงแบน'}
-            </span>
-            <span className="text-[11.5px] font-bold text-slate-800 truncate">
-              {item.bannedHero}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center flex-shrink-0 px-1">
-          <span className="text-[9px] font-['Orbitron'] font-black text-[#E91E63]">
-            {item.confidence}%
-          </span>
-          <span className="text-xs text-slate-400">➔</span>
-        </div>
-
-        <div className="flex items-center gap-1.5 min-w-0 justify-end flex-row-reverse">
-          <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-[#E91E63] shadow-xs flex-shrink-0">
-            <img
-              src={getHeroImageUrl(item.predictedHero)}
-              alt={item.predictedHero}
-              className="w-full h-full object-cover"
-            />
-            <span className="absolute top-0 right-0 bg-[#E91E63] text-white text-[7.5px] font-black px-1 rounded-bl">
-              {item.predictedHeroPos}
-            </span>
-          </div>
-          <div className="flex flex-col items-end min-w-0">
-            <span className="text-[9px] font-bold text-[#E91E63] truncate">
-              มีโอกาสหยิบ
-            </span>
-            <span className="text-[12px] font-black text-slate-900 truncate">
-              {item.predictedHero}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="text-[10px] sm:text-[10.5px] text-slate-600 bg-white/90 p-1.5 rounded-lg border border-slate-200 leading-relaxed">
-        💡 {item.reason}
-      </div>
-
-      <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-100">
-        <div>
-          {item.isAvailable ? (
-            <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>ว่างอยู่ในพูล</span>
-            </span>
-          ) : (
-            <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded">
-              ถูกเลือก/แบนแล้ว
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onInspectHero(item.predictedHero)}
-            className="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 cursor-pointer flex items-center gap-0.5 shadow-2xs"
-          >
-            <Eye size={10} />
-            <span>สถิติ</span>
-          </button>
-          {item.isAvailable && isPickTurn && onPickHeroDirectly && (
-            <button
-              type="button"
-              onClick={() => onPickHeroDirectly(item.predictedHero)}
-              className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#E91E63] hover:bg-[#D81B60] text-white cursor-pointer shadow-2xs"
-            >
-              ตัดหยิบก่อน
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  // Helper to render a synergy prediction card
-  const renderSynergyCard = (item: PickSynergyPredictionItem) => (
-    <div
-      key={item.id}
-      className={`p-2.5 rounded-xl border-2 transition-all flex flex-col justify-between gap-2 shadow-2xs ${
-        !item.isAvailable
-          ? 'bg-slate-50 border-slate-200 opacity-60'
-          : item.team === 'blue'
-          ? 'bg-gradient-to-r from-sky-50/80 to-white border-sky-300 hover:border-sky-500'
-          : 'bg-gradient-to-r from-rose-50/80 to-white border-rose-300 hover:border-rose-500'
-      }`}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <div className="relative w-8 h-8 rounded-lg overflow-hidden border-2 border-emerald-500 shadow-xs flex-shrink-0">
-            <img
-              src={getHeroImageUrl(item.pickedHero)}
-              alt={item.pickedHero}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute bottom-0 right-0 bg-emerald-600 text-white p-0.5 rounded-tl">
-              <CheckCircle2 size={8} />
-            </div>
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-[9px] font-bold text-slate-400 uppercase">
-              {item.team === 'blue' ? '🔵 น้ำเงินเลือก' : '🔴 แดงเลือก'}
-            </span>
-            <span className="text-[11.5px] font-bold text-slate-800 truncate">
-              {item.pickedHero}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center flex-shrink-0 px-1">
-          <span className="text-[8px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.2 rounded border border-amber-300">
-            {item.comboName || 'คู่หูคอมโบ'}
-          </span>
-          <span className="text-xs text-amber-500 font-bold">⚡ คู่กับ ⚡</span>
-        </div>
-
-        <div className="flex items-center gap-1.5 min-w-0 justify-end flex-row-reverse">
-          <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-amber-500 shadow-xs flex-shrink-0">
-            <img
-              src={getHeroImageUrl(item.suggestedHero)}
-              alt={item.suggestedHero}
-              className="w-full h-full object-cover"
-            />
-            <span className="absolute top-0 right-0 bg-amber-600 text-white text-[7.5px] font-black px-1 rounded-bl">
-              {item.suggestedHeroPos}
-            </span>
-          </div>
-          <div className="flex flex-col items-end min-w-0">
-            <span className="text-[9.5px] font-bold text-amber-700 truncate">
-              คู่หูยอดฮิต
-            </span>
-            <span className="text-[12px] font-black text-slate-900 truncate">
-              {item.suggestedHero}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="text-[10px] sm:text-[10.5px] text-slate-600 bg-white/90 p-1.5 rounded-lg border border-slate-200 leading-relaxed">
-        ⚡ {item.reason}
-      </div>
-
-      <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-100">
-        <div>
-          {item.isAvailable ? (
-            <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>ว่างอยู่ในพูล ({item.confidence}% โอกาส)</span>
-            </span>
-          ) : (
-            <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded">
-              ถูกเลือก/แบนไปแล้ว
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onInspectHero(item.suggestedHero)}
-            className="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 cursor-pointer flex items-center gap-0.5 shadow-2xs"
-          >
-            <Eye size={10} />
-            <span>สถิติ</span>
-          </button>
-          {item.isAvailable && isPickTurn && onPickHeroDirectly && (
-            <button
-              type="button"
-              onClick={() => onPickHeroDirectly(item.suggestedHero)}
-              className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-600 hover:bg-amber-700 text-white cursor-pointer shadow-2xs"
-            >
-              ชิงหยิบก่อน
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  // Helper to render a counter-pick card
-  const renderCounterCard = (item: CounterPredictionItem) => (
-    <div
-      key={item.id}
-      className={`p-2.5 rounded-xl border-2 transition-all flex flex-col justify-between gap-2 shadow-2xs ${
-        !item.isAvailable
-          ? 'bg-slate-50 border-slate-200 opacity-60'
-          : 'bg-gradient-to-r from-sky-50/70 to-white border-sky-300 hover:border-sky-500'
-      }`}
-    >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-300 flex-shrink-0">
-            <img
-              src={getHeroImageUrl(item.targetHero)}
-              alt={item.targetHero}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-[9px] font-bold text-slate-400 uppercase">
-              {item.targetTeam === 'blue' ? '🔵 ฝั่งน้ำเงินมี' : '🔴 ฝั่งแดงมี'}
-            </span>
-            <span className="text-[11.5px] font-bold text-slate-800 truncate">
-              {item.targetHero}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center flex-shrink-0 px-1">
-          <span className="text-[9px] font-bold text-sky-600 bg-sky-100 px-1.5 py-0.2 rounded border border-sky-300">
-            แก้ทาง
-          </span>
-          <span className="text-xs text-sky-500 font-bold">⚔️ ฟันธง ⚔️</span>
-        </div>
-
-        <div className="flex items-center gap-1.5 min-w-0 justify-end flex-row-reverse">
-          <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-sky-600 shadow-xs flex-shrink-0">
-            <img
-              src={getHeroImageUrl(item.counterHero)}
-              alt={item.counterHero}
-              className="w-full h-full object-cover"
-            />
-            <span className="absolute top-0 right-0 bg-sky-700 text-white text-[7.5px] font-black px-1 rounded-bl">
-              {item.counterHeroPos}
-            </span>
-          </div>
-          <div className="flex flex-col items-end min-w-0">
-            <span className="text-[9.5px] font-bold text-sky-700 truncate">
-              ตัวแก้ทางเบอร์ 1
-            </span>
-            <span className="text-[12px] font-black text-slate-900 truncate">
-              {item.counterHero}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="text-[10px] sm:text-[10.5px] text-slate-600 bg-white/90 p-1.5 rounded-lg border border-slate-200 leading-relaxed">
-        🛡️ {item.reason}
-      </div>
-
-      <div className="flex items-center justify-between gap-1 pt-1 border-t border-slate-100">
-        <div>
-          {item.isAvailable ? (
-            <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.2 rounded flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span>ว่างในพูล (แก้ทางได้ผล {item.confidence}%)</span>
-            </span>
-          ) : (
-            <span className="text-[9px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.2 rounded">
-              ถูกเลือก/แบนไปแล้ว
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onInspectHero(item.counterHero)}
-            className="px-2 py-0.5 rounded text-[10px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 cursor-pointer flex items-center gap-0.5 shadow-2xs"
-          >
-            <Eye size={10} />
-            <span>สถิติ</span>
-          </button>
-          {item.isAvailable && isPickTurn && onPickHeroDirectly && (
-            <button
-              type="button"
-              onClick={() => onPickHeroDirectly(item.counterHero)}
-              className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#0284c7] hover:bg-sky-700 text-white cursor-pointer shadow-2xs"
-            >
-              เลือกแก้ทาง
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-
-  // Helper to render an entire team's tactical column (Blue or Red)
-  const renderTeamColumn = (team: 'blue' | 'red') => {
-    const isBlue = team === 'blue';
-    const teamName = isBlue ? blueTeamName || 'BLUE SIDE' : redTeamName || 'RED SIDE';
-    const bans = isBlue ? blueBanPredictions : redBanPredictions;
-    const synergies = isBlue ? blueSynergies : redSynergies;
-    const counters = isBlue ? blueCounters : redCounters;
-
-    const showBans = (activeTab === 'all' || activeTab === 'bans') && bans.length > 0;
-    const showSynergies = (activeTab === 'all' || activeTab === 'synergies') && synergies.length > 0;
-    const showCounters = (activeTab === 'all' || activeTab === 'counters') && counters.length > 0;
-
-    const hasAnyForTab = showBans || showSynergies || showCounters;
-
-    const count =
-      activeTab === 'all'
-        ? bans.length + synergies.length + counters.length
-        : activeTab === 'bans'
-        ? bans.length
-        : activeTab === 'synergies'
-        ? synergies.length
-        : counters.length;
-
-    return (
-      <div className="flex flex-col gap-2.5">
-        {/* Column Header */}
-        <div
-          className={`flex items-center justify-between p-2 sm:p-2.5 rounded-xl border shadow-2xs ${
-            isBlue
-              ? 'bg-gradient-to-r from-sky-100/90 to-sky-50 border-sky-300'
-              : 'bg-gradient-to-r from-rose-100/90 to-rose-50 border-rose-300'
-          }`}
-        >
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <span className="text-sm sm:text-base">{isBlue ? '🔵' : '🔴'}</span>
-            <span
-              className={`font-['Prompt'] font-bold text-xs sm:text-[13px] uppercase tracking-wide truncate ${
-                isBlue ? 'text-[#0284C7]' : 'text-[#E11D48]'
-              }`}
-            >
-              {teamName}
-            </span>
-            <span
-              className={`text-[9px] sm:text-[9.5px] font-['Orbitron'] font-black px-1.5 py-0.2 rounded-md border shadow-2xs flex-shrink-0 ${
-                isBlue
-                  ? 'bg-white text-sky-800 border-sky-300'
-                  : 'bg-white text-rose-800 border-rose-300'
-              }`}
-            >
-              {count} {count === 1 ? 'ITEM' : 'ITEMS'}
-            </span>
-          </div>
-
-          <span
-            className={`text-[10px] font-bold hidden sm:inline ${
-              isBlue ? 'text-sky-700' : 'text-rose-700'
-            }`}
-          >
-            {isBlue ? 'วิเคราะห์แท็กติกฝั่งน้ำเงิน' : 'วิเคราะห์แท็กติกฝั่งแดง'}
-          </span>
-        </div>
-
-        {/* Content */}
-        {!hasAnyForTab ? (
-          <div
-            className={`py-8 px-4 rounded-xl border border-dashed text-center flex flex-col items-center justify-center ${
-              isBlue
-                ? 'bg-sky-50/40 border-sky-200 text-sky-800'
-                : 'bg-rose-50/40 border-rose-200 text-rose-800'
-            }`}
-          >
-            <span className="text-xl mb-1">{isBlue ? '🔵' : '🔴'}</span>
-            <span className="font-bold text-xs">
-              {activeTab === 'bans'
-                ? `ยังไม่มีข้อมูลการแบนของ ${teamName}`
-                : activeTab === 'synergies'
-                ? `ยังไม่มีข้อมูลคอมโบของ ${teamName}`
-                : activeTab === 'counters'
-                ? `ยังไม่มีตัวเคาน์เตอร์ของ ${teamName}`
-                : `ยังไม่มีข้อมูลแท็กติกของ ${teamName}`}
-            </span>
-            <span className="text-[10.5px] text-slate-500 mt-1">
-              ข้อมูลจะอัปเดตอัตโนมัติเมื่อฝั่งนี้มีการแบนหรือเลือกฮีโร่
-            </span>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {/* Bans Section */}
-            {showBans && (
-              <div className="flex flex-col gap-1.5">
-                <div
-                  className={`flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-md border ${
-                    isBlue
-                      ? 'bg-sky-100/70 text-sky-900 border-sky-200'
-                      : 'bg-rose-100/70 text-rose-900 border-rose-200'
-                  }`}
-                >
-                  <Ban size={12} className={isBlue ? 'text-sky-600' : 'text-rose-600'} />
-                  <span>เขาแบนตัวนี้ ➔ มีโอกาสจะหยิบตัวนี้ ({bans.length})</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
-                  {bans.slice(0, activeTab === 'all' ? 4 : 12).map(renderBanCard)}
-                </div>
-              </div>
-            )}
-
-            {/* Synergies Section */}
-            {showSynergies && (
-              <div className="flex flex-col gap-1.5">
-                <div
-                  className={`flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-md border ${
-                    isBlue
-                      ? 'bg-amber-50 text-amber-900 border-amber-200'
-                      : 'bg-amber-50 text-amber-900 border-amber-200'
-                  }`}
-                >
-                  <Zap size={12} className="text-amber-600" />
-                  <span>เขาเลือกตัวนี้ ➔ เล่นคู่กับตัวนี้ ({synergies.length})</span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
-                  {synergies.slice(0, activeTab === 'all' ? 4 : 12).map(renderSynergyCard)}
-                </div>
-              </div>
-            )}
-
-            {/* Counters Section */}
-            {showCounters && (
-              <div className="flex flex-col gap-1.5">
-                <div
-                  className={`flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-md border ${
-                    isBlue
-                      ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-                      : 'bg-emerald-50 text-emerald-900 border-emerald-200'
-                  }`}
-                >
-                  <ShieldAlert size={12} className="text-emerald-600" />
-                  <span>
-                    {isBlue
-                      ? `แนะนำให้ฝั่งน้ำเงินหยิบแก้ทางแดง (${counters.length})`
-                      : `แนะนำให้ฝั่งแดงหยิบแก้ทางน้ำเงิน (${counters.length})`}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2 gap-2">
-                  {counters.slice(0, activeTab === 'all' ? 4 : 12).map(renderCounterCard)}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+    const candidateList = HEROES.filter(
+      (h) => !pickedHeroNames.has(h.name) && !bannedHeroNames.has(h.name)
     );
-  };
+
+    const scored = candidateList.map((hero) => {
+      let score = 50;
+      const reasons: { text: string; type: 'counter' | 'synergy' | 'role' | 'signature' | 'meta' }[] = [];
+
+      // 1. Role priority bonus
+      const heroPrimaryPos = hero.primaryPos || (hero.pos && hero.pos[0]) || 'dsl';
+      const isRoleNeeded = !friendlyRolesTaken.has(heroPrimaryPos);
+      if (isRoleNeeded) {
+        score += 15;
+        reasons.push({ text: `เติมเต็มเลน ${heroPrimaryPos.toUpperCase()} ที่ทีมยังขาด`, type: 'role' });
+      }
+
+      // 2. Tournament statistics from official RPL 2026 Summer
+      const tourneyStats = RPL_2026_HEROES_DATA[hero.name];
+      if (tourneyStats && tourneyStats.games >= 10) {
+        const wrBonus = (tourneyStats.winRate - 50) * 0.6;
+        score += wrBonus;
+        if (tourneyStats.winRate >= 55) {
+          reasons.push({
+            text: `RPL WR ${tourneyStats.winRate}% (${tourneyStats.games} เกม)`,
+            type: 'meta',
+          });
+        }
+      }
+
+      // 3. Counter advantage against enemy locked picks
+      const againstData = RPL_2026_PLAYED_AGAINST_DATA[hero.name] || [];
+      enemyPicks.forEach((eHero) => {
+        const foundMatchup = againstData.find((m) => m.opponentHero === eHero);
+        if (foundMatchup && foundMatchup.games >= 3) {
+          if (foundMatchup.winRate >= 55) {
+            score += 12;
+            reasons.push({
+              text: `ชนะทาง ${eHero} (WR ${foundMatchup.winRate}%)`,
+              type: 'counter',
+            });
+          } else if (foundMatchup.winRate <= 42) {
+            score -= 10;
+          }
+        }
+      });
+
+      // 4. Synergy boost with friendly locked picks
+      const allyData = RPL_2026_PLAYED_WITH_DATA[hero.name] || [];
+      friendlyPicks.forEach((fHero) => {
+        const foundAlly = allyData.find((a) => a.allyHero === fHero);
+        if (foundAlly && foundAlly.games >= 3) {
+          if (foundAlly.winRate >= 56 || (foundAlly.diff && foundAlly.diff > 2)) {
+            score += 14;
+            reasons.push({
+              text: `คอมโบกับ ${fHero} (WR ${foundAlly.winRate}%)`,
+              type: 'synergy',
+            });
+          }
+        }
+      });
+
+      // 5. Player signature / comfortable mastery
+      const badges = heroToPlayersMap[hero.name] || [];
+      if (badges.length > 0) {
+        const sig = badges.find((b) => b.tier === 'signature');
+        if (sig) {
+          score += 15;
+          reasons.push({
+            text: `ซิกเนเจอร์ของ ${sig.playerName} (${sig.position})`,
+            type: 'signature',
+          });
+        } else {
+          const comf = badges.find((b) => b.tier === 'comfortable');
+          if (comf) {
+            score += 8;
+            reasons.push({
+              text: `ตัวถนัดของ ${comf.playerName}`,
+              type: 'signature',
+            });
+          }
+        }
+      }
+
+      const finalScore = Math.max(10, Math.min(99, Math.round(score)));
+
+      return {
+        hero,
+        score: finalScore,
+        reasons,
+        primaryPos: heroPrimaryPos,
+        tourneyStats,
+      };
+    });
+
+    // Sort descending by score
+    scored.sort((a, b) => b.score - a.score);
+
+    // Apply lane filter
+    if (recommendationLaneFilter === 'all') return scored.slice(0, 12);
+    return scored
+      .filter((item) => item.hero.pos?.includes(recommendationLaneFilter as PositionKey))
+      .slice(0, 12);
+  }, [
+    activeTeam,
+    bluePickNames,
+    redPickNames,
+    bluePicks,
+    redPicks,
+    pickedHeroNames,
+    bannedHeroNames,
+    heroToPlayersMap,
+    recommendationLaneFilter,
+  ]);
+
+  // Real-time Smart Ban Recommendations based strictly on RPL 2026 Summer official data
+  const proLeagueBans = useMemo(() => {
+    return getTopProLeagueBans(bannedHeroNames, pickedHeroNames, 10);
+  }, [bannedHeroNames, pickedHeroNames]);
+
+  const blueSideBans = useMemo(() => {
+    return getBlueSideRecommendedBans(
+      bannedHeroNames,
+      pickedHeroNames,
+      bluePickNames,
+      redPickNames,
+      10
+    );
+  }, [bannedHeroNames, pickedHeroNames, bluePickNames, redPickNames]);
+
+  const redSideBans = useMemo(() => {
+    return getRedSideRecommendedBans(
+      bannedHeroNames,
+      pickedHeroNames,
+      redPickNames,
+      bluePickNames,
+      10
+    );
+  }, [bannedHeroNames, pickedHeroNames, redPickNames, bluePickNames]);
+
+  const displayedBans = useMemo(() => {
+    if (banCategoryTab === 'blue') return blueSideBans;
+    if (banCategoryTab === 'red') return redSideBans;
+    return proLeagueBans;
+  }, [banCategoryTab, proLeagueBans, blueSideBans, redSideBans]);
+
+  const smartBanRecommendations = displayedBans;
+
+  // ==========================================
+  // 3. HERO ANALYSIS DATA (Inspect Selected Hero)
+  // ==========================================
+  const heroAnalysisDetails = useMemo(() => {
+    const heroName = selectedHeroForAnalysis;
+    const heroObj = HEROES.find((h) => h.name.toLowerCase() === heroName.toLowerCase());
+    const stats = RPL_2026_HEROES_DATA[heroName];
+    const against = RPL_2026_PLAYED_AGAINST_DATA[heroName] || [];
+    const withData = RPL_2026_PLAYED_WITH_DATA[heroName] || [];
+    const playerBadges = heroToPlayersMap[heroName] || [];
+
+    // Filter counters: best win rates against opponents
+    const countersList = [...against]
+      .filter((m) => m.games >= 2 && m.winRate >= 50)
+      .sort((a, b) => b.winRate - a.winRate)
+      .slice(0, 5);
+
+    // Filter countered by: worst win rates
+    const counteredByList = [...against]
+      .filter((m) => m.games >= 2 && m.winRate < 50)
+      .sort((a, b) => a.winRate - b.winRate)
+      .slice(0, 5);
+
+    // Filter top synergies
+    const topSynergies = [...withData]
+      .filter((s) => s.games >= 2)
+      .sort((a, b) => b.winRate - a.winRate)
+      .slice(0, 5);
+
+    return {
+      heroObj,
+      stats,
+      countersList,
+      counteredByList,
+      topSynergies,
+      playerBadges,
+      hasTournamentData: Boolean(stats),
+    };
+  }, [selectedHeroForAnalysis, heroToPlayersMap]);
+
+  // Filtered heroes list for quick search in Hero Analysis
+  const filteredAnalysisHeroList = useMemo(() => {
+    if (!heroSearchQuery.trim()) {
+      // Prioritize currently drafted heroes
+      const currentDraftHeroes = [...bluePickNames, ...redPickNames];
+      if (currentDraftHeroes.length > 0) {
+        return HEROES.filter((h) => currentDraftHeroes.includes(h.name)).slice(0, 10);
+      }
+      return HEROES.slice(0, 10);
+    }
+    const q = heroSearchQuery.trim().toLowerCase();
+    return HEROES.filter(
+      (h) => h.name.toLowerCase().includes(q) || (h.nameTh && h.nameTh.toLowerCase().includes(q))
+    ).slice(0, 12);
+  }, [heroSearchQuery, bluePickNames, redPickNames]);
+
+  // ==========================================
+  // 4. DRAFT SYNERGY & TEAM BALANCE
+  // ==========================================
+  const draftSynergyAnalytics = useMemo(() => {
+    const analyzeTeam = (picks: { hero: Hero | null; pos?: string }[]) => {
+      const activeHeroes = picks.map((p) => p.hero).filter(Boolean) as Hero[];
+      const count = activeHeroes.length;
+
+      // Count attributes
+      let frontlineCount = 0;
+      let physicalCount = 0;
+      let magicCount = 0;
+      let ccCount = 0;
+      let mobilityCount = 0;
+
+      activeHeroes.forEach((h) => {
+        const roles = h.roles || [];
+        const isTank = roles.includes('tank');
+        const isFighter = roles.includes('fighter');
+        const isMage = roles.includes('mage');
+        const isAssassin = roles.includes('assassin');
+        const isMarksman = roles.includes('marksman');
+        const isSupport = roles.includes('support');
+
+        if (isTank || (isFighter && !isAssassin)) frontlineCount++;
+        if (isMarksman || isAssassin || isFighter) physicalCount++;
+        if (isMage || isSupport) magicCount++;
+        if (isTank || isSupport || isMage) ccCount++;
+        if (isAssassin || isMarksman || isFighter) mobilityCount++;
+      });
+
+      // Power Curve estimations
+      let earlyPower = 'ปานกลาง';
+      let midPower = 'แข็งแกร่ง';
+      let latePower = 'ปานกลาง';
+
+      if (mobilityCount >= 2 && frontlineCount >= 1) earlyPower = 'แข็งแกร่งมาก (High Tempo)';
+      if (frontlineCount >= 2 && count >= 3) midPower = 'คุมไฟต์มังกรยอดเยี่ยม';
+      if (physicalCount >= 2 && magicCount >= 1) latePower = 'สเกลเลทเกมสมดุล';
+
+      // Warnings
+      const warnings: string[] = [];
+      if (count >= 3 && frontlineCount === 0) {
+        warnings.push('⚠️ ขาดตัวค้ำแนวหน้า (No Frontline) - ระวังโดนไฟต์ประชิดถล่ม');
+      }
+      if (count >= 3 && magicCount === 0) {
+        warnings.push('⚠️ ดาเมจกายภาพล้วน (All Physical) - ศัตรูออกเกราะกายภาพแก้ทางได้ง่าย');
+      }
+      if (count >= 3 && physicalCount === 0) {
+        warnings.push('⚠️ ขาดดาเมจกายภาพหลัก - ดันป้อมและตบเสาบ้านช้า');
+      }
+      if (count >= 4 && ccCount <= 1) {
+        warnings.push('⚠️ ขาดสกิลหยุด/ควบคุม (Low CC) - รับมือตัวล้วงคล่องตัวลำบาก');
+      }
+
+      return {
+        activeCount: count,
+        frontlineRating: Math.min(100, (frontlineCount / Math.max(1, count)) * 100),
+        physicalPercent: Math.round((physicalCount / Math.max(1, physicalCount + magicCount)) * 100) || 50,
+        magicPercent: Math.round((magicCount / Math.max(1, physicalCount + magicCount)) * 100) || 50,
+        ccRating: Math.min(100, Math.round((ccCount / Math.max(1, count)) * 100)),
+        earlyPower,
+        midPower,
+        latePower,
+        warnings,
+      };
+    };
+
+    return {
+      blue: analyzeTeam(bluePicks),
+      red: analyzeTeam(redPicks),
+    };
+  }, [bluePicks, redPicks]);
 
   return (
-    <div className="w-full mt-3 bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-sm overflow-hidden font-['Prompt'] transition-all">
-      {/* Top Banner Header */}
-      <div className="px-2.5 sm:px-4 py-2 sm:py-2.5 bg-gradient-to-r from-[#FFF0F5] via-white to-[#F0F9FF] border-b-2 border-[#F3D5E2] flex items-center justify-between flex-wrap gap-1.5 sm:gap-2">
-        <div className="flex items-center gap-1.5 sm:gap-2.5 min-w-0">
-          <div className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-[#E91E63] text-white flex items-center justify-center shadow-xs flex-shrink-0 animate-pulse">
-            <Sparkles size={14} className="sm:w-4 sm:h-4" />
+    <div className={`w-full bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-sm overflow-hidden font-['Prompt'] transition-all flex flex-col ${className || 'mt-3'}`}>
+      {/* ============================================================== */}
+      {/* 1. TOP HEADER BANNER (White-Pink 60/30/10 Constitution)         */}
+      {/* ============================================================== */}
+      <div className="px-3 sm:px-5 py-2.5 sm:py-3 bg-gradient-to-r from-[#FFF0F5] via-white to-[#F0F9FF] border-b-2 border-[#F3D5E2] flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#E91E63] text-white flex items-center justify-center shadow-xs flex-shrink-0 animate-pulse">
+            <Sparkles size={16} />
           </div>
           <div className="min-w-0">
-            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-              <span className="font-['Orbitron'] font-black text-[11px] sm:text-[13px] text-[#E91E63] tracking-wider uppercase">
-                REAL-TIME TACTICAL RADAR
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-['Orbitron'] font-black text-xs sm:text-sm text-[#E91E63] tracking-wider uppercase">
+                TACTICAL DRAFT DASHBOARD
               </span>
-              <span className="text-[8.5px] sm:text-[9.5px] font-bold px-1.5 sm:px-2 py-0.2 sm:py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs flex-shrink-0">
+              <span className="text-[8.5px] sm:text-[9.5px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-2xs">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                <span>วิเคราะห์ดราฟต์เรียลไทม์</span>
+                <span>REAL-TIME ENGINE</span>
+              </span>
+              <span className="text-[8.5px] sm:text-[9.5px] font-semibold text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-full hidden md:inline-flex items-center gap-1">
+                <Clock size={10} className="text-slate-400" />
+                <span>RPL 2026 Summer (291 Games)</span>
               </span>
             </div>
-            <p className="text-[9.5px] sm:text-[11px] text-slate-500 font-medium truncate">
-              เขาแบนตัวนี้ → มีโอกาสจะหยิบตัวนี้ | เขาเลือกตัวนี้ → มีโอกาสเอามาเล่นคู่กับตัวนี้
+            <p className="text-[10px] sm:text-[11.5px] text-slate-600 font-medium truncate mt-0.5">
+              ศูนย์วิเคราะห์ดราฟต์เชิงแท็กติกสำหรับโค้ชอีสปอร์ต: ชนะทาง • แพ้ทาง • คอมโบ • แนะนำตัวถัดไป
             </p>
           </div>
         </div>
 
-        {/* Right action controls */}
-        <div className="flex items-center gap-1 sm:gap-2 ml-auto flex-shrink-0">
+        {/* Right Action Controls */}
+        <div className="flex items-center gap-1.5 sm:gap-2 ml-auto flex-shrink-0">
+          {/* Quick RPL Pro Comps Button */}
           <button
             type="button"
             onClick={() => setIsProCompsOpen(true)}
             title="เปิดดูดราฟต์และคอมพ์ 2-4 ตัวที่นักแข่งโปรชอบใช้ใน RoV Pro League"
-            className="font-['Prompt'] text-[10px] sm:text-[11px] font-bold tracking-wider px-2 sm:px-2.5 py-1 rounded-lg border border-amber-400 bg-gradient-to-r from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 text-amber-900 transition-all flex items-center gap-1 cursor-pointer shadow-2xs whitespace-nowrap"
+            className="font-['Prompt'] text-[10.5px] sm:text-xs font-bold tracking-wider px-2.5 sm:px-3 py-1.5 rounded-xl border border-amber-400 bg-gradient-to-r from-amber-50 to-amber-100 hover:from-amber-100 hover:to-amber-200 text-amber-950 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap"
           >
             <span>🏆</span>
             <span className="hidden sm:inline">RPL PRO COMPS</span>
             <span className="sm:hidden">COMPS</span>
-            <span className="text-[9px] bg-amber-500 text-white font-black px-1.5 py-0.2 rounded-full">
+            <span className="text-[9.5px] bg-amber-500 text-white font-black px-1.5 py-0.2 rounded-full">
               {RPL_2026_PRO_COMPS.length}
             </span>
           </button>
 
-          {hasAnyDraftActions && (
-            <span className="text-[9.5px] sm:text-[10.5px] font-bold text-slate-600 bg-white border border-[#F3D5E2] px-2 sm:px-2.5 py-0.5 rounded-lg shadow-2xs whitespace-nowrap">
-              {totalInsightsCount} ข้อเสนอแนะแท็กติก
-            </span>
-          )}
+          {/* Toggle Expand/Collapse */}
           <button
             type="button"
             onClick={() => setIsOpen((prev) => !prev)}
-            className="p-1 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 cursor-pointer transition-colors"
-            title={isOpen ? 'ย่อแผงข้อมูล' : 'ขยายแผงข้อมูล'}
+            className="p-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 cursor-pointer transition-colors border border-slate-200 bg-white shadow-2xs"
+            title={isOpen ? 'ย่อแผงแดชบอร์ด' : 'ขยายแผงแดชบอร์ด'}
           >
             {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
@@ -666,228 +587,1475 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
       </div>
 
       {isOpen && (
-        <div className="p-2 sm:p-4 flex flex-col gap-2.5 sm:gap-3">
-          {/* Live Draft Advantage Banner (% Display) */}
-          {hasScore && (
-            <div className="p-2.5 sm:p-3 bg-gradient-to-r from-sky-50/80 via-white to-rose-50/80 rounded-xl border border-[#F3D5E2] flex flex-col gap-1.5 shadow-2xs">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[13px]">📊</span>
-                  <span className="font-['Orbitron'] font-black text-[10.5px] sm:text-[11.5px] text-slate-800 tracking-wider uppercase">
-                    LIVE DRAFT ADVANTAGE
-                  </span>
-                  <span
-                    className={`px-2 py-0.5 rounded-full text-[9.5px] sm:text-[10px] font-bold shadow-2xs ${
-                      advantageSide === 'blue'
-                        ? 'bg-sky-100 text-[#0284C7] border border-sky-300'
-                        : advantageSide === 'red'
-                        ? 'bg-rose-100 text-[#E11D48] border border-rose-300'
-                        : 'bg-slate-100 text-slate-700 border border-slate-300'
-                    }`}
-                  >
-                    {advantageSide === 'blue'
-                      ? `🔵 ฝั่งน้ำเงินได้เปรียบ ${bluePercent}%`
-                      : advantageSide === 'red'
-                      ? `🔴 ฝั่งแดงได้เปรียบ ${redPercent}%`
-                      : `≈ สูสีสมดุล 50% : 50%`}
-                  </span>
-                </div>
-
-                <div className="text-[9.5px] sm:text-[10.5px] font-['Prompt'] font-bold text-slate-500">
-                  {advantageSide === 'blue'
-                    ? `🔵 ${blueTeamName} ได้เปรียบนำอยู่ +${percentDiff}%`
-                    : advantageSide === 'red'
-                    ? `🔴 ${redTeamName} ได้เปรียบนำอยู่ +${Math.abs(percentDiff)}%`
-                    : 'อัตราความได้เปรียบของทั้งสองฝั่งสูสีกัน'}
-                </div>
-              </div>
-
-              {/* Real-time Percentage Bar */}
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1 min-w-[50px]">
-                  <span className="text-[10px] font-bold text-[#0284C7] truncate max-w-[60px] hidden sm:inline">
-                    {blueTeamName}
-                  </span>
-                  <span className="font-['Orbitron'] font-black text-xs sm:text-[13px] text-[#0284C7]">
+        <div className="p-2.5 sm:p-3.5 flex flex-col gap-2.5 bg-[#FFF8FB]/30 max-h-[540px] overflow-y-auto custom-scrollbar flex-1 min-h-0">
+          {/* ============================================================== */}
+          {/* 2. TACTICAL OVERVIEW: Advantage Bar & Key Metrics Counters      */}
+          {/* ============================================================== */}
+          <div className="bg-white rounded-2xl border border-[#F3D5E2] p-3 shadow-xs flex flex-col gap-2.5">
+            {/* Advantage Score Progress Bar */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <div className="flex items-center gap-1.5 text-sky-800">
+                  <span className="w-2 h-2 rounded-full bg-sky-600" />
+                  <span className="font-['Orbitron']">{blueTeamName}</span>
+                  <span className="text-[11px] bg-sky-100 text-sky-900 px-1.5 py-0.2 rounded border border-sky-300">
                     {bluePercent}%
                   </span>
+                  {blueScore && blueScore.score > 0 && (
+                    <span className="text-[10px] text-slate-400 font-normal">
+                      (Score: {blueScore.score})
+                    </span>
+                  )}
                 </div>
 
-                <div className="flex-1 h-3 bg-slate-200/80 border border-slate-300 rounded-full overflow-hidden flex shadow-inner">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#0284c7] to-[#38bdf8] transition-all duration-500"
-                    style={{ width: `${bluePercent}%` }}
-                    title={`Blue: ${bluePercent}%`}
-                  />
-                  <div
-                    className="h-full bg-gradient-to-l from-[#e11d48] to-[#f43f5e] transition-all duration-500"
-                    style={{ width: `${redPercent}%` }}
-                    title={`Red: ${redPercent}%`}
-                  />
-                </div>
-
-                <div className="flex items-center gap-1 min-w-[50px] justify-end flex-row-reverse">
-                  <span className="text-[10px] font-bold text-[#E11D48] truncate max-w-[60px] hidden sm:inline">
-                    {redTeamName}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 hidden sm:inline">
+                    {advantageSide === 'balanced'
+                      ? '⚖️ ดราฟต์สูสี (Balanced Matchup)'
+                      : advantageSide === 'blue'
+                      ? `🔵 ${blueTeamName} ได้เปรียบเชิงโครงสร้าง (+${percentDiff}%)`
+                      : `🔴 ${redTeamName} ได้เปรียบเชิงโครงสร้าง (+${Math.abs(percentDiff)}%)`}
                   </span>
-                  <span className="font-['Orbitron'] font-black text-xs sm:text-[13px] text-[#E11D48] text-right">
+                </div>
+
+                <div className="flex items-center gap-1.5 text-rose-800">
+                  {redScore && redScore.score > 0 && (
+                    <span className="text-[10px] text-slate-400 font-normal">
+                      (Score: {redScore.score})
+                    </span>
+                  )}
+                  <span className="text-[11px] bg-rose-100 text-rose-900 px-1.5 py-0.2 rounded border border-rose-300">
                     {redPercent}%
                   </span>
+                  <span className="font-['Orbitron']">{redTeamName}</span>
+                  <span className="w-2 h-2 rounded-full bg-rose-600" />
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Controls Bar: Mode Switcher & Team Filter */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 pb-2 border-b border-[#F3D5E2]">
-            {/* Tab Filter Pills (All / Ban Intent / Combo / Counter) - single horizontal scrolling row on mobile */}
-            <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar flex-nowrap py-0.5 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={() => setActiveTab('all')}
-                className={`px-2 sm:px-2.5 py-1 rounded-lg text-[9.5px] sm:text-[11px] font-bold tracking-wide transition-all cursor-pointer border flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
-                  activeTab === 'all'
-                    ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs'
-                    : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                }`}
-              >
-                <span>🎯</span>
-                <span>ทั้งหมด ({totalInsightsCount})</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('bans')}
-                className={`px-2 sm:px-2.5 py-1 rounded-lg text-[9.5px] sm:text-[11px] font-bold tracking-wide transition-all cursor-pointer border flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
-                  activeTab === 'bans'
-                    ? 'bg-rose-600 border-rose-600 text-white shadow-xs'
-                    : 'bg-white border-slate-200 text-slate-600 hover:text-rose-700 hover:bg-rose-50'
-                }`}
-              >
-                <span>🚫</span>
-                <span className="sm:hidden">แบน ➔ หยิบ ({filteredBans.length})</span>
-                <span className="hidden sm:inline">แบนตัวนี้ ➔ โอกาสหยิบ ({filteredBans.length})</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('synergies')}
-                className={`px-2 sm:px-2.5 py-1 rounded-lg text-[9.5px] sm:text-[11px] font-bold tracking-wide transition-all cursor-pointer border flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
-                  activeTab === 'synergies'
-                    ? 'bg-amber-600 border-amber-600 text-white shadow-xs'
-                    : 'bg-white border-slate-200 text-slate-600 hover:text-amber-700 hover:bg-amber-50'
-                }`}
-              >
-                <span>⚡</span>
-                <span className="sm:hidden">คู่หูคอมโบ ({filteredSynergies.length})</span>
-                <span className="hidden sm:inline">เลือกตัวนี้ ➔ เล่นคู่กัน ({filteredSynergies.length})</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('counters')}
-                className={`px-2 sm:px-2.5 py-1 rounded-lg text-[9.5px] sm:text-[11px] font-bold tracking-wide transition-all cursor-pointer border flex items-center gap-1 whitespace-nowrap flex-shrink-0 ${
-                  activeTab === 'counters'
-                    ? 'bg-[#0284c7] border-[#0284c7] text-white shadow-xs'
-                    : 'bg-white border-slate-200 text-slate-600 hover:text-[#0284c7] hover:bg-sky-50'
-                }`}
-              >
-                <span>🛡️</span>
-                <span className="sm:hidden">ตัวแก้ทาง ({filteredCounters.length})</span>
-                <span className="hidden sm:inline">แก้ทาง / เคาน์เตอร์ ({filteredCounters.length})</span>
-              </button>
+              {/* Dual Color Bar */}
+              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden flex border border-slate-200 shadow-inner">
+                <div
+                  className="h-full bg-gradient-to-r from-sky-600 to-sky-400 transition-all duration-500 ease-out"
+                  style={{ width: `${bluePercent}%` }}
+                />
+                <div
+                  className="h-full bg-gradient-to-r from-rose-400 to-rose-600 transition-all duration-500 ease-out"
+                  style={{ width: `${redPercent}%` }}
+                />
+              </div>
             </div>
 
-            {/* Team Filter Pills (All / Blue / Red) */}
-            <div className="flex items-center gap-1 self-start sm:self-auto sm:ml-auto overflow-x-auto no-scrollbar flex-nowrap py-0.5">
-              <span className="text-[9px] font-bold text-slate-400 uppercase hidden sm:inline">ทีม:</span>
+            {/* Quick KPI Cards Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-slate-100 text-xs">
+              {/* Card 1: ชนะทาง */}
+              <div className="p-2 rounded-xl bg-emerald-50/60 border border-emerald-200 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-emerald-800 uppercase flex items-center gap-1">
+                    <TrendingUp size={11} className="text-emerald-600" />
+                    <span>คู่ชนะทาง</span>
+                  </span>
+                  <span className="text-[10.5px] text-slate-500">
+                    น้ำเงิน {tacticalOverviewMetrics.blueCounterWins} | แดง {tacticalOverviewMetrics.redCounterWins}
+                  </span>
+                </div>
+                <span className="font-['Orbitron'] font-black text-sm text-emerald-700">
+                  {tacticalOverviewMetrics.blueCounterWins + tacticalOverviewMetrics.redCounterWins}
+                </span>
+              </div>
+
+              {/* Card 2: เสียเปรียบ */}
+              <div className="p-2 rounded-xl bg-rose-50/60 border border-rose-200 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-rose-800 uppercase flex items-center gap-1">
+                    <ShieldAlert size={11} className="text-rose-600" />
+                    <span>คู่เสียเปรียบ</span>
+                  </span>
+                  <span className="text-[10.5px] text-slate-500">
+                    น้ำเงิน {tacticalOverviewMetrics.blueDisadvantages} | แดง {tacticalOverviewMetrics.redDisadvantages}
+                  </span>
+                </div>
+                <span className="font-['Orbitron'] font-black text-sm text-rose-700">
+                  {tacticalOverviewMetrics.blueDisadvantages + tacticalOverviewMetrics.redDisadvantages}
+                </span>
+              </div>
+
+              {/* Card 3: คอมโบที่ค้นพบ */}
+              <div className="p-2 rounded-xl bg-amber-50/60 border border-amber-200 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-amber-900 uppercase flex items-center gap-1">
+                    <Zap size={11} className="text-amber-600" />
+                    <span>คอมโบที่ค้นพบ</span>
+                  </span>
+                  <span className="text-[10.5px] text-slate-500">
+                    น้ำเงิน {tacticalOverviewMetrics.blueCombosCount} | แดง {tacticalOverviewMetrics.redCombosCount}
+                  </span>
+                </div>
+                <span className="font-['Orbitron'] font-black text-sm text-amber-700">
+                  {tacticalOverviewMetrics.totalCombosDiscovered}
+                </span>
+              </div>
+
+              {/* Card 4: สถานะดราฟต์ */}
+              <div className="p-2 rounded-xl bg-sky-50/60 border border-sky-200 flex items-center justify-between">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-sky-900 uppercase flex items-center gap-1">
+                    <Target size={11} className="text-sky-600" />
+                    <span>ฮีโร่ในกระดาน</span>
+                  </span>
+                  <span className="text-[10.5px] text-slate-500">
+                    แบนแล้ว {blueBans.filter(Boolean).length + redBans.filter(Boolean).length} ตัว
+                  </span>
+                </div>
+                <span className="font-['Orbitron'] font-black text-sm text-sky-800">
+                  {bluePickNames.length + redPickNames.length}/10
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* ============================================================== */}
+          {/* 3. DASHBOARD SUB-NAVIGATION TABS (Modern Pink 30% Accent)      */}
+          {/* ============================================================== */}
+          <div className="flex items-center justify-between flex-wrap gap-2 border-b border-[#F3D5E2] pb-1.5">
+            <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto custom-scrollbar py-0.5">
+              <button
+                type="button"
+                onClick={() => setActiveDashboardTab('overview')}
+                className={`px-3 py-1.5 rounded-xl font-['Prompt'] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
+                  activeDashboardTab === 'overview'
+                    ? 'bg-[#E91E63] text-white shadow-xs'
+                    : 'bg-white text-slate-700 border border-[#F3D5E2] hover:bg-[#FFF0F5]'
+                }`}
+              >
+                <Target size={13} />
+                <span>Tactical Overview</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveDashboardTab('recommendations')}
+                className={`px-3 py-1.5 rounded-xl font-['Prompt'] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
+                  activeDashboardTab === 'recommendations'
+                    ? 'bg-[#E91E63] text-white shadow-xs'
+                    : 'bg-white text-slate-700 border border-[#F3D5E2] hover:bg-[#FFF0F5]'
+                }`}
+              >
+                {isBanTurn ? (
+                  <>
+                    <Ban size={13} className="text-rose-400" />
+                    <span>Smart Ban Recommendation</span>
+                    <span className="text-[9px] bg-rose-100 text-rose-900 border border-rose-300 font-black px-1.5 py-0.2 rounded-full">
+                      BAN TOP {smartBanRecommendations.length}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <Award size={13} className="text-amber-500" />
+                    <span>Smart Pick Recommendation</span>
+                    <span className="text-[9px] bg-amber-100 text-amber-900 border border-amber-300 font-black px-1.5 py-0.2 rounded-full">
+                      TOP {smartPickRecommendations.length}
+                    </span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveDashboardTab('hero_analysis')}
+                className={`px-3 py-1.5 rounded-xl font-['Prompt'] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
+                  activeDashboardTab === 'hero_analysis'
+                    ? 'bg-[#E91E63] text-white shadow-xs'
+                    : 'bg-white text-slate-700 border border-[#F3D5E2] hover:bg-[#FFF0F5]'
+                }`}
+              >
+                <BarChart3 size={13} className="text-sky-500" />
+                <span>Hero Analysis Panel</span>
+                <span className="text-[9px] bg-sky-100 text-sky-800 border border-sky-300 font-bold px-1.5 py-0.2 rounded-full">
+                  {selectedHeroForAnalysis}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveDashboardTab('synergy')}
+                className={`px-3 py-1.5 rounded-xl font-['Prompt'] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
+                  activeDashboardTab === 'synergy'
+                    ? 'bg-[#E91E63] text-white shadow-xs'
+                    : 'bg-white text-slate-700 border border-[#F3D5E2] hover:bg-[#FFF0F5]'
+                }`}
+              >
+                <Layers size={13} className="text-purple-500" />
+                <span>Draft Synergy & Balance</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveDashboardTab('predictions')}
+                className={`px-3 py-1.5 rounded-xl font-['Prompt'] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
+                  activeDashboardTab === 'predictions'
+                    ? 'bg-[#E91E63] text-white shadow-xs'
+                    : 'bg-white text-slate-700 border border-[#F3D5E2] hover:bg-[#FFF0F5]'
+                }`}
+              >
+                <Sparkles size={13} className="text-emerald-500" />
+                <span>Radar Predictions</span>
+              </button>
+            </div>
+
+            {/* Team Filter Pills */}
+            <div className="flex items-center gap-1 bg-white border border-[#F3D5E2] p-0.5 rounded-xl shadow-2xs text-[11px]">
               <button
                 type="button"
                 onClick={() => setTeamFilter('all')}
-                className={`px-2 py-0.5 rounded text-[9.5px] sm:text-[10.5px] font-bold cursor-pointer transition-all border whitespace-nowrap flex items-center gap-1 flex-shrink-0 ${
-                  teamFilter === 'all'
-                    ? 'bg-slate-800 border-slate-800 text-white shadow-xs ring-1 ring-slate-800'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100'
+                className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer ${
+                  teamFilter === 'all' ? 'bg-[#E91E63] text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
-                title="แสดงทั้งสองฝั่ง แยกซ้าย (Blue) และขวา (Red)"
               >
-                <span>👥 สองฝั่ง</span>
-                <span className="hidden md:inline text-[9px] opacity-80">(ซ้าย Blue / ขวา Red)</span>
+                ทั้งสองทีม
               </button>
               <button
                 type="button"
                 onClick={() => setTeamFilter('blue')}
-                className={`px-2 py-0.5 rounded text-[9.5px] sm:text-[10.5px] font-bold cursor-pointer transition-all border whitespace-nowrap flex items-center gap-1 flex-shrink-0 ${
-                  teamFilter === 'blue'
-                    ? 'bg-[#0284c7] border-[#0284c7] text-white shadow-xs'
-                    : 'bg-white border-sky-200 text-[#0284c7] hover:bg-sky-50'
+                className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer flex items-center gap-1 ${
+                  teamFilter === 'blue' ? 'bg-sky-600 text-white' : 'text-sky-700 hover:bg-sky-50'
                 }`}
               >
-                <span>🔵</span>
-                <span className="sm:hidden">Blue</span>
-                <span className="hidden sm:inline">{blueTeamName || 'Blue'}</span>
-                <span className="text-[9px] opacity-90">({blueTotalCount})</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                <span>Blue</span>
               </button>
               <button
                 type="button"
                 onClick={() => setTeamFilter('red')}
-                className={`px-2 py-0.5 rounded text-[9.5px] sm:text-[10.5px] font-bold cursor-pointer transition-all border whitespace-nowrap flex items-center gap-1 flex-shrink-0 ${
-                  teamFilter === 'red'
-                    ? 'bg-[#e11d48] border-[#e11d48] text-white shadow-xs'
-                    : 'bg-white border-rose-200 text-[#e11d48] hover:bg-rose-50'
+                className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer flex items-center gap-1 ${
+                  teamFilter === 'red' ? 'bg-rose-600 text-white' : 'text-rose-700 hover:bg-rose-50'
                 }`}
               >
-                <span>🔴</span>
-                <span className="sm:hidden">Red</span>
-                <span className="hidden sm:inline">{redTeamName || 'Red'}</span>
-                <span className="text-[9px] opacity-90">({redTotalCount})</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                <span>Red</span>
               </button>
             </div>
           </div>
 
-          {/* Empty state when no bans/picks yet */}
-          {!hasAnyDraftActions && (
-            <div className="py-6 px-4 bg-[#FFF8FB] rounded-xl border border-dashed border-[#F3D5E2] flex flex-col items-center justify-center text-center">
-              <div className="w-10 h-10 rounded-full bg-[#FCE4EC] text-[#E91E63] flex items-center justify-center mb-2">
-                <span>⚔️</span>
+          {/* ============================================================== */}
+          {/* TAB 1: TACTICAL OVERVIEW                                       */}
+          {/* ============================================================== */}
+          {activeDashboardTab === 'overview' && (
+            <div className="flex flex-col gap-3">
+              {/* Split Blue Side / Red Side Overview */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {/* BLUE SIDE SUMMARY */}
+                <div className="bg-white border-2 border-sky-200 rounded-xl p-3 shadow-2xs flex flex-col gap-2">
+                  <div className="flex items-center justify-between border-b border-sky-100 pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-sky-600" />
+                      <span className="font-['Orbitron'] font-bold text-xs text-sky-900">
+                        {blueTeamName} (BLUE SIDE)
+                      </span>
+                    </div>
+                    <span className="text-[10.5px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md border border-sky-200">
+                      Pick {bluePickNames.length}/5 • Ban {blueBans.filter(Boolean).length}/4
+                    </span>
+                  </div>
+
+                  {/* Picked Heroes Avatars Bar */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">ดราฟต์แล้ว:</span>
+                    {bluePickNames.length === 0 ? (
+                      <span className="text-xs text-slate-400 italic">ยังไม่ได้เลือกฮีโร่</span>
+                    ) : (
+                      bluePickNames.map((hName) => (
+                        <button
+                          key={hName}
+                          type="button"
+                          onClick={() => {
+                            setSelectedHeroForAnalysis(hName);
+                            setActiveDashboardTab('hero_analysis');
+                          }}
+                          className="flex items-center gap-1 p-1 pr-2 rounded-lg bg-sky-50 border border-sky-200 hover:border-sky-400 transition-all cursor-pointer shadow-2xs text-[11px]"
+                          title="คลิกเพื่อวิเคราะห์สถิติฮีโร่ตัวนี้"
+                        >
+                          <img
+                            src={getHeroImageUrl(hName)}
+                            alt={hName}
+                            className="w-5 h-5 rounded-md object-cover"
+                          />
+                          <span className="font-bold text-sky-900">{hName}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Active Synergies & Counters on Blue */}
+                  <div className="grid grid-cols-2 gap-2 mt-1 text-[11px]">
+                    <div className="p-2 rounded-lg bg-emerald-50/60 border border-emerald-200">
+                      <span className="font-bold text-emerald-800 block text-[10px] uppercase">
+                        🎯 ชนะทางคู่แข่ง ({tacticalOverviewMetrics.blueCounterWins} คู่)
+                      </span>
+                      <p className="text-[10.5px] text-slate-600 mt-0.5">
+                        {tacticalOverviewMetrics.blueCounterWins > 0
+                          ? 'มีฮีโร่ที่ได้เปรียบสถิติเหนือคู่แข่ง'
+                          : 'ยังไม่พบคู่ที่ได้เปรียบชัดเจน'}
+                      </p>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-amber-50/60 border border-amber-200">
+                      <span className="font-bold text-amber-900 block text-[10px] uppercase">
+                        ⚡ คอมโบในทีม ({tacticalOverviewMetrics.blueCombosCount} คอมโบ)
+                      </span>
+                      <p className="text-[10.5px] text-slate-600 mt-0.5">
+                        {tacticalOverviewMetrics.blueCombosCount > 0
+                          ? 'มีคู่หูที่ประสานงานได้ดีในโปรลีก'
+                          : 'กำลังสร้างโครงสร้างคอมโบ'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* RED SIDE SUMMARY */}
+                <div className="bg-white border-2 border-rose-200 rounded-xl p-3 shadow-2xs flex flex-col gap-2">
+                  <div className="flex items-center justify-between border-b border-rose-100 pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
+                      <span className="font-['Orbitron'] font-bold text-xs text-rose-900">
+                        {redTeamName} (RED SIDE)
+                      </span>
+                    </div>
+                    <span className="text-[10.5px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+                      Pick {redPickNames.length}/5 • Ban {redBans.filter(Boolean).length}/4
+                    </span>
+                  </div>
+
+                  {/* Picked Heroes Avatars Bar */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase">ดราฟต์แล้ว:</span>
+                    {redPickNames.length === 0 ? (
+                      <span className="text-xs text-slate-400 italic">ยังไม่ได้เลือกฮีโร่</span>
+                    ) : (
+                      redPickNames.map((hName) => (
+                        <button
+                          key={hName}
+                          type="button"
+                          onClick={() => {
+                            setSelectedHeroForAnalysis(hName);
+                            setActiveDashboardTab('hero_analysis');
+                          }}
+                          className="flex items-center gap-1 p-1 pr-2 rounded-lg bg-rose-50 border border-rose-200 hover:border-rose-400 transition-all cursor-pointer shadow-2xs text-[11px]"
+                          title="คลิกเพื่อวิเคราะห์สถิติฮีโร่ตัวนี้"
+                        >
+                          <img
+                            src={getHeroImageUrl(hName)}
+                            alt={hName}
+                            className="w-5 h-5 rounded-md object-cover"
+                          />
+                          <span className="font-bold text-rose-900">{hName}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Active Synergies & Counters on Red */}
+                  <div className="grid grid-cols-2 gap-2 mt-1 text-[11px]">
+                    <div className="p-2 rounded-lg bg-emerald-50/60 border border-emerald-200">
+                      <span className="font-bold text-emerald-800 block text-[10px] uppercase">
+                        🎯 ชนะทางคู่แข่ง ({tacticalOverviewMetrics.redCounterWins} คู่)
+                      </span>
+                      <p className="text-[10.5px] text-slate-600 mt-0.5">
+                        {tacticalOverviewMetrics.redCounterWins > 0
+                          ? 'มีฮีโร่ที่ได้เปรียบสถิติเหนือคู่แข่ง'
+                          : 'ยังไม่พบคู่ที่ได้เปรียบชัดเจน'}
+                      </p>
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-amber-50/60 border border-amber-200">
+                      <span className="font-bold text-amber-900 block text-[10px] uppercase">
+                        ⚡ คอมโบในทีม ({tacticalOverviewMetrics.redCombosCount} คอมโบ)
+                      </span>
+                      <p className="text-[10.5px] text-slate-600 mt-0.5">
+                        {tacticalOverviewMetrics.redCombosCount > 0
+                          ? 'มีคู่หูที่ประสานงานได้ดีในโปรลีก'
+                          : 'กำลังสร้างโครงสร้างคอมโบ'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <h4 className="font-bold text-slate-800 text-[13px] mb-1">
-                พร้อมเริ่มการวิเคราะห์ดราฟต์เชิงแท็กติก (Tactical Radar)
-              </h4>
-              <p className="text-[11px] text-slate-500 max-w-[500px]">
-                เมื่อเริ่มดราฟต์และมีการแบนหรือเลือกฮีโร่ตัวแรก
-                ระบบจะคำนวณทันทีว่าคู่แข่งแบนตัวนี้เพื่อเตรียมหยิบตัวไหน หรือเลือกตัวนี้เพื่อเตรียมคอมโบกับตัวใดในก้าวถัดไป!
-              </p>
+
+              {/* Quick Actions Bar */}
+              <div className="p-2.5 rounded-xl bg-white border border-[#F3D5E2] flex items-center justify-between flex-wrap gap-2 text-xs">
+                <span className="text-slate-600 flex items-center gap-1.5">
+                  <Info size={14} className="text-[#E91E63]" />
+                  <span>
+                    คลิกแท็บ <strong>Smart Pick Recommendation</strong> เพื่อดูฮีโร่ที่แนะนำให้หยิบตัวถัดไป หรือคลิกฮีโร่เพื่อดูสถิติเชิงลึก
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveDashboardTab('recommendations')}
+                  className="px-3 py-1 rounded-lg bg-[#E91E63] hover:bg-[#D81B60] text-white font-bold transition-colors cursor-pointer shadow-2xs flex items-center gap-1 text-[11px]"
+                >
+                  <span>ดูฮีโร่แนะนำตัวถัดไป</span>
+                  <ArrowUpRight size={13} />
+                </button>
+              </div>
             </div>
           )}
 
-          {/* Tactical Intelligence Items: Split Left (BLUE) / Right (RED) for 'all', or Single Team */}
-          {hasAnyDraftActions && (
-            <>
-              {teamFilter === 'all' ? (
-                /* Split View: Left = BLUE SIDE, Right = RED SIDE */
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3.5 sm:gap-4 items-start pt-1">
-                  {/* Left Column: BLUE SIDE */}
-                  <div className="p-2 sm:p-2.5 rounded-2xl bg-sky-50/20 border border-sky-200/80 shadow-2xs">
-                    {renderTeamColumn('blue')}
+          {/* ============================================================== */}
+          {/* TAB 2: SMART RECOMMENDATIONS (BANS & PICKS)                   */}
+          {/* ============================================================== */}
+          {activeDashboardTab === 'recommendations' && (
+            <div className="flex flex-col gap-3 font-['Prompt']">
+              {/* Mode Switch Header: Bans vs Picks */}
+              <div className="p-2 sm:p-2.5 bg-white rounded-xl border border-[#F3D5E2] flex items-center justify-between flex-wrap gap-2 shadow-2xs">
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setRecommendationMode('bans')}
+                      className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        recommendationMode === 'bans'
+                          ? 'bg-gradient-to-r from-[#E11D48] to-[#BE123C] text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <Ban size={12} />
+                      <span>แนะนำตัวแบน (BANS)</span>
+                      <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${
+                        recommendationMode === 'bans' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-800'
+                      }`}>
+                        {smartBanRecommendations.length}
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setRecommendationMode('picks')}
+                      className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        recommendationMode === 'picks'
+                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <Award size={12} />
+                      <span>แนะนำตัวเลือก (PICKS)</span>
+                      <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${
+                        recommendationMode === 'picks' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {smartPickRecommendations.length}
+                      </span>
+                    </button>
                   </div>
 
-                  {/* Right Column: RED SIDE */}
-                  <div className="p-2 sm:p-2.5 rounded-2xl bg-rose-50/20 border border-rose-200/80 shadow-2xs">
-                    {renderTeamColumn('red')}
-                  </div>
+                  <span className="text-[10.5px] text-slate-500 hidden md:inline">
+                    {recommendationMode === 'bans'
+                      ? `วิเคราะห์ตัวแบนที่อันตรายที่สุดสำหรับฝั่ง ${activeTeam === 'blue' ? blueTeamName : redTeamName}`
+                      : `วิเคราะห์ตัวที่เหมาะสมที่สุดสำหรับฝั่ง ${activeTeam === 'blue' ? blueTeamName : redTeamName}`}
+                  </span>
                 </div>
-              ) : (
-                /* Single Team View: Full Width */
-                <div className="pt-1">
-                  {renderTeamColumn(teamFilter)}
+
+                {recommendationMode === 'picks' && (
+                  <div className="flex items-center gap-1 text-[10.5px] flex-wrap ml-auto">
+                    {['all', 'dsl', 'jg', 'mid', 'roam', 'adl'].map((pos) => (
+                      <button
+                        key={pos}
+                        type="button"
+                        onClick={() => setRecommendationLaneFilter(pos)}
+                        className={`px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer uppercase ${
+                          recommendationLaneFilter === pos
+                            ? 'bg-[#E91E63] text-white'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {pos === 'all' ? 'ทุกลำดับ' : pos}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* RECOMMENDED BANS VIEW */}
+              {recommendationMode === 'bans' && (
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between text-xs text-slate-600 flex-wrap gap-2">
+                    <div className="flex items-center gap-1.5 p-0.5 bg-rose-50/80 rounded-xl border border-rose-200">
+                      <button
+                        type="button"
+                        onClick={() => setBanCategoryTab('pro_league')}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                          banCategoryTab === 'pro_league'
+                            ? 'bg-amber-500 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-amber-800'
+                        }`}
+                      >
+                        <span>🔥 1. โปรลีกแบนเยอะ</span>
+                        <span className="text-[9px] bg-white/20 px-1 py-0.2 rounded-full font-black">
+                          {proLeagueBans.length}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setBanCategoryTab('blue')}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                          banCategoryTab === 'blue'
+                            ? 'bg-sky-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-sky-800'
+                        }`}
+                      >
+                        <span>🔵 2. แนะนำแบนฝั่ง BLUE</span>
+                        <span className="text-[9px] bg-white/20 px-1 py-0.2 rounded-full font-black">
+                          {blueSideBans.length}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setBanCategoryTab('red')}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                          banCategoryTab === 'red'
+                            ? 'bg-rose-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-rose-800'
+                        }`}
+                      >
+                        <span>🔴 3. แนะนำแบนฝั่ง RED</span>
+                        <span className="text-[9px] bg-white/20 px-1 py-0.2 rounded-full font-black">
+                          {redSideBans.length}
+                        </span>
+                      </button>
+                    </div>
+
+                    <span className="text-[10.5px] text-slate-500 font-medium">
+                      สถิติจากการแข่งขันทางการ 291 เกม (RPL 2026 Summer)
+                    </span>
+                  </div>
+
+                  {smartBanRecommendations.length === 0 ? (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center gap-2">
+                      <ShieldAlert size={16} className="text-amber-600 flex-shrink-0" />
+                      <span>ไม่สามารถดึงข้อมูลสถิติ RPL 2026 Summer ได้ หรือฮีโร่แนะนำถูกแบนครบทั้งหมดแล้ว</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2.5">
+                      {smartBanRecommendations.slice(0, 10).map((item) => {
+                        const isTopRank = item.rank === 1;
+
+                        return (
+                          <div
+                            key={item.hero.id}
+                            className={`p-3 rounded-xl border flex flex-col justify-between gap-2 transition-all shadow-2xs ${
+                              isTopRank
+                                ? 'border-amber-400 ring-2 ring-amber-300/80 bg-gradient-to-b from-amber-50/70 via-white to-white'
+                                : 'border-rose-200 bg-white hover:border-rose-400 hover:shadow-xs'
+                            }`}
+                          >
+                            <div className="flex items-start gap-2.5">
+                              {/* Portrait & Rank Badge */}
+                              <div className="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-200 flex-shrink-0 shadow-2xs">
+                                <img
+                                  src={item.hero.avatarUrl || getHeroImageUrl(item.hero.name)}
+                                  alt={item.hero.name}
+                                  className="w-full h-full object-cover"
+                                />
+                                <span
+                                  className={`absolute top-0 left-0 text-[9px] font-['Orbitron'] font-black px-1.5 rounded-br ${
+                                    isTopRank
+                                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white'
+                                      : 'bg-slate-800 text-white'
+                                  }`}
+                                >
+                                  #{item.rank}
+                                </span>
+                              </div>
+
+                              {/* Hero Name & Ban Score */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedHeroForAnalysis(item.hero.name);
+                                      setActiveDashboardTab('hero_analysis');
+                                    }}
+                                    className="font-bold text-xs sm:text-sm text-slate-900 hover:text-[#E11D48] transition-colors truncate text-left cursor-pointer"
+                                    title="คลิกเพื่อดูสถิติเชิงลึก"
+                                  >
+                                    {item.hero.name}
+                                  </button>
+                                  <span
+                                    className={`text-[9.5px] font-['Orbitron'] font-black px-1.5 py-0.2 rounded border ${
+                                      isTopRank
+                                        ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                        : 'bg-rose-50 text-rose-800 border-rose-200'
+                                    }`}
+                                  >
+                                    {item.score}/100
+                                  </span>
+                                </div>
+
+                                <div className="text-[10px] text-slate-500 font-semibold uppercase mt-0.5 truncate">
+                                  {item.hero.primaryPos || (item.hero.pos && item.hero.pos[0])}
+                                  {item.hero.nameTh ? ` • ${item.hero.nameTh}` : ''}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Official RPL Stats Line */}
+                            <div className="p-2 rounded-lg bg-rose-50/60 border border-rose-100 flex flex-col gap-1 text-[10.5px] font-medium text-slate-600">
+                              <div className="flex items-center justify-between">
+                                <span className="text-rose-700 font-bold">🚫 Ban: {item.stats.banRate}%</span>
+                                <span className="text-slate-400">({item.stats.bans} ครั้ง)</span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-emerald-700 font-bold">🏆 WR: {item.stats.winRate}%</span>
+                                <span className="text-purple-700 font-bold">⚡ P&B: {item.stats.presenceRate}%</span>
+                              </div>
+                              {item.sideContext && (
+                                <div className="text-[9.5px] font-bold text-slate-700 pt-0.5 border-t border-slate-200/60 truncate">
+                                  📊 {item.sideContext}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Tactical Reason */}
+                            <p className="text-[10px] text-slate-600 line-clamp-2 leading-relaxed">
+                              {item.reason}
+                            </p>
+
+                            {/* Action Ban Button */}
+                            {(onBanHeroDirectly || onPickHeroDirectly) && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (onBanHeroDirectly) onBanHeroDirectly(item.hero.name);
+                                  else if (onPickHeroDirectly) onPickHeroDirectly(item.hero.name);
+                                }}
+                                className="w-full py-1.5 rounded-lg bg-gradient-to-r from-[#E11D48] to-[#BE123C] hover:from-[#BE123C] hover:to-[#9F1239] text-white text-[11px] font-bold tracking-wide transition-all cursor-pointer shadow-xs flex items-center justify-center gap-1 active:scale-95 mt-1"
+                                title={`แบน ${item.hero.name}`}
+                              >
+                                <Ban size={12} />
+                                <span>แบน {item.hero.name}</span>
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
-            </>
+
+              {/* RECOMMENDED PICKS VIEW */}
+              {recommendationMode === 'picks' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                  {smartPickRecommendations.map((item, index) => {
+                    const rank = index + 1;
+                    const isTopRank = rank === 1;
+
+                    return (
+                      <div
+                        key={item.hero.id}
+                        className={`p-3 rounded-xl border flex flex-col justify-between gap-2 transition-all bg-white shadow-2xs ${
+                          isTopRank
+                            ? 'border-amber-400 ring-1 ring-amber-300 bg-gradient-to-b from-amber-50/30 to-white'
+                            : 'border-slate-200 hover:border-[#E91E63]'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2.5">
+                          {/* Portrait & Rank Badge */}
+                          <div className="relative w-11 h-11 rounded-xl overflow-hidden border border-slate-200 flex-shrink-0">
+                            <img
+                              src={item.hero.avatarUrl || getHeroImageUrl(item.hero.name)}
+                              alt={item.hero.name}
+                              className="w-full h-full object-cover"
+                            />
+                            <span
+                              className={`absolute top-0 left-0 text-[8.5px] font-['Orbitron'] font-black px-1 rounded-br ${
+                                isTopRank ? 'bg-amber-500 text-white' : 'bg-slate-800 text-white'
+                              }`}
+                            >
+                              #{rank}
+                            </span>
+                          </div>
+
+                          {/* Hero Name & Position */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedHeroForAnalysis(item.hero.name);
+                                  setActiveDashboardTab('hero_analysis');
+                                }}
+                                className="font-bold text-xs sm:text-sm text-slate-900 hover:text-[#E91E63] transition-colors truncate text-left cursor-pointer"
+                              >
+                                {item.hero.name}
+                              </button>
+                              <span
+                                className={`text-[9.5px] font-['Orbitron'] font-black px-1.5 py-0.2 rounded border ${
+                                  item.score >= 80
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                                    : 'bg-amber-50 text-amber-800 border-amber-300'
+                                }`}
+                              >
+                                {item.score}/100
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-0.5">
+                              <span className="font-semibold text-slate-700 uppercase bg-slate-100 px-1 py-0.2 rounded">
+                                {item.primaryPos}
+                              </span>
+                              {item.tourneyStats && (
+                                <span className="text-emerald-700 font-bold">
+                                  WR {item.tourneyStats.winRate}% ({item.tourneyStats.games}G)
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Tactical Reasons Chips */}
+                        <div className="flex flex-col gap-1 text-[10.5px]">
+                          {item.reasons.length > 0 ? (
+                            item.reasons.slice(0, 3).map((r, i) => (
+                              <span
+                                key={i}
+                                className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 ${
+                                  r.type === 'counter'
+                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                    : r.type === 'synergy'
+                                    ? 'bg-amber-50 text-amber-900 border border-amber-200'
+                                    : r.type === 'signature'
+                                    ? 'bg-purple-50 text-purple-900 border border-purple-200 font-bold'
+                                    : 'bg-slate-50 text-slate-700 border border-slate-200'
+                                }`}
+                              >
+                                <span>{r.type === 'counter' ? '🎯' : r.type === 'synergy' ? '⚡' : '🛡️'}</span>
+                                <span className="truncate">{r.text}</span>
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[10px] text-slate-400 italic">
+                              ไม่มีข้อมูลความสัมพันธ์เด่นเป็นพิเศษ
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Action Pick Button */}
+                        {isPickTurn && onPickHeroDirectly && (
+                          <button
+                            type="button"
+                            onClick={() => onPickHeroDirectly(item.hero.name)}
+                            className="w-full py-1.5 rounded-lg bg-[#E91E63] hover:bg-[#D81B60] text-white text-[11px] font-bold transition-colors cursor-pointer shadow-2xs flex items-center justify-center gap-1 mt-1"
+                          >
+                            <Check size={12} />
+                            <span>หยิบ {item.hero.name} ลงดราฟต์</span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           )}
 
-          {/* Section ต่อท้าย REAL-TIME TACTICAL RADAR: RPL Pro Meta Comps */}
-          <div className="mt-2.5 pt-3 border-t-2 border-[#F3D5E2] bg-gradient-to-r from-amber-50/70 via-white to-amber-50/40 rounded-xl p-2.5 sm:p-3 flex items-center justify-between flex-wrap gap-2.5 shadow-2xs">
+          {/* ============================================================== */}
+          {/* TAB 3: HERO ANALYSIS PANEL (Deep-Dive Stats, Matchups & Bias) */}
+          {/* ============================================================== */}
+          {activeDashboardTab === 'hero_analysis' && (
+            <div className="flex flex-col gap-3">
+              {/* Quick Hero Selector Bar */}
+              <div className="p-2.5 bg-white rounded-xl border border-[#F3D5E2] flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                  <Search size={14} className="text-slate-400" />
+                  <input
+                    type="text"
+                    value={heroSearchQuery}
+                    onChange={(e) => setHeroSearchQuery(e.target.value)}
+                    placeholder="พิมพ์ชื่อฮีโร่เพื่อดูสถิติ (เช่น Toro, Hayate, Marja)..."
+                    className="w-full text-xs font-['Prompt'] text-slate-800 placeholder-slate-400 outline-none bg-transparent"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar">
+                  {filteredAnalysisHeroList.map((h) => (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedHeroForAnalysis(h.name);
+                        setHeroSearchQuery('');
+                      }}
+                      className={`px-2 py-0.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
+                        selectedHeroForAnalysis.toLowerCase() === h.name.toLowerCase()
+                          ? 'bg-[#E91E63] text-white shadow-2xs'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <img src={getHeroImageUrl(h.name)} alt={h.name} className="w-3.5 h-3.5 rounded-full" />
+                      <span>{h.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Hero Stats Card */}
+              <div className="bg-white border-2 border-[#F3D5E2] rounded-xl p-3.5 sm:p-4 shadow-2xs flex flex-col gap-3">
+                {/* Header Information */}
+                <div className="flex items-start justify-between flex-wrap gap-2 pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={getHeroImageUrl(selectedHeroForAnalysis)}
+                      alt={selectedHeroForAnalysis}
+                      className="w-14 h-14 rounded-2xl object-cover border-2 border-[#F3D5E2] shadow-xs"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-['Prompt'] font-bold text-base sm:text-lg text-slate-900">
+                          {selectedHeroForAnalysis}
+                        </h3>
+                        {heroAnalysisDetails.heroObj?.nameTh && (
+                          <span className="text-xs font-medium text-slate-500">
+                            ({heroAnalysisDetails.heroObj.nameTh})
+                          </span>
+                        )}
+                        <span className="text-[10px] font-bold uppercase bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
+                          {heroAnalysisDetails.heroObj?.primaryPos || 'DSL'}
+                        </span>
+                      </div>
+
+                      {/* Player Badges in Team Roster */}
+                      {heroAnalysisDetails.playerBadges.length > 0 && (
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[10.5px]">
+                          <span className="text-slate-500 font-semibold">ในทีม MCU:</span>
+                          {heroAnalysisDetails.playerBadges.map((badge, idx) => (
+                            <span
+                              key={idx}
+                              className={`px-1.5 py-0.2 rounded font-bold border ${
+                                badge.tier === 'signature'
+                                  ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                  : 'bg-sky-100 text-sky-900 border-sky-300'
+                              }`}
+                            >
+                              ⭐ {badge.playerName} ({badge.tier === 'signature' ? 'Signature' : 'Comfortable'})
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions Pick/Inspect */}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onInspectHero(selectedHeroForAnalysis)}
+                      className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1"
+                    >
+                      <ExternalLink size={12} />
+                      <span>เปิดแผงสถิติละเอียด</span>
+                    </button>
+                    {isPickTurn && onPickHeroDirectly && (
+                      <button
+                        type="button"
+                        onClick={() => onPickHeroDirectly(selectedHeroForAnalysis)}
+                        className="px-3 py-1 rounded-lg bg-[#E91E63] hover:bg-[#D81B60] text-white font-bold text-xs transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
+                      >
+                        <Check size={13} />
+                        <span>หยิบตัวนี้</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tournament Stats 4-Grid */}
+                {heroAnalysisDetails.hasTournamentData && heroAnalysisDetails.stats ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    {/* Win Rate */}
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">อัตราชนะ (Win Rate)</span>
+                      <span className="font-['Orbitron'] font-black text-lg text-emerald-600 mt-0.5">
+                        {heroAnalysisDetails.stats.winRate}%
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        {heroAnalysisDetails.stats.wins} ชนะ / {heroAnalysisDetails.stats.losses} แพ้
+                      </span>
+                    </div>
+
+                    {/* Games Picked */}
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">จำนวนเกมที่หยิบ</span>
+                      <span className="font-['Orbitron'] font-black text-lg text-slate-800 mt-0.5">
+                        {heroAnalysisDetails.stats.games} เกม
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        Pick Rate: {heroAnalysisDetails.stats.pickRate}%
+                      </span>
+                    </div>
+
+                    {/* Ban Rate */}
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">อัตราแบน (Ban Rate)</span>
+                      <span className="font-['Orbitron'] font-black text-lg text-rose-600 mt-0.5">
+                        {heroAnalysisDetails.stats.banRate}%
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        แบน {heroAnalysisDetails.stats.bans} เกม
+                      </span>
+                    </div>
+
+                    {/* Blue / Red Split */}
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Blue vs Red Win Rate</span>
+                      <div className="flex items-center justify-between text-[11px] font-bold mt-1">
+                        <span className="text-sky-700">
+                          🔵 {heroAnalysisDetails.stats.blueWins || 0}W-{heroAnalysisDetails.stats.blueLosses || 0}L
+                        </span>
+                        <span className="text-rose-700">
+                          🔴 {heroAnalysisDetails.stats.redWins || 0}W-{heroAnalysisDetails.stats.redLosses || 0}L
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center gap-2">
+                    <Info size={15} />
+                    <span>ไม่มีข้อมูลการแข่งขันเพียงพอในฐานข้อมูล RPL 2026 Summer สำหรับฮีโร่ตัวนี้</span>
+                  </div>
+                )}
+
+                {/* Matchups Split: 3 Columns (Counters, Countered By, Top Synergies) */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs pt-1">
+                  {/* Column 1: ชนะทาง (Counters) */}
+                  <div className="p-2.5 rounded-xl bg-emerald-50/50 border border-emerald-200 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-emerald-800 flex items-center gap-1 text-[11px]">
+                        <TrendingUp size={12} />
+                        <span>ชนะทาง (Counters)</span>
+                      </span>
+                      <span className="text-[10px] text-emerald-600 font-bold">RPL Head-to-Head</span>
+                    </div>
+
+                    {heroAnalysisDetails.countersList.length > 0 ? (
+                      heroAnalysisDetails.countersList.map((m, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-1.5 rounded-lg bg-white border border-emerald-100 text-[11px]"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <img
+                              src={getHeroImageUrl(m.opponentHero)}
+                              alt={m.opponentHero}
+                              className="w-4 h-4 rounded-full object-cover"
+                            />
+                            <span className="font-bold text-slate-800">{m.opponentHero}</span>
+                          </div>
+                          <span className="font-['Orbitron'] font-bold text-emerald-600">
+                            {m.winRate}% ({m.games}G)
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-[10.5px] text-slate-400 italic py-2 text-center">
+                        ไม่มีข้อมูลชนะทางที่เด่นชัด
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Column 2: แพ้ทาง (Countered By) */}
+                  <div className="p-2.5 rounded-xl bg-rose-50/50 border border-rose-200 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-rose-800 flex items-center gap-1 text-[11px]">
+                        <ShieldAlert size={12} />
+                        <span>แพ้ทาง (Countered by)</span>
+                      </span>
+                      <span className="text-[10px] text-rose-600 font-bold">RPL Head-to-Head</span>
+                    </div>
+
+                    {heroAnalysisDetails.counteredByList.length > 0 ? (
+                      heroAnalysisDetails.counteredByList.map((m, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-1.5 rounded-lg bg-white border border-rose-100 text-[11px]"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <img
+                              src={getHeroImageUrl(m.opponentHero)}
+                              alt={m.opponentHero}
+                              className="w-4 h-4 rounded-full object-cover"
+                            />
+                            <span className="font-bold text-slate-800">{m.opponentHero}</span>
+                          </div>
+                          <span className="font-['Orbitron'] font-bold text-rose-600">
+                            {m.winRate}% ({m.games}G)
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-[10.5px] text-slate-400 italic py-2 text-center">
+                        ไม่มีข้อมูลแพ้ทางที่เด่นชัด
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Column 3: เล่นคู่กันได้ดี (Top Synergies) */}
+                  <div className="p-2.5 rounded-xl bg-amber-50/50 border border-amber-200 flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-amber-900 flex items-center gap-1 text-[11px]">
+                        <Zap size={12} />
+                        <span>เล่นคู่กันได้ดี (Best Synergy)</span>
+                      </span>
+                      <span className="text-[10px] text-amber-700 font-bold">Played Together</span>
+                    </div>
+
+                    {heroAnalysisDetails.topSynergies.length > 0 ? (
+                      heroAnalysisDetails.topSynergies.map((s, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-1.5 rounded-lg bg-white border border-amber-100 text-[11px]"
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <img
+                              src={getHeroImageUrl(s.allyHero)}
+                              alt={s.allyHero}
+                              className="w-4 h-4 rounded-full object-cover"
+                            />
+                            <span className="font-bold text-slate-800">{s.allyHero}</span>
+                          </div>
+                          <span className="font-['Orbitron'] font-bold text-amber-700">
+                            {s.winRate}% ({s.games}G)
+                          </span>
+                        </div>
+                      ))
+                    ) : (
+                      <span className="text-[10.5px] text-slate-400 italic py-2 text-center">
+                        ไม่มีข้อมูลคู่หูที่เด่นชัด
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* TAB 4: DRAFT SYNERGY & TEAM BALANCE                            */}
+          {/* ============================================================== */}
+          {activeDashboardTab === 'synergy' && (
+            <div className="flex flex-col gap-3 text-xs">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {/* BLUE TEAM BALANCE */}
+                <div className="p-3 bg-white rounded-xl border-2 border-sky-200 shadow-2xs flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between border-b border-sky-100 pb-2">
+                    <span className="font-bold text-sky-900 flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-sky-600" />
+                      <span>โครงสร้างทีม {blueTeamName}</span>
+                    </span>
+                    <span className="text-[10.5px] font-bold text-slate-500">
+                      {draftSynergyAnalytics.blue.activeCount}/5 ฮีโร่
+                    </span>
+                  </div>
+
+                  {/* Attributes Bars */}
+                  <div className="space-y-2">
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] mb-0.5">
+                        <span className="font-semibold text-slate-600">🛡️ ตัวค้ำแนวหน้า (Frontline)</span>
+                        <span className="font-bold text-slate-800">
+                          {Math.round(draftSynergyAnalytics.blue.frontlineRating)}%
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-sky-600 rounded-full transition-all"
+                          style={{ width: `${draftSynergyAnalytics.blue.frontlineRating}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] mb-0.5">
+                        <span className="font-semibold text-slate-600">⚔️ สัดส่วนดาเมจ (กายภาพ vs เวท)</span>
+                        <span className="font-bold text-slate-800">
+                          {draftSynergyAnalytics.blue.physicalPercent}% Phys / {draftSynergyAnalytics.blue.magicPercent}% Magic
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-purple-100 rounded-full overflow-hidden flex">
+                        <div
+                          className="h-full bg-orange-500 transition-all"
+                          style={{ width: `${draftSynergyAnalytics.blue.physicalPercent}%` }}
+                        />
+                        <div
+                          className="h-full bg-purple-600 transition-all"
+                          style={{ width: `${draftSynergyAnalytics.blue.magicPercent}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] mb-0.5">
+                        <span className="font-semibold text-slate-600">💫 การควบคุมและสตั๊นท์ (Crowd Control)</span>
+                        <span className="font-bold text-slate-800">{draftSynergyAnalytics.blue.ccRating}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full transition-all"
+                          style={{ width: `${draftSynergyAnalytics.blue.ccRating}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Power Curve */}
+                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-[11px] flex flex-col gap-1">
+                    <span className="font-bold text-slate-700">กราฟพลังตามช่วงเวลา (Power Curve):</span>
+                    <div className="grid grid-cols-3 gap-1 text-[10px]">
+                      <div className="p-1 rounded bg-white border border-slate-100 text-center">
+                        <span className="text-slate-400 block">ต้นเกม (0-5m)</span>
+                        <span className="font-bold text-slate-800">{draftSynergyAnalytics.blue.earlyPower}</span>
+                      </div>
+                      <div className="p-1 rounded bg-white border border-slate-100 text-center">
+                        <span className="text-slate-400 block">กลางเกม (5-12m)</span>
+                        <span className="font-bold text-slate-800">{draftSynergyAnalytics.blue.midPower}</span>
+                      </div>
+                      <div className="p-1 rounded bg-white border border-slate-100 text-center">
+                        <span className="text-slate-400 block">เลทเกม (12m+)</span>
+                        <span className="font-bold text-slate-800">{draftSynergyAnalytics.blue.latePower}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Warnings */}
+                  {draftSynergyAnalytics.blue.warnings.length > 0 && (
+                    <div className="space-y-1">
+                      {draftSynergyAnalytics.blue.warnings.map((w, i) => (
+                        <div key={i} className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-[10.5px] text-rose-800 font-medium">
+                          {w}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* RED TEAM BALANCE */}
+                <div className="p-3 bg-white rounded-xl border-2 border-rose-200 shadow-2xs flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between border-b border-rose-100 pb-2">
+                    <span className="font-bold text-rose-900 flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
+                      <span>โครงสร้างทีม {redTeamName}</span>
+                    </span>
+                    <span className="text-[10.5px] font-bold text-slate-500">
+                      {draftSynergyAnalytics.red.activeCount}/5 ฮีโร่
+                    </span>
+                  </div>
+
+                  {/* Attributes Bars */}
+                  <div className="space-y-2">
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] mb-0.5">
+                        <span className="font-semibold text-slate-600">🛡️ ตัวค้ำแนวหน้า (Frontline)</span>
+                        <span className="font-bold text-slate-800">
+                          {Math.round(draftSynergyAnalytics.red.frontlineRating)}%
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-rose-600 rounded-full transition-all"
+                          style={{ width: `${draftSynergyAnalytics.red.frontlineRating}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] mb-0.5">
+                        <span className="font-semibold text-slate-600">⚔️ สัดส่วนดาเมจ (กายภาพ vs เวท)</span>
+                        <span className="font-bold text-slate-800">
+                          {draftSynergyAnalytics.red.physicalPercent}% Phys / {draftSynergyAnalytics.red.magicPercent}% Magic
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-purple-100 rounded-full overflow-hidden flex">
+                        <div
+                          className="h-full bg-orange-500 transition-all"
+                          style={{ width: `${draftSynergyAnalytics.red.physicalPercent}%` }}
+                        />
+                        <div
+                          className="h-full bg-purple-600 transition-all"
+                          style={{ width: `${draftSynergyAnalytics.red.magicPercent}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] mb-0.5">
+                        <span className="font-semibold text-slate-600">💫 การควบคุมและสตั๊นท์ (Crowd Control)</span>
+                        <span className="font-bold text-slate-800">{draftSynergyAnalytics.red.ccRating}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full transition-all"
+                          style={{ width: `${draftSynergyAnalytics.red.ccRating}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Power Curve */}
+                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-200 text-[11px] flex flex-col gap-1">
+                    <span className="font-bold text-slate-700">กราฟพลังตามช่วงเวลา (Power Curve):</span>
+                    <div className="grid grid-cols-3 gap-1 text-[10px]">
+                      <div className="p-1 rounded bg-white border border-slate-100 text-center">
+                        <span className="text-slate-400 block">ต้นเกม (0-5m)</span>
+                        <span className="font-bold text-slate-800">{draftSynergyAnalytics.red.earlyPower}</span>
+                      </div>
+                      <div className="p-1 rounded bg-white border border-slate-100 text-center">
+                        <span className="text-slate-400 block">กลางเกม (5-12m)</span>
+                        <span className="font-bold text-slate-800">{draftSynergyAnalytics.red.midPower}</span>
+                      </div>
+                      <div className="p-1 rounded bg-white border border-slate-100 text-center">
+                        <span className="text-slate-400 block">เลทเกม (12m+)</span>
+                        <span className="font-bold text-slate-800">{draftSynergyAnalytics.red.latePower}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Warnings */}
+                  {draftSynergyAnalytics.red.warnings.length > 0 && (
+                    <div className="space-y-1">
+                      {draftSynergyAnalytics.red.warnings.map((w, i) => (
+                        <div key={i} className="p-1.5 rounded-lg bg-rose-50 border border-rose-200 text-[10.5px] text-rose-800 font-medium">
+                          {w}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* TAB 5: RADAR PREDICTIONS (Original Predictive Insights)       */}
+          {/* ============================================================== */}
+          {activeDashboardTab === 'predictions' && (
+            <div className="flex flex-col gap-3">
+              {!hasAnyDraftActions ? (
+                <div className="py-8 px-4 text-center bg-white rounded-xl border border-dashed border-[#F3D5E2] flex flex-col items-center justify-center">
+                  <Target size={24} className="text-[#E91E63] mb-1.5" />
+                  <span className="font-bold text-slate-800 text-xs">
+                    พร้อมเริ่มการวิเคราะห์ดราฟต์เชิงแท็กติก (Tactical Radar)
+                  </span>
+                  <span className="text-[11px] text-slate-400 max-w-[480px] mt-0.5">
+                    เมื่อเริ่มดราฟต์และมีการแบนหรือเลือกฮีโร่ตัวแรก
+                    ระบบจะคำนวณทันทีว่าคู่แข่งแบนตัวนี้เพื่อเตรียมหยิบตัวไหน หรือเลือกตัวนี้เพื่อเตรียมคอมโบกับตัวใด!
+                  </span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  {/* Left Column: BLUE TEAM PREDICTIONS */}
+                  {(teamFilter === 'all' || teamFilter === 'blue') && (
+                    <div className="p-2.5 rounded-xl bg-sky-50/30 border border-sky-200/80 shadow-2xs flex flex-col gap-2">
+                      <div className="flex items-center justify-between pb-1.5 border-b border-sky-100">
+                        <span className="font-bold text-xs text-sky-900 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-sky-600" />
+                          <span>ข้อเสนอแนะแท็กติกสำหรับ {blueTeamName}</span>
+                        </span>
+                      </div>
+
+                      {/* Synergies for Blue */}
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                          ⚡ คอมโบที่แนะนำให้หยิบเพิ่ม:
+                        </span>
+                        {intelligence.pickSynergies
+                          .filter((p) => p.team === 'blue')
+                          .slice(0, 3)
+                          .map((syn) => (
+                            <div
+                              key={syn.id}
+                              className="p-2 rounded-lg bg-white border border-slate-200 text-xs flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={getHeroImageUrl(syn.suggestedHero)}
+                                  alt={syn.suggestedHero}
+                                  className="w-7 h-7 rounded-md object-cover border border-slate-200"
+                                />
+                                <div>
+                                  <div className="font-bold text-slate-900 text-xs">
+                                    {syn.suggestedHero} ({syn.comboName})
+                                  </div>
+                                  <div className="text-[10px] text-slate-500">{syn.reason}</div>
+                                </div>
+                              </div>
+                              {isPickTurn && onPickHeroDirectly && syn.isAvailable && (
+                                <button
+                                  type="button"
+                                  onClick={() => onPickHeroDirectly(syn.suggestedHero)}
+                                  className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#E91E63] text-white hover:bg-[#D81B60] cursor-pointer"
+                                >
+                                  หยิบ
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+
+                      {/* Counters for Blue to deal with Red */}
+                      <div className="space-y-1.5 mt-1">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                          🎯 ตัวแก้ทางที่แนะนำให้เลือกใส่ศัตรู:
+                        </span>
+                        {intelligence.counterSuggestions
+                          .filter((c) => c.targetTeam === 'red')
+                          .slice(0, 3)
+                          .map((ctr) => (
+                            <div
+                              key={ctr.id}
+                              className="p-2 rounded-lg bg-white border border-slate-200 text-xs flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={getHeroImageUrl(ctr.counterHero)}
+                                  alt={ctr.counterHero}
+                                  className="w-7 h-7 rounded-md object-cover border border-slate-200"
+                                />
+                                <div>
+                                  <div className="font-bold text-slate-900 text-xs">
+                                    {ctr.counterHero} (แก้ทาง {ctr.targetHero})
+                                  </div>
+                                  <div className="text-[10px] text-slate-500">{ctr.reason}</div>
+                                </div>
+                              </div>
+                              {isPickTurn && onPickHeroDirectly && ctr.isAvailable && (
+                                <button
+                                  type="button"
+                                  onClick={() => onPickHeroDirectly(ctr.counterHero)}
+                                  className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#E91E63] text-white hover:bg-[#D81B60] cursor-pointer"
+                                >
+                                  หยิบ
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Right Column: RED TEAM PREDICTIONS */}
+                  {(teamFilter === 'all' || teamFilter === 'red') && (
+                    <div className="p-2.5 rounded-xl bg-rose-50/30 border border-rose-200/80 shadow-2xs flex flex-col gap-2">
+                      <div className="flex items-center justify-between pb-1.5 border-b border-rose-100">
+                        <span className="font-bold text-xs text-rose-900 flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-rose-600" />
+                          <span>ข้อเสนอแนะแท็กติกสำหรับ {redTeamName}</span>
+                        </span>
+                      </div>
+
+                      {/* Synergies for Red */}
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                          ⚡ คอมโบที่แนะนำให้หยิบเพิ่ม:
+                        </span>
+                        {intelligence.pickSynergies
+                          .filter((p) => p.team === 'red')
+                          .slice(0, 3)
+                          .map((syn) => (
+                            <div
+                              key={syn.id}
+                              className="p-2 rounded-lg bg-white border border-slate-200 text-xs flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={getHeroImageUrl(syn.suggestedHero)}
+                                  alt={syn.suggestedHero}
+                                  className="w-7 h-7 rounded-md object-cover border border-slate-200"
+                                />
+                                <div>
+                                  <div className="font-bold text-slate-900 text-xs">
+                                    {syn.suggestedHero} ({syn.comboName})
+                                  </div>
+                                  <div className="text-[10px] text-slate-500">{syn.reason}</div>
+                                </div>
+                              </div>
+                              {isPickTurn && onPickHeroDirectly && syn.isAvailable && (
+                                <button
+                                  type="button"
+                                  onClick={() => onPickHeroDirectly(syn.suggestedHero)}
+                                  className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#E91E63] text-white hover:bg-[#D81B60] cursor-pointer"
+                                >
+                                  หยิบ
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+
+                      {/* Counters for Red to deal with Blue */}
+                      <div className="space-y-1.5 mt-1">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                          🎯 ตัวแก้ทางที่แนะนำให้เลือกใส่ศัตรู:
+                        </span>
+                        {intelligence.counterSuggestions
+                          .filter((c) => c.targetTeam === 'blue')
+                          .slice(0, 3)
+                          .map((ctr) => (
+                            <div
+                              key={ctr.id}
+                              className="p-2 rounded-lg bg-white border border-slate-200 text-xs flex items-center justify-between"
+                            >
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={getHeroImageUrl(ctr.counterHero)}
+                                  alt={ctr.counterHero}
+                                  className="w-7 h-7 rounded-md object-cover border border-slate-200"
+                                />
+                                <div>
+                                  <div className="font-bold text-slate-900 text-xs">
+                                    {ctr.counterHero} (แก้ทาง {ctr.targetHero})
+                                  </div>
+                                  <div className="text-[10px] text-slate-500">{ctr.reason}</div>
+                                </div>
+                              </div>
+                              {isPickTurn && onPickHeroDirectly && ctr.isAvailable && (
+                                <button
+                                  type="button"
+                                  onClick={() => onPickHeroDirectly(ctr.counterHero)}
+                                  className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#E91E63] text-white hover:bg-[#D81B60] cursor-pointer"
+                                >
+                                  หยิบ
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ============================================================== */}
+          {/* 5. DATA CONTROL & SOURCE FOOTER BAR                            */}
+          {/* ============================================================== */}
+          <div className="pt-2 border-t border-[#F3D5E2] flex items-center justify-between flex-wrap gap-2 text-[10.5px] text-slate-500">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="flex items-center gap-1 font-semibold text-slate-700">
+                <BarChart3 size={12} className="text-[#E91E63]" />
+                <span>แหล่งสถิติ: {RPL_2026_SUMMER_DATASET.tournamentName}</span>
+              </span>
+              <span>•</span>
+              <span>ฐานข้อมูลคำนวณจาก {RPL_2026_SUMMER_DATASET.totalGames} เกม ({RPL_2026_SUMMER_DATASET.totalMatches} แมตช์)</span>
+              <span>•</span>
+              <span className="text-emerald-700 font-semibold">อัปเดตเรียลไทม์ตามสถานะดราฟต์</span>
+            </div>
+          </div>
+
+          {/* ============================================================== */}
+          {/* 6. RPL PRO COMPS SECTION (ต่อท้าย REAL-TIME TACTICAL RADAR)    */}
+          {/* ============================================================== */}
+          <div className="mt-1 pt-2.5 sm:pt-3 border-t-2 border-[#F3D5E2] bg-gradient-to-r from-amber-50/70 via-white to-amber-50/40 rounded-xl p-2.5 sm:p-3 flex items-center justify-between flex-wrap gap-2.5 shadow-2xs">
             <div className="flex items-center gap-2.5 sm:gap-3">
               <div className="w-8 h-8 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center text-base shadow-2xs flex-shrink-0">
                 🏆

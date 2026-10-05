@@ -4,7 +4,7 @@ import { HeroPlayerBadge, TeamCategory } from '../types/player';
 import { DRAFT_TURNS } from '../data/draftSteps';
 import { HEROES, getHeroImageUrl } from '../data/heroes';
 import { DraftScoreResult } from '../data/metaData';
-import { Search, Pause, Play, Ban, Check } from 'lucide-react';
+import { Search, Pause, Play, Ban, Check, Sparkles } from 'lucide-react';
 
 interface DraftCenterProps {
   draftActive: boolean;
@@ -144,6 +144,13 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
     phaseText = `Manual Slot ${currentTurnSlot.phase.toUpperCase()} #${currentTurnSlot.index + 1}`;
   }
 
+  // Check if current turn is in Ban Phase
+  const isBanPhase = !isDraftComplete && (
+    (currentTurn?.phase === 'ban') ||
+    (currentTurnSlot?.phase === 'ban')
+  );
+  const currentBanTeam: TeamSide = currentTurn?.team || currentTurnSlot?.team || 'blue';
+
   // Filtered Heroes
   const filteredHeroes = useMemo(() => {
     return HEROES.filter((hero) => {
@@ -218,19 +225,19 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
       : '#0284c7'; // blue
 
   return (
-    <div className="flex-1 min-w-0 w-full flex flex-col bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-sm overflow-hidden">
-      {/* 1. TOP DRAFT STATUS BAR */}
-      <div className="flex items-center justify-between gap-3 px-4 py-3 bg-[#FFF0F5] border-b-2 border-[#F3D5E2] flex-wrap">
+    <div className="flex-1 min-w-0 w-full h-full min-h-0 flex flex-col bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-sm overflow-hidden">
+      {/* 1. TOP DRAFT STATUS BAR (Compact Single-line) */}
+      <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2]">
         {/* Left: Turn Badge & Team Details */}
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-shrink-0">
           <div
-            className={`font-['Orbitron'] font-black text-[10.5px] tracking-[2px] px-3 py-1.5 rounded-lg border uppercase transition-all shadow-xs ${turnBadgeClass}`}
+            className={`font-['Orbitron'] font-black text-[9px] tracking-wider px-2 py-0.5 rounded-md border uppercase transition-all shadow-2xs ${turnBadgeClass}`}
           >
             {turnBadgeText}
           </div>
           <div className="flex flex-col min-w-0">
             <span
-              className={`font-['Prompt'] font-bold text-[15px] sm:text-[16px] tracking-wide truncate leading-tight ${
+              className={`font-['Prompt'] font-bold text-[12px] sm:text-[13px] tracking-wide truncate leading-tight ${
                 currentTurn?.team === 'blue'
                   ? 'text-[#0284C7]'
                   : currentTurn?.team === 'red'
@@ -240,46 +247,46 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
             >
               {activeTeamTitle}
             </span>
-            <span className="text-[11px] font-['Prompt'] font-semibold text-slate-500 tracking-wide truncate">
+            <span className="text-[9.5px] font-['Prompt'] font-semibold text-slate-500 tracking-tight truncate leading-none mt-0.5 max-w-[200px] sm:max-w-[280px]">
               {phaseText}
             </span>
           </div>
         </div>
 
-        {/* Center: Search input */}
-        <div className="relative flex-1 max-w-[220px] min-w-[150px]">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+        {/* Center: Search input (Compact) */}
+        <div className="relative flex-1 max-w-[170px] min-w-[110px] mx-1">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="🔍 ค้นหา Hero…"
-            className="w-full bg-white border border-[#F3D5E2] text-[#1F2937] placeholder-slate-400 text-[12px] font-['Prompt'] pl-8 pr-2.5 py-1.5 rounded-lg outline-none focus:border-[#E91E63] focus:ring-1 focus:ring-[#E91E63]/30 transition-all shadow-xs"
+            className="w-full bg-white border border-[#F3D5E2] text-[#1F2937] placeholder-slate-400 text-[11px] font-['Prompt'] pl-7 pr-2 py-1 rounded-lg outline-none focus:border-[#E91E63] focus:ring-1 focus:ring-[#E91E63]/30 transition-all shadow-2xs"
           />
         </div>
 
-        {/* Right: Timer ring */}
-        <div className="flex items-center gap-2.5 bg-white px-3 py-1.5 rounded-xl border border-[#F3D5E2] shadow-xs">
-          <div className="flex flex-col items-end mr-1">
-            <span className="font-['Prompt'] text-[9.5px] font-bold tracking-[1.5px] text-slate-500 uppercase">
-              {currentTurn?.phase === 'pick' ? 'PICK TIMER' : 'BAN TIMER'}
+        {/* Right: Timer pill (Compact) */}
+        <div className="flex items-center gap-2 bg-white px-2.5 py-0.5 rounded-lg border border-[#F3D5E2] shadow-2xs flex-shrink-0">
+          <div className="flex flex-col items-end leading-none">
+            <span className="font-['Prompt'] text-[8px] font-bold tracking-wider text-slate-400 uppercase">
+              {currentTurn?.phase === 'pick' ? 'PICK' : 'BAN'}
             </span>
             <span
-              className="font-['Orbitron'] font-black text-[18px] leading-tight"
+              className="font-['Orbitron'] font-black text-[13px] leading-tight"
               style={{ color: timerColor }}
             >
               {draftActive ? timerSec : '—'}
             </span>
           </div>
 
-          <div className="relative w-[36px] h-[36px] flex items-center justify-center flex-shrink-0">
+          <div className="relative w-[24px] h-[24px] flex items-center justify-center flex-shrink-0">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 48 48">
               <circle
                 cx="24"
                 cy="24"
                 r={radius}
                 className="text-[#FCE4EC]"
-                strokeWidth="4"
+                strokeWidth="5"
                 stroke="currentColor"
                 fill="transparent"
               />
@@ -288,7 +295,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                 cy="24"
                 r={radius}
                 stroke={timerColor}
-                strokeWidth="4"
+                strokeWidth="5"
                 strokeDasharray={circumference}
                 strokeDashoffset={draftActive ? strokeDashoffset : 0}
                 strokeLinecap="round"
@@ -302,7 +309,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
               title={isTimerPaused ? 'ดำเนินการจับเวลาต่อ' : 'หยุดเวลาชั่วคราว'}
               className="absolute inset-0 flex items-center justify-center text-slate-700 hover:text-[#E91E63] disabled:opacity-40 transition-colors cursor-pointer"
             >
-              {isTimerPaused ? <Play size={11} className="fill-current ml-0.5" /> : <Pause size={11} />}
+              {isTimerPaused ? <Play size={8} className="fill-current ml-0.5" /> : <Pause size={8} />}
             </button>
           </div>
         </div>
@@ -342,31 +349,6 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
         )}
 
         <div className="ml-auto flex items-center gap-1 sm:gap-1.5 pl-1.5">
-          {onOpenCoachPanel && (
-            <button
-              onClick={onOpenCoachPanel}
-              title="เปิด Coach Analysis Panel"
-              className="font-['Prompt'] text-[10.5px] sm:text-[11px] font-bold tracking-wider px-2 sm:px-2.5 py-1 rounded-lg border border-[#E91E63] bg-[#FCE4EC] hover:bg-[#F8BBD0] text-[#E91E63] transition-all flex items-center gap-1 cursor-pointer shadow-xs"
-            >
-              <span>🎯</span>
-              <span>COACH PANEL</span>
-            </button>
-          )}
-          {onToggleStats && (
-            <button
-              onClick={onToggleStats}
-              title="เปิด/ปิด Side Panel สถิติ Hero และ Matchup"
-              className={`font-['Prompt'] text-[10.5px] sm:text-[11px] font-bold tracking-wider px-2 sm:px-2.5 py-1 rounded-lg border transition-all flex items-center gap-1 cursor-pointer shadow-xs ${
-                isStatsOpen
-                  ? 'bg-[#0284C7] border-[#0284C7] text-white shadow-xs'
-                  : 'bg-white border-[#F3D5E2] text-slate-700 hover:border-[#0284C7] hover:text-[#0284C7]'
-              }`}
-            >
-              <span>📊</span>
-              <span className="hidden sm:inline">RPL STATS</span>
-              <span className="sm:hidden">STATS</span>
-            </button>
-          )}
           <span className="text-[10.5px] sm:text-[11px] font-['Prompt'] font-bold text-slate-500 whitespace-nowrap px-1.5 sm:px-2 py-0.5 rounded bg-white border border-[#F3D5E2] shadow-2xs">
             {filteredHeroes.length} HEROES
             {playerPoolFilter === 'signature' && ' (⭐ SIGNATURE)'}
@@ -585,8 +567,8 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
         })}
       </div>
 
-      {/* 5. HERO GRID */}
-      <div className="flex-1 overflow-y-auto p-3 custom-scrollbar min-h-[320px] max-h-[580px] bg-[#FFF8FB]/30">
+      {/* 5. HERO GRID — Strictly bounded within arena height, no overflow past Blue Pick 5 */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-2.5 custom-scrollbar bg-[#FFF8FB]/30">
         {filteredHeroes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-slate-500 font-['Prompt'] text-sm px-4 text-center">
             <span>ไม่พบฮีโร่ที่ตรงกับเงื่อนไข</span>
@@ -808,3 +790,4 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
     </div>
   );
 };
+

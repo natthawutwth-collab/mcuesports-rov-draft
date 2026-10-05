@@ -13,9 +13,10 @@ import { StatsImportExportModal } from './components/StatsImportExportModal';
 import { MatchNotesSection } from './components/MatchNotesSection';
 import { PlayersPage } from './components/PlayersPage';
 import { DraftHistoryPage } from './components/DraftHistoryPage';
+import { DashboardView } from './components/DashboardView';
+import { AppView } from './components/BrandBar';
 import { PreDraftModal } from './components/PreDraftModal';
 import { SaveDraftModal } from './components/SaveDraftModal';
-import { DraftPlayerRosterBar } from './components/DraftPlayerRosterBar';
 import { DraftTacticalRadar } from './components/DraftTacticalRadar';
 import { Toast } from './components/Toast';
 import { statsDataProvider } from './services/statsDataProvider';
@@ -28,19 +29,19 @@ const CURRENT_VIEW_KEY = 'mcu_rov_current_view';
 const SIDE_PANEL_OPEN_KEY = 'mcu_rov_side_panel_open';
 const SIDE_PANEL_TAB_KEY = 'mcu_rov_side_panel_tab';
 
-const getInitialView = (): 'draft' | 'players' | 'history' => {
+const getInitialView = (): AppView => {
   if (typeof window !== 'undefined') {
-    // 1. Check URL hash first (e.g. #players, #history, #draft)
+    // 1. Check URL hash first (e.g. #dashboard, #players, #history, #draft)
     const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
-    if (hash === 'players' || hash === 'history' || hash === 'draft') {
-      return hash as 'draft' | 'players' | 'history';
+    if (hash === 'dashboard' || hash === 'players' || hash === 'history' || hash === 'draft') {
+      return hash as AppView;
     }
-    // 2. Check query param (e.g. ?view=players or ?tab=players)
+    // 2. Check query param (e.g. ?view=dashboard or ?tab=dashboard)
     try {
       const params = new URLSearchParams(window.location.search);
       const queryView = params.get('view') || params.get('tab');
-      if (queryView === 'players' || queryView === 'history' || queryView === 'draft') {
-        return queryView as 'draft' | 'players' | 'history';
+      if (queryView === 'dashboard' || queryView === 'players' || queryView === 'history' || queryView === 'draft') {
+        return queryView as AppView;
       }
     } catch {
       // ignore
@@ -48,14 +49,14 @@ const getInitialView = (): 'draft' | 'players' | 'history' => {
     // 3. Check localStorage for last active page
     try {
       const saved = localStorage.getItem(CURRENT_VIEW_KEY);
-      if (saved === 'players' || saved === 'history' || saved === 'draft') {
-        return saved as 'draft' | 'players' | 'history';
+      if (saved === 'dashboard' || saved === 'players' || saved === 'history' || saved === 'draft') {
+        return saved as AppView;
       }
     } catch {
       // ignore
     }
   }
-  return 'draft';
+  return 'dashboard';
 };
 
 const getInitialSidePanelOpen = (): boolean => {
@@ -88,8 +89,8 @@ const getInitialSidePanelTab = (): 'coach' | 'stats' => {
 };
 
 export default function App() {
-  // Navigation view: Draft Simulator vs Players Management vs Draft History (with persistence & URL hash)
-  const [currentView, setCurrentView] = useState<'draft' | 'players' | 'history'>(getInitialView);
+  // Navigation view: Dashboard vs Draft Simulator vs Players Management vs Draft History (with persistence & URL hash)
+  const [currentView, setCurrentView] = useState<AppView>(getInitialView);
 
   // Match metadata (Pre-Draft: Tournament, Match, Game #, Blue, Red, Patch)
   const [matchMetadata, setMatchMetadata] = useState<DraftMatchMetadata>({
@@ -118,7 +119,7 @@ export default function App() {
   const [isDataModalOpen, setIsDataModalOpen] = useState<boolean>(false);
   const [statsStatus, setStatsStatus] = useState(() => statsDataProvider.getStatus());
 
-  const handleSelectView = (view: 'draft' | 'players' | 'history') => {
+  const handleSelectView = (view: AppView) => {
     setCurrentView(view);
     try {
       localStorage.setItem(CURRENT_VIEW_KEY, view);
@@ -275,6 +276,27 @@ export default function App() {
   const [scaledContentHeight, setScaledContentHeight] = useState<number>(760);
   const [mobileZoomMode, setMobileZoomMode] = useState<'fit' | 'zoom'>('fit');
 
+  // Measure Blue Side column height so that Center Draft Arena strictly matches it
+  // and hero grid never overflows past Blue Pick 5
+  const blueColumnRef = useRef<HTMLDivElement>(null);
+  const [blueColumnHeight, setBlueColumnHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!blueColumnRef.current) return;
+    const updateHeight = () => {
+      if (blueColumnRef.current) {
+        const h = blueColumnRef.current.offsetHeight;
+        if (h > 0) {
+          setBlueColumnHeight(h);
+        }
+      }
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(blueColumnRef.current);
+    return () => observer.disconnect();
+  }, []);
+
   // Container ref to measure exact available width
   const arenaContainerRef = useRef<HTMLDivElement>(null);
   const [arenaContainerWidth, setArenaContainerWidth] = useState<number>(() =>
@@ -398,11 +420,6 @@ export default function App() {
         />
       )}
     </div>
-  );
-
-  // Collapsible state for Draft Player Roster Bar on Draft screen (collapsed on mobile by default to keep draft front & center)
-  const [isRosterBarOpen, setIsRosterBarOpen] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth >= 840 : true
   );
 
   // Status for BrandBar
@@ -574,37 +591,72 @@ export default function App() {
         draftsCount={historyRecords.length}
       />
 
-      {/* 2. Breadcrumb (hidden on mobile to save vertical space) */}
-      {currentView === 'draft' ? (
+      {/* 2. Breadcrumb Navigation */}
+      {currentView === 'dashboard' ? (
+        <div className="flex items-center gap-2 text-[11px] font-['Prompt'] font-semibold text-slate-500 px-1">
+          <span className="text-slate-700">🏠 HOME</span>
+          <span>›</span>
+          <span className="text-[#E91E63] font-bold">COACH EXECUTIVE DASHBOARD</span>
+        </div>
+      ) : currentView === 'draft' ? (
         <div className="hidden sm:block">
           <Breadcrumb />
         </div>
       ) : currentView === 'history' ? (
-        <div className="flex items-center gap-2 text-[11px] font-['Barlow_Condensed'] font-semibold tracking-wider text-[#a0a0a8] px-1">
+        <div className="flex items-center gap-2 text-[11px] font-['Prompt'] font-semibold text-slate-500 px-1">
           <span
-            onClick={() => handleSelectView('draft')}
-            className="cursor-pointer hover:text-white transition-colors"
+            onClick={() => handleSelectView('dashboard')}
+            className="cursor-pointer hover:text-[#E91E63] transition-colors"
           >
             🏠 HOME
           </span>
           <span>›</span>
-          <span className="text-[#d4a857] font-bold">DRAFT HISTORY & ARCHIVES</span>
+          <span className="text-amber-600 font-bold">DRAFT HISTORY & ARCHIVES</span>
         </div>
       ) : (
-        <div className="flex items-center gap-2 text-[11px] font-['Barlow_Condensed'] font-semibold tracking-wider text-[#a0a0a8] px-1">
+        <div className="flex items-center gap-2 text-[11px] font-['Prompt'] font-semibold text-slate-500 px-1">
           <span
-            onClick={() => handleSelectView('draft')}
-            className="cursor-pointer hover:text-white transition-colors"
+            onClick={() => handleSelectView('dashboard')}
+            className="cursor-pointer hover:text-[#E91E63] transition-colors"
           >
             🏠 HOME
           </span>
           <span>›</span>
-          <span className="text-[#a82844] font-bold">PLAYERS & HERO POOL</span>
+          <span className="text-[#E91E63] font-bold">ROSTER & HERO POOL</span>
         </div>
       )}
 
-      {/* 3. View Switch: Players Management vs Draft History vs Draft Simulator */}
-      {currentView === 'players' ? (
+      {/* 3. View Switch: Coach Dashboard vs Players Management vs Draft History vs Draft Simulator */}
+      {currentView === 'dashboard' ? (
+        <DashboardView
+          onSelectView={handleSelectView}
+          onOpenNewDraftSetup={() => {
+            setIsPreDraftModalOpen(true);
+          }}
+          players={players}
+          historyRecords={historyRecords}
+          onInspectHero={handleInspectHero}
+          onStartNewDraftFromMatch={(rec) => {
+            const nextGameNum = rec.gameNumber + 1;
+            setMatchMetadata({
+              tournament: rec.tournament,
+              match: rec.match,
+              gameNumber: nextGameNum,
+              blueTeam: rec.redTeam.teamName,
+              redTeam: rec.blueTeam.teamName,
+              patch: rec.patch,
+            });
+            setBlueTeamName(rec.redTeam.teamName);
+            setRedTeamName(rec.blueTeam.teamName);
+            handleSelectView('draft');
+            startNewDraft();
+            showToast(`⚔️ เริ่ม Game ${nextGameNum}: ${rec.redTeam.teamName} (Blue) vs ${rec.blueTeam.teamName} (Red)`);
+          }}
+          isCloudConnected={isPlayersCloudConnected}
+          teamId={teamId}
+          draftActive={draftActive}
+        />
+      ) : currentView === 'players' ? (
         <PlayersPage
           players={players}
           teamId={teamId}
@@ -688,96 +740,7 @@ export default function App() {
             selectedTeamCategory={selectedTeamCategory}
             onChangeTeamCategory={changeTeamCategory}
             playerCounts={playerCounts}
-            isRosterBarOpen={isRosterBarOpen}
-            onToggleRosterBar={() => setIsRosterBarOpen((prev) => !prev)}
           />
-
-          {/* Draft Player Roster Bar (แยกทีมชาย ทีมหญิง ทีมผสม พร้อมข้อมูลนักแข่ง) */}
-          <DraftPlayerRosterBar
-            players={players}
-            selectedCategory={selectedTeamCategory}
-            onChangeCategory={changeTeamCategory}
-            isOpen={isRosterBarOpen}
-            onToggleOpen={() => setIsRosterBarOpen((prev) => !prev)}
-            onInspectHero={handleInspectHero}
-            onSelectHeroDirectly={handleSelectHero}
-            onAssignPlayerToActiveSlot={(player) => {
-              if (currentTurnSlot && currentTurnSlot.phase === 'pick') {
-                assignPlayerToPickSlot(currentTurnSlot.team, currentTurnSlot.index, player);
-                showToast(`👤 กำหนด "${player.nickname}" (${player.position}) ลงช่อง ${currentTurnSlot.team.toUpperCase()} Pick ${currentTurnSlot.index + 1}`);
-              }
-            }}
-            currentTurnSlot={currentTurnSlot}
-          />
-
-          {/* Draft Arena View Mode & Toolbar */}
-          <div className="flex items-center justify-between gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 sm:py-2 bg-white border border-[#F3D5E2] rounded-xl shadow-xs">
-            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-              <span className="font-['Orbitron'] font-black text-[11px] sm:text-xs text-[#E91E63] flex items-center gap-1 sm:gap-1.5 tracking-wider flex-shrink-0">
-                <span>⚔️</span>
-                <span>DRAFT ARENA</span>
-              </span>
-              {isMobileScreen ? (
-                <span className="text-[9px] font-['Prompt'] text-emerald-700 bg-emerald-50 border border-emerald-300 px-1.5 py-0.2 rounded flex items-center gap-1 font-bold truncate">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0" />
-                  <span>3 คอลัมน์</span>
-                </span>
-              ) : (
-                <span className="text-[11px] font-['Prompt'] text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span>3 คอลัมน์พอดีจอคอมพิวเตอร์ (No Scroll)</span>
-                </span>
-              )}
-            </div>
-
-            {isMobileScreen ? (
-              <div className="flex items-center gap-1 ml-auto flex-shrink-0">
-                {/* Mobile Scale/Zoom Toggle */}
-                <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-md border border-slate-300">
-                  <button
-                    type="button"
-                    onClick={() => setMobileZoomMode('fit')}
-                    className={`px-1.5 py-0.5 text-[9.5px] font-['Prompt'] font-bold tracking-wider rounded transition-all cursor-pointer flex items-center gap-0.5 ${
-                      mobileZoomMode === 'fit'
-                        ? 'bg-[#10b981] text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                    title="ย่อ 3 คอลัมน์ให้พอดีหน้าจอมือถือ 100% ไม่ต้องเลื่อนข้าง"
-                  >
-                    <span>📐</span>
-                    <span>พอดีจอ</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMobileZoomMode('zoom')}
-                    className={`px-1.5 py-0.5 text-[9.5px] font-['Prompt'] font-bold tracking-wider rounded transition-all cursor-pointer flex items-center gap-0.5 ${
-                      mobileZoomMode === 'zoom'
-                        ? 'bg-[#0284c7] text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                    title="ขยายขนาด 1.25x ให้มองเห็นได้ใหญ่ขึ้น"
-                  >
-                    <span>🔍</span>
-                    <span>1.25x</span>
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 text-[11px] font-['Prompt'] text-slate-500 ml-auto">
-                <span className="px-2 py-0.5 rounded bg-sky-50 border border-sky-200 font-bold text-[#0284C7]">
-                  🔵 BLUE
-                </span>
-                <span>+</span>
-                <span className="px-2 py-0.5 rounded bg-[#FCE4EC] border border-[#F48FB1] font-bold text-[#E91E63]">
-                  ⚔️ HERO POOL (ตรงกลาง)
-                </span>
-                <span>+</span>
-                <span className="px-2 py-0.5 rounded bg-rose-50 border border-rose-200 font-bold text-[#E11D48]">
-                  🔴 RED
-                </span>
-              </div>
-            )}
-          </div>
 
           {/* Main Draft Area - Zero horizontal scroll on any device */}
           <div
@@ -884,9 +847,13 @@ export default function App() {
               </div>
             ) : (
               /* PC / Desktop View: 100% Fluid 3-Column Arena */
-              <main className="w-full flex flex-row items-stretch gap-2.5 lg:gap-3 min-h-0 overflow-x-hidden">
+              <main className="w-full flex flex-row items-start gap-2.5 lg:gap-3 min-h-0 overflow-x-hidden">
                 {/* Left: Blue Side */}
-                <div id="blue-team-column" className="w-[195px] md:w-[215px] lg:w-[240px] xl:w-[260px] flex-shrink-0">
+                <div
+                  id="blue-team-column"
+                  ref={blueColumnRef}
+                  className="w-[195px] md:w-[215px] lg:w-[240px] xl:w-[260px] flex-shrink-0"
+                >
                   <TeamColumn
                     side="blue"
                     teamName={blueTeamName}
@@ -905,8 +872,16 @@ export default function App() {
                   />
                 </div>
 
-                {/* Center: Draft Center Arena */}
-                <div id="center-draft-arena" className="flex-1 flex flex-col min-w-0">
+                {/* Center: Draft Center Arena — Strictly bounded to Blue Column height (no overflow past Blue Pick 5) */}
+                <div
+                  id="center-draft-arena"
+                  className="flex-1 flex flex-col min-w-0"
+                  style={
+                    blueColumnHeight
+                      ? { height: `${blueColumnHeight}px`, maxHeight: `${blueColumnHeight}px` }
+                      : undefined
+                  }
+                >
                   <DraftCenter
                     draftActive={draftActive}
                     draftTurnIdx={draftTurnIdx}
@@ -936,11 +911,21 @@ export default function App() {
                     onOpenCoachPanel={handleToggleCoachPanel}
                     selectedTeamCategory={selectedTeamCategory}
                     onChangeTeamCategory={changeTeamCategory}
+                    bluePicks={bluePicks}
+                    redPicks={redPicks}
                   />
                 </div>
 
                 {/* Right: Red Side */}
-                <div id="red-team-column" className="w-[195px] md:w-[215px] lg:w-[240px] xl:w-[260px] flex-shrink-0">
+                <div
+                  id="red-team-column"
+                  className="w-[195px] md:w-[215px] lg:w-[240px] xl:w-[260px] flex-shrink-0"
+                  style={
+                    blueColumnHeight
+                      ? { height: `${blueColumnHeight}px`, maxHeight: `${blueColumnHeight}px` }
+                      : undefined
+                  }
+                >
                   <TeamColumn
                     side="red"
                     teamName={redTeamName}
@@ -973,30 +958,35 @@ export default function App() {
           </div>
 
           {/* Real-time Draft Tactical Radar: Ban Intents, Pick Combos, Counter Recommendations */}
-          <DraftTacticalRadar
-            blueBans={blueBans}
-            redBans={redBans}
-            bluePicks={bluePicks}
-            redPicks={redPicks}
-            bannedHeroNames={bannedHeroNames}
-            pickedHeroNames={pickedHeroNames}
-            onInspectHero={handleInspectHero}
-            onPickHeroDirectly={(heroName) => {
-              const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
-              if (h) handleSelectHero(h);
-            }}
-            isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
-            isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
-            activeTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
-            onBanHeroDirectly={(heroName) => {
-              const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
-              if (h) handleSelectHero(h);
-            }}
-            blueTeamName={blueTeamName}
-            redTeamName={redTeamName}
-            blueScore={draftScore}
-            redScore={redDraftScore}
-          />
+          <div className="w-full mb-3 select-none">
+            <DraftTacticalRadar
+              blueBans={blueBans}
+              redBans={redBans}
+              bluePicks={bluePicks}
+              redPicks={redPicks}
+              bannedHeroNames={bannedHeroNames}
+              pickedHeroNames={pickedHeroNames}
+              onInspectHero={handleInspectHero}
+              onPickHeroDirectly={(heroName) => {
+                const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
+                if (h) handleSelectHero(h);
+              }}
+              isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
+              isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
+              activeTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
+              onBanHeroDirectly={(heroName) => {
+                const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
+                if (h) handleSelectHero(h);
+              }}
+              blueTeamName={blueTeamName}
+              redTeamName={redTeamName}
+              blueScore={draftScore}
+              redScore={redDraftScore}
+              players={players}
+              heroToPlayersMap={heroToPlayersMap}
+              inspectedHeroName={inspectedHeroName}
+            />
+          </div>
 
           {/* Slide-out Coach Drawer overlay for screens < 1280px & mobile */}
           {isSidePanelOpen && (

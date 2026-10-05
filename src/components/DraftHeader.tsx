@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { RotateCcw, Save, Undo2, Play, Users, MoreHorizontal, Settings, FileText, Database } from 'lucide-react';
+import { RotateCcw, Save, Undo2, Play, MoreHorizontal, Settings, FileText, Database } from 'lucide-react';
 import { TeamCategory } from '../types/player';
 
 interface DraftHeaderProps {
@@ -40,8 +40,6 @@ interface DraftHeaderProps {
     female: number;
     mixed: number;
   };
-  isRosterBarOpen?: boolean;
-  onToggleRosterBar?: () => void;
 }
 
 export const DraftHeader: React.FC<DraftHeaderProps> = ({
@@ -71,8 +69,6 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
   selectedTeamCategory = 'male',
   onChangeTeamCategory,
   playerCounts,
-  isRosterBarOpen = true,
-  onToggleRosterBar,
 }) => {
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
@@ -251,45 +247,8 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
           )}
         </div>
 
-        {/* Right Section: Roster Toggle & Lifecycle Action Buttons */}
+        {/* Right Section: Lifecycle Action Buttons */}
         <div className="flex items-center gap-1 sm:gap-1.5 ml-auto flex-shrink-0">
-          {/* Coach & Stats Dock Toggle */}
-          {onToggleCoachPanel && (
-            <button
-              type="button"
-              onClick={onToggleCoachPanel}
-              title={isSidePanelOpen ? 'ซ่อนแผงวิเคราะห์โค้ชและสถิติ' : 'เปิดแผงวิเคราะห์โค้ชและสถิติ'}
-              className={`font-['Prompt'] text-[9.5px] sm:text-[10.5px] font-semibold px-2 py-0.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
-                isSidePanelOpen
-                  ? 'bg-[#E91E63] border-[#E91E63] text-white font-bold shadow-xs'
-                  : 'bg-white border-[#CBD5E1] text-[#64748B] hover:text-[#E91E63] hover:bg-[#FFF0F5]'
-              }`}
-            >
-              <span>🎯</span>
-              <span>{isSidePanelOpen ? 'ซ่อนแผงโค้ช' : 'แผงโค้ช'}</span>
-            </button>
-          )}
-
-          {/* Roster Bar Toggle Button */}
-          {onToggleRosterBar && (
-            <button
-              type="button"
-              onClick={onToggleRosterBar}
-              title={isRosterBarOpen ? 'ซ่อนแถบข้อมูลนักแข่ง' : 'แสดงแถบข้อมูลนักแข่ง'}
-              className={`font-['Prompt'] text-[9.5px] sm:text-[10.5px] font-semibold px-2 py-0.5 rounded-lg border transition-all cursor-pointer flex items-center gap-1 shadow-2xs ${
-                isRosterBarOpen
-                  ? 'bg-[#FCE4EC] border-[#F48FB1] text-[#E91E63] font-bold'
-                  : 'bg-white border-[#CBD5E1] text-[#64748B] hover:text-[#E91E63] hover:bg-[#FFF0F5]'
-              }`}
-            >
-              <Users size={12} className={isRosterBarOpen ? 'text-[#E91E63]' : 'text-[#94A3B8]'} />
-              <span>{isRosterBarOpen ? 'ซ่อนนักแข่ง' : 'แสดงนักแข่ง'}</span>
-            </button>
-          )}
-
-          {/* Vertical Divider */}
-          <div className="h-3.5 w-px bg-[#F3D5E2] flex-shrink-0" />
-
           {/* Undo Action */}
           <button
             type="button"
