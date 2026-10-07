@@ -69,9 +69,11 @@ interface DraftTacticalRadarProps {
   heroToPlayersMap?: Record<string, HeroPlayerBadge[]>;
   inspectedHeroName?: string | null;
   className?: string;
+  activeTab?: DashboardTab;
+  onTabChange?: (tab: DashboardTab) => void;
 }
 
-type DashboardTab = 'overview' | 'recommendations' | 'synergy' | 'hero_analysis' | 'predictions';
+type DashboardTab = 'overview' | 'recommendations' | 'synergy' | 'predictions';
 type TeamFilter = 'all' | 'blue' | 'red';
 
 export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
@@ -95,9 +97,16 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
   heroToPlayersMap = {},
   inspectedHeroName = null,
   className,
+  activeTab,
+  onTabChange,
 }) => {
   const [isOpen, setIsOpen] = useState<boolean>(true);
-  const [activeDashboardTab, setActiveDashboardTab] = useState<DashboardTab>('overview');
+  const [internalDashboardTab, setInternalDashboardTab] = useState<DashboardTab>('recommendations');
+  const activeDashboardTab = activeTab || internalDashboardTab;
+  const setActiveDashboardTab = (tab: DashboardTab) => {
+    setInternalDashboardTab(tab);
+    if (onTabChange) onTabChange(tab);
+  };
   const [teamFilter, setTeamFilter] = useState<TeamFilter>('all');
   const [isProCompsOpen, setIsProCompsOpen] = useState<boolean>(false);
   const [recommendationLaneFilter, setRecommendationLaneFilter] = useState<string>('all');
@@ -714,129 +723,6 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
           </div>
 
           {/* ============================================================== */}
-          {/* 3. DASHBOARD SUB-NAVIGATION TABS (Modern Pink 30% Accent)      */}
-          {/* ============================================================== */}
-          <div className="flex items-center justify-between flex-wrap gap-2 border-b border-[#F3D5E2] pb-1.5">
-            <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto custom-scrollbar py-0.5">
-              <button
-                type="button"
-                onClick={() => setActiveDashboardTab('overview')}
-                className={`px-3 py-1.5 rounded-xl font-['Prompt'] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
-                  activeDashboardTab === 'overview'
-                    ? 'bg-[#E91E63] text-white shadow-xs'
-                    : 'bg-white text-slate-700 border border-[#F3D5E2] hover:bg-[#FFF0F5]'
-                }`}
-              >
-                <Target size={13} />
-                <span>Tactical Overview</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveDashboardTab('recommendations')}
-                className={`px-3 py-1.5 rounded-xl font-['Prompt'] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
-                  activeDashboardTab === 'recommendations'
-                    ? 'bg-[#E91E63] text-white shadow-xs'
-                    : 'bg-white text-slate-700 border border-[#F3D5E2] hover:bg-[#FFF0F5]'
-                }`}
-              >
-                {isBanTurn ? (
-                  <>
-                    <Ban size={13} className="text-rose-400" />
-                    <span>Smart Ban Recommendation</span>
-                    <span className="text-[9px] bg-rose-100 text-rose-900 border border-rose-300 font-black px-1.5 py-0.2 rounded-full">
-                      BAN TOP {smartBanRecommendations.length}
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <Award size={13} className="text-amber-500" />
-                    <span>Smart Pick Recommendation</span>
-                    <span className="text-[9px] bg-amber-100 text-amber-900 border border-amber-300 font-black px-1.5 py-0.2 rounded-full">
-                      TOP {smartPickRecommendations.length}
-                    </span>
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveDashboardTab('hero_analysis')}
-                className={`px-3 py-1.5 rounded-xl font-['Prompt'] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
-                  activeDashboardTab === 'hero_analysis'
-                    ? 'bg-[#E91E63] text-white shadow-xs'
-                    : 'bg-white text-slate-700 border border-[#F3D5E2] hover:bg-[#FFF0F5]'
-                }`}
-              >
-                <BarChart3 size={13} className="text-sky-500" />
-                <span>Hero Analysis Panel</span>
-                <span className="text-[9px] bg-sky-100 text-sky-800 border border-sky-300 font-bold px-1.5 py-0.2 rounded-full">
-                  {selectedHeroForAnalysis}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveDashboardTab('synergy')}
-                className={`px-3 py-1.5 rounded-xl font-['Prompt'] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
-                  activeDashboardTab === 'synergy'
-                    ? 'bg-[#E91E63] text-white shadow-xs'
-                    : 'bg-white text-slate-700 border border-[#F3D5E2] hover:bg-[#FFF0F5]'
-                }`}
-              >
-                <Layers size={13} className="text-purple-500" />
-                <span>Draft Synergy & Balance</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setActiveDashboardTab('predictions')}
-                className={`px-3 py-1.5 rounded-xl font-['Prompt'] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap shadow-2xs ${
-                  activeDashboardTab === 'predictions'
-                    ? 'bg-[#E91E63] text-white shadow-xs'
-                    : 'bg-white text-slate-700 border border-[#F3D5E2] hover:bg-[#FFF0F5]'
-                }`}
-              >
-                <Sparkles size={13} className="text-emerald-500" />
-                <span>Radar Predictions</span>
-              </button>
-            </div>
-
-            {/* Team Filter Pills */}
-            <div className="flex items-center gap-1 bg-white border border-[#F3D5E2] p-0.5 rounded-xl shadow-2xs text-[11px]">
-              <button
-                type="button"
-                onClick={() => setTeamFilter('all')}
-                className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer ${
-                  teamFilter === 'all' ? 'bg-[#E91E63] text-white' : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                ทั้งสองทีม
-              </button>
-              <button
-                type="button"
-                onClick={() => setTeamFilter('blue')}
-                className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer flex items-center gap-1 ${
-                  teamFilter === 'blue' ? 'bg-sky-600 text-white' : 'text-sky-700 hover:bg-sky-50'
-                }`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
-                <span>Blue</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setTeamFilter('red')}
-                className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer flex items-center gap-1 ${
-                  teamFilter === 'red' ? 'bg-rose-600 text-white' : 'text-rose-700 hover:bg-rose-50'
-                }`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                <span>Red</span>
-              </button>
-            </div>
-          </div>
-
-          {/* ============================================================== */}
           {/* TAB 1: TACTICAL OVERVIEW                                       */}
           {/* ============================================================== */}
           {activeDashboardTab === 'overview' && (
@@ -867,10 +753,7 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
                         <button
                           key={hName}
                           type="button"
-                          onClick={() => {
-                            setSelectedHeroForAnalysis(hName);
-                            setActiveDashboardTab('hero_analysis');
-                          }}
+                          onClick={() => onInspectHero(hName)}
                           className="flex items-center gap-1 p-1 pr-2 rounded-lg bg-sky-50 border border-sky-200 hover:border-sky-400 transition-all cursor-pointer shadow-2xs text-[11px]"
                           title="คลิกเพื่อวิเคราะห์สถิติฮีโร่ตัวนี้"
                         >
@@ -935,10 +818,7 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
                         <button
                           key={hName}
                           type="button"
-                          onClick={() => {
-                            setSelectedHeroForAnalysis(hName);
-                            setActiveDashboardTab('hero_analysis');
-                          }}
+                          onClick={() => onInspectHero(hName)}
                           className="flex items-center gap-1 p-1 pr-2 rounded-lg bg-rose-50 border border-rose-200 hover:border-rose-400 transition-all cursor-pointer shadow-2xs text-[11px]"
                           title="คลิกเพื่อวิเคราะห์สถิติฮีโร่ตัวนี้"
                         >
@@ -1005,74 +885,6 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
           {/* ============================================================== */}
           {activeDashboardTab === 'recommendations' && (
             <div className="flex flex-col gap-3 font-['Prompt']">
-              {/* Mode Switch Header: Bans vs Picks */}
-              <div className="p-2 sm:p-2.5 bg-white rounded-xl border border-[#F3D5E2] flex items-center justify-between flex-wrap gap-2 shadow-2xs">
-                <div className="flex items-center gap-1.5">
-                  <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-                    <button
-                      type="button"
-                      onClick={() => setRecommendationMode('bans')}
-                      className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                        recommendationMode === 'bans'
-                          ? 'bg-gradient-to-r from-[#E11D48] to-[#BE123C] text-white shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      <Ban size={12} />
-                      <span>แนะนำตัวแบน (BANS)</span>
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${
-                        recommendationMode === 'bans' ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-800'
-                      }`}>
-                        {smartBanRecommendations.length}
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setRecommendationMode('picks')}
-                      className={`px-3 py-1 rounded-md text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
-                        recommendationMode === 'picks'
-                          ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-xs'
-                          : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                    >
-                      <Award size={12} />
-                      <span>แนะนำตัวเลือก (PICKS)</span>
-                      <span className={`text-[9px] px-1.5 py-0.2 rounded-full font-black ${
-                        recommendationMode === 'picks' ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {smartPickRecommendations.length}
-                      </span>
-                    </button>
-                  </div>
-
-                  <span className="text-[10.5px] text-slate-500 hidden md:inline">
-                    {recommendationMode === 'bans'
-                      ? `วิเคราะห์ตัวแบนที่อันตรายที่สุดสำหรับฝั่ง ${activeTeam === 'blue' ? blueTeamName : redTeamName}`
-                      : `วิเคราะห์ตัวที่เหมาะสมที่สุดสำหรับฝั่ง ${activeTeam === 'blue' ? blueTeamName : redTeamName}`}
-                  </span>
-                </div>
-
-                {recommendationMode === 'picks' && (
-                  <div className="flex items-center gap-1 text-[10.5px] flex-wrap ml-auto">
-                    {['all', 'dsl', 'jg', 'mid', 'roam', 'adl'].map((pos) => (
-                      <button
-                        key={pos}
-                        type="button"
-                        onClick={() => setRecommendationLaneFilter(pos)}
-                        className={`px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer uppercase ${
-                          recommendationLaneFilter === pos
-                            ? 'bg-[#E91E63] text-white'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
-                      >
-                        {pos === 'all' ? 'ทุกลำดับ' : pos}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               {/* RECOMMENDED BANS VIEW */}
               {recommendationMode === 'bans' && (
                 <div className="flex flex-col gap-2.5">
@@ -1172,10 +984,7 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
                                 <div className="flex items-center justify-between gap-1">
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      setSelectedHeroForAnalysis(item.hero.name);
-                                      setActiveDashboardTab('hero_analysis');
-                                    }}
+                                    onClick={() => onInspectHero(item.hero.name)}
                                     className="font-bold text-xs sm:text-sm text-slate-900 hover:text-[#E11D48] transition-colors truncate text-left cursor-pointer"
                                     title="คลิกเพื่อดูสถิติเชิงลึก"
                                   >
@@ -1246,7 +1055,30 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
 
               {/* RECOMMENDED PICKS VIEW */}
               {recommendationMode === 'picks' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                <div className="flex flex-col gap-2.5">
+                  <div className="flex items-center justify-between text-xs text-slate-600 flex-wrap gap-2">
+                    <span className="font-bold text-slate-700 text-xs">
+                      🏆 แนะนำตัวเลือกสำหรับฝั่ง {activeTeam === 'blue' ? blueTeamName : redTeamName} ({smartPickRecommendations.length} ตัว)
+                    </span>
+                    <div className="flex items-center gap-1 text-[10.5px] flex-wrap">
+                      {['all', 'dsl', 'jg', 'mid', 'roam', 'adl'].map((pos) => (
+                        <button
+                          key={pos}
+                          type="button"
+                          onClick={() => setRecommendationLaneFilter(pos)}
+                          className={`px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer uppercase ${
+                            recommendationLaneFilter === pos
+                              ? 'bg-[#E91E63] text-white shadow-2xs'
+                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                          }`}
+                        >
+                          {pos === 'all' ? 'ทุกลำดับ' : pos}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
                   {smartPickRecommendations.map((item, index) => {
                     const rank = index + 1;
                     const isTopRank = rank === 1;
@@ -1282,10 +1114,7 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
                             <div className="flex items-center justify-between gap-1">
                               <button
                                 type="button"
-                                onClick={() => {
-                                  setSelectedHeroForAnalysis(item.hero.name);
-                                  setActiveDashboardTab('hero_analysis');
-                                }}
+                                onClick={() => onInspectHero(item.hero.name)}
                                 className="font-bold text-xs sm:text-sm text-slate-900 hover:text-[#E91E63] transition-colors truncate text-left cursor-pointer"
                               >
                                 {item.hero.name}
@@ -1356,286 +1185,8 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
                     );
                   })}
                 </div>
+              </div>
               )}
-            </div>
-          )}
-
-          {/* ============================================================== */}
-          {/* TAB 3: HERO ANALYSIS PANEL (Deep-Dive Stats, Matchups & Bias) */}
-          {/* ============================================================== */}
-          {activeDashboardTab === 'hero_analysis' && (
-            <div className="flex flex-col gap-3">
-              {/* Quick Hero Selector Bar */}
-              <div className="p-2.5 bg-white rounded-xl border border-[#F3D5E2] flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                  <Search size={14} className="text-slate-400" />
-                  <input
-                    type="text"
-                    value={heroSearchQuery}
-                    onChange={(e) => setHeroSearchQuery(e.target.value)}
-                    placeholder="พิมพ์ชื่อฮีโร่เพื่อดูสถิติ (เช่น Toro, Hayate, Marja)..."
-                    className="w-full text-xs font-['Prompt'] text-slate-800 placeholder-slate-400 outline-none bg-transparent"
-                  />
-                </div>
-
-                <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar">
-                  {filteredAnalysisHeroList.map((h) => (
-                    <button
-                      key={h.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedHeroForAnalysis(h.name);
-                        setHeroSearchQuery('');
-                      }}
-                      className={`px-2 py-0.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 ${
-                        selectedHeroForAnalysis.toLowerCase() === h.name.toLowerCase()
-                          ? 'bg-[#E91E63] text-white shadow-2xs'
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                      }`}
-                    >
-                      <img src={getHeroImageUrl(h.name)} alt={h.name} className="w-3.5 h-3.5 rounded-full" />
-                      <span>{h.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Hero Stats Card */}
-              <div className="bg-white border-2 border-[#F3D5E2] rounded-xl p-3.5 sm:p-4 shadow-2xs flex flex-col gap-3">
-                {/* Header Information */}
-                <div className="flex items-start justify-between flex-wrap gap-2 pb-3 border-b border-slate-100">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={getHeroImageUrl(selectedHeroForAnalysis)}
-                      alt={selectedHeroForAnalysis}
-                      className="w-14 h-14 rounded-2xl object-cover border-2 border-[#F3D5E2] shadow-xs"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-['Prompt'] font-bold text-base sm:text-lg text-slate-900">
-                          {selectedHeroForAnalysis}
-                        </h3>
-                        {heroAnalysisDetails.heroObj?.nameTh && (
-                          <span className="text-xs font-medium text-slate-500">
-                            ({heroAnalysisDetails.heroObj.nameTh})
-                          </span>
-                        )}
-                        <span className="text-[10px] font-bold uppercase bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md border border-slate-200">
-                          {heroAnalysisDetails.heroObj?.primaryPos || 'DSL'}
-                        </span>
-                      </div>
-
-                      {/* Player Badges in Team Roster */}
-                      {heroAnalysisDetails.playerBadges.length > 0 && (
-                        <div className="flex items-center gap-1.5 mt-1 flex-wrap text-[10.5px]">
-                          <span className="text-slate-500 font-semibold">ในทีม MCU:</span>
-                          {heroAnalysisDetails.playerBadges.map((badge, idx) => (
-                            <span
-                              key={idx}
-                              className={`px-1.5 py-0.2 rounded font-bold border ${
-                                badge.tier === 'signature'
-                                  ? 'bg-amber-100 text-amber-900 border-amber-300'
-                                  : 'bg-sky-100 text-sky-900 border-sky-300'
-                              }`}
-                            >
-                              ⭐ {badge.playerName} ({badge.tier === 'signature' ? 'Signature' : 'Comfortable'})
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Actions Pick/Inspect */}
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onInspectHero(selectedHeroForAnalysis)}
-                      className="px-2.5 py-1 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 font-bold text-xs transition-colors cursor-pointer flex items-center gap-1"
-                    >
-                      <ExternalLink size={12} />
-                      <span>เปิดแผงสถิติละเอียด</span>
-                    </button>
-                    {isPickTurn && onPickHeroDirectly && (
-                      <button
-                        type="button"
-                        onClick={() => onPickHeroDirectly(selectedHeroForAnalysis)}
-                        className="px-3 py-1 rounded-lg bg-[#E91E63] hover:bg-[#D81B60] text-white font-bold text-xs transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
-                      >
-                        <Check size={13} />
-                        <span>หยิบตัวนี้</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Tournament Stats 4-Grid */}
-                {heroAnalysisDetails.hasTournamentData && heroAnalysisDetails.stats ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                    {/* Win Rate */}
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">อัตราชนะ (Win Rate)</span>
-                      <span className="font-['Orbitron'] font-black text-lg text-emerald-600 mt-0.5">
-                        {heroAnalysisDetails.stats.winRate}%
-                      </span>
-                      <span className="text-[10px] text-slate-500">
-                        {heroAnalysisDetails.stats.wins} ชนะ / {heroAnalysisDetails.stats.losses} แพ้
-                      </span>
-                    </div>
-
-                    {/* Games Picked */}
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">จำนวนเกมที่หยิบ</span>
-                      <span className="font-['Orbitron'] font-black text-lg text-slate-800 mt-0.5">
-                        {heroAnalysisDetails.stats.games} เกม
-                      </span>
-                      <span className="text-[10px] text-slate-500">
-                        Pick Rate: {heroAnalysisDetails.stats.pickRate}%
-                      </span>
-                    </div>
-
-                    {/* Ban Rate */}
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">อัตราแบน (Ban Rate)</span>
-                      <span className="font-['Orbitron'] font-black text-lg text-rose-600 mt-0.5">
-                        {heroAnalysisDetails.stats.banRate}%
-                      </span>
-                      <span className="text-[10px] text-slate-500">
-                        แบน {heroAnalysisDetails.stats.bans} เกม
-                      </span>
-                    </div>
-
-                    {/* Blue / Red Split */}
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Blue vs Red Win Rate</span>
-                      <div className="flex items-center justify-between text-[11px] font-bold mt-1">
-                        <span className="text-sky-700">
-                          🔵 {heroAnalysisDetails.stats.blueWins || 0}W-{heroAnalysisDetails.stats.blueLosses || 0}L
-                        </span>
-                        <span className="text-rose-700">
-                          🔴 {heroAnalysisDetails.stats.redWins || 0}W-{heroAnalysisDetails.stats.redLosses || 0}L
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-center gap-2">
-                    <Info size={15} />
-                    <span>ไม่มีข้อมูลการแข่งขันเพียงพอในฐานข้อมูล RPL 2026 Summer สำหรับฮีโร่ตัวนี้</span>
-                  </div>
-                )}
-
-                {/* Matchups Split: 3 Columns (Counters, Countered By, Top Synergies) */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs pt-1">
-                  {/* Column 1: ชนะทาง (Counters) */}
-                  <div className="p-2.5 rounded-xl bg-emerald-50/50 border border-emerald-200 flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-emerald-800 flex items-center gap-1 text-[11px]">
-                        <TrendingUp size={12} />
-                        <span>ชนะทาง (Counters)</span>
-                      </span>
-                      <span className="text-[10px] text-emerald-600 font-bold">RPL Head-to-Head</span>
-                    </div>
-
-                    {heroAnalysisDetails.countersList.length > 0 ? (
-                      heroAnalysisDetails.countersList.map((m, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between p-1.5 rounded-lg bg-white border border-emerald-100 text-[11px]"
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <img
-                              src={getHeroImageUrl(m.opponentHero)}
-                              alt={m.opponentHero}
-                              className="w-4 h-4 rounded-full object-cover"
-                            />
-                            <span className="font-bold text-slate-800">{m.opponentHero}</span>
-                          </div>
-                          <span className="font-['Orbitron'] font-bold text-emerald-600">
-                            {m.winRate}% ({m.games}G)
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <span className="text-[10.5px] text-slate-400 italic py-2 text-center">
-                        ไม่มีข้อมูลชนะทางที่เด่นชัด
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Column 2: แพ้ทาง (Countered By) */}
-                  <div className="p-2.5 rounded-xl bg-rose-50/50 border border-rose-200 flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-rose-800 flex items-center gap-1 text-[11px]">
-                        <ShieldAlert size={12} />
-                        <span>แพ้ทาง (Countered by)</span>
-                      </span>
-                      <span className="text-[10px] text-rose-600 font-bold">RPL Head-to-Head</span>
-                    </div>
-
-                    {heroAnalysisDetails.counteredByList.length > 0 ? (
-                      heroAnalysisDetails.counteredByList.map((m, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between p-1.5 rounded-lg bg-white border border-rose-100 text-[11px]"
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <img
-                              src={getHeroImageUrl(m.opponentHero)}
-                              alt={m.opponentHero}
-                              className="w-4 h-4 rounded-full object-cover"
-                            />
-                            <span className="font-bold text-slate-800">{m.opponentHero}</span>
-                          </div>
-                          <span className="font-['Orbitron'] font-bold text-rose-600">
-                            {m.winRate}% ({m.games}G)
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <span className="text-[10.5px] text-slate-400 italic py-2 text-center">
-                        ไม่มีข้อมูลแพ้ทางที่เด่นชัด
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Column 3: เล่นคู่กันได้ดี (Top Synergies) */}
-                  <div className="p-2.5 rounded-xl bg-amber-50/50 border border-amber-200 flex flex-col gap-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-amber-900 flex items-center gap-1 text-[11px]">
-                        <Zap size={12} />
-                        <span>เล่นคู่กันได้ดี (Best Synergy)</span>
-                      </span>
-                      <span className="text-[10px] text-amber-700 font-bold">Played Together</span>
-                    </div>
-
-                    {heroAnalysisDetails.topSynergies.length > 0 ? (
-                      heroAnalysisDetails.topSynergies.map((s, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between p-1.5 rounded-lg bg-white border border-amber-100 text-[11px]"
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <img
-                              src={getHeroImageUrl(s.allyHero)}
-                              alt={s.allyHero}
-                              className="w-4 h-4 rounded-full object-cover"
-                            />
-                            <span className="font-bold text-slate-800">{s.allyHero}</span>
-                          </div>
-                          <span className="font-['Orbitron'] font-bold text-amber-700">
-                            {s.winRate}% ({s.games}G)
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <span className="text-[10.5px] text-slate-400 italic py-2 text-center">
-                        ไม่มีข้อมูลคู่หูที่เด่นชัด
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
             </div>
           )}
 
@@ -1644,6 +1195,45 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
           {/* ============================================================== */}
           {activeDashboardTab === 'synergy' && (
             <div className="flex flex-col gap-3 text-xs">
+              {/* Synergy Header with Team Filter */}
+              <div className="flex items-center justify-between flex-wrap gap-2 pb-1 border-b border-[#F3D5E2]/60">
+                <span className="font-['Prompt'] font-bold text-slate-700 text-xs flex items-center gap-1.5">
+                  <Layers size={14} className="text-purple-600" />
+                  <span>สมดุลโครงสร้างทีมและการประสานคอมโบ</span>
+                </span>
+                <div className="flex items-center gap-1 bg-white border border-[#F3D5E2] p-0.5 rounded-xl shadow-2xs text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setTeamFilter('all')}
+                    className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer ${
+                      teamFilter === 'all' ? 'bg-[#E91E63] text-white' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    ทั้งสองทีม
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTeamFilter('blue')}
+                    className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer flex items-center gap-1 ${
+                      teamFilter === 'blue' ? 'bg-sky-600 text-white' : 'text-sky-700 hover:bg-sky-50'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                    <span>Blue</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTeamFilter('red')}
+                    className={`px-2 py-0.5 rounded-lg font-bold transition-colors cursor-pointer flex items-center gap-1 ${
+                      teamFilter === 'red' ? 'bg-rose-600 text-white' : 'text-rose-700 hover:bg-rose-50'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                    <span>Red</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                 {/* BLUE TEAM BALANCE */}
                 <div className="p-3 bg-white rounded-xl border-2 border-sky-200 shadow-2xs flex flex-col gap-2.5">

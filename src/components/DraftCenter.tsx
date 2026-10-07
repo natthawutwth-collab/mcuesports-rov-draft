@@ -41,6 +41,7 @@ interface DraftCenterProps {
   onChangeTeamCategory?: (cat: TeamCategory) => void;
   bluePicks?: { hero: Hero | null }[];
   redPicks?: { hero: Hero | null }[];
+  compact?: boolean;
 }
 
 export type PlayerPoolFilter = 'all' | 'player_all' | 'signature' | 'comfortable';
@@ -85,6 +86,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
   onChangeTeamCategory,
   bluePicks = [],
   redPicks = [],
+  compact = false,
 }) => {
   const currentTurn = DRAFT_TURNS[draftTurnIdx];
 
@@ -225,101 +227,102 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
       : '#0284c7'; // blue
 
   return (
-    <div className="flex-1 min-w-0 w-full h-full min-h-0 flex flex-col bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-sm overflow-hidden">
-      {/* 1. TOP BAR: หมวดทีม & ค้นหา Hero */}
-      <div className="flex items-center justify-between gap-2.5 px-3 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2]">
-        {/* Left: หมวดทีม (Team Category) */}
-        {onChangeTeamCategory && (
-          <div className="flex items-center gap-1.5 flex-shrink-0">
-            <span className="text-[10.5px] font-['Prompt'] font-bold text-slate-600 uppercase flex items-center gap-1">
-              <span>หมวดทีม:</span>
-            </span>
-            <select
-              value={selectedTeamCategory}
-              onChange={(e) => onChangeTeamCategory(e.target.value as any)}
-              className="bg-white border border-[#F3D5E2] hover:border-[#E91E63] text-slate-800 text-[11px] font-['Prompt'] font-bold px-2 py-1 rounded-lg outline-none cursor-pointer shadow-2xs transition-all"
-            >
-              <option value="male">👨 ทีมชาย</option>
-              <option value="female">👩 ทีมหญิง</option>
-              <option value="mixed">👥 ทีมผสม</option>
-              <option value="all">🌐 ทั้งหมด</option>
-            </select>
-          </div>
-        )}
-
-        {/* Center: ค้นหา Hero (Search) */}
-        <div className="relative flex-1 max-w-[240px] min-w-[120px]">
+    <div className="flex-1 min-w-0 w-full h-full min-h-0 flex flex-col bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-md overflow-hidden ring-1 ring-[#F3D5E2]/60">
+      {/* 1. TOP BAR: Search Hero & Timer */}
+      <div className="flex items-center justify-between gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex-shrink-0">
+        {/* Search Input */}
+        <div className="relative flex-1 min-w-[100px] max-w-[260px]">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="🔍 ค้นหา Hero…"
-            className="w-full bg-white border border-[#F3D5E2] text-[#1F2937] placeholder-slate-400 text-[11px] font-['Prompt'] pl-7 pr-2 py-1 rounded-lg outline-none focus:border-[#E91E63] focus:ring-1 focus:ring-[#E91E63]/30 transition-all shadow-2xs"
+            placeholder="ค้นหา Hero..."
+            className="w-full bg-white border border-[#F3D5E2] text-[#1F2937] placeholder-slate-400 text-[10.5px] sm:text-[11px] font-['Prompt'] pl-7 pr-2 py-0.5 sm:py-1 rounded-lg outline-none focus:border-[#E91E63] focus:ring-1 focus:ring-[#E91E63]/30 transition-all shadow-2xs"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+            >
+              ✕
+            </button>
+          )}
         </div>
 
-        {/* Right: Timer pill (active during draft) */}
-        {draftActive && (
-          <div className="flex items-center gap-2 bg-white px-2.5 py-0.5 rounded-lg border border-[#F3D5E2] shadow-2xs flex-shrink-0 ml-auto">
-            <div className="flex flex-col items-end leading-none">
-              <span className="font-['Prompt'] text-[8px] font-bold tracking-wider text-slate-400 uppercase">
-                {currentTurn?.phase === 'pick' ? 'PICK' : 'BAN'}
-              </span>
-              <span
-                className="font-['Orbitron'] font-black text-[13px] leading-tight"
-                style={{ color: timerColor }}
-              >
-                {timerSec}
-              </span>
-            </div>
-
-            <div className="relative w-[24px] h-[24px] flex items-center justify-center flex-shrink-0">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 48 48">
-                <circle
-                  cx="24"
-                  cy="24"
-                  r={radius}
-                  className="text-[#FCE4EC]"
-                  strokeWidth="5"
-                  stroke="currentColor"
-                  fill="transparent"
-                />
-                <circle
-                  cx="24"
-                  cy="24"
-                  r={radius}
-                  stroke={timerColor}
-                  strokeWidth="5"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={strokeDashoffset}
-                  strokeLinecap="round"
-                  fill="transparent"
-                  className="transition-all duration-500 ease-linear"
-                />
-              </svg>
-              <button
-                onClick={toggleTimerPause}
-                title={isTimerPaused ? 'ดำเนินการจับเวลาต่อ' : 'หยุดเวลาชั่วคราว'}
-                className="absolute inset-0 flex items-center justify-center text-slate-700 hover:text-[#E91E63] transition-colors cursor-pointer"
-              >
-                {isTimerPaused ? <Play size={8} className="fill-current ml-0.5" /> : <Pause size={8} />}
-              </button>
-            </div>
+        {/* Turn Phase Badge */}
+        <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white border border-[#F3D5E2] shadow-2xs">
+            <span className={`text-[8.5px] font-['Orbitron'] font-black px-1.5 py-0.2 rounded ${turnBadgeClass}`}>
+              {turnBadgeText}
+            </span>
+            <span className="font-['Prompt'] font-bold text-[9.5px] text-slate-700 truncate max-w-[90px] sm:max-w-[120px]">
+              {activeTeamTitle}
+            </span>
           </div>
-        )}
+
+          {/* Timer pill (active during draft) */}
+          {draftActive && (
+            <div className="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-lg border border-[#F3D5E2] shadow-2xs flex-shrink-0">
+              <div className="flex flex-col items-end leading-none">
+                <span className="font-['Prompt'] text-[7px] font-bold tracking-wider text-slate-400 uppercase">
+                  {currentTurn?.phase === 'pick' ? 'PICK' : 'BAN'}
+                </span>
+                <span
+                  className="font-['Orbitron'] font-black text-[11px] sm:text-[12px] leading-tight"
+                  style={{ color: timerColor }}
+                >
+                  {timerSec}
+                </span>
+              </div>
+
+              <div className="relative w-[18px] h-[18px] flex items-center justify-center flex-shrink-0">
+                <svg className="w-full h-full -rotate-90" viewBox="0 0 48 48">
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r={radius}
+                    className="text-[#FCE4EC]"
+                    strokeWidth="5"
+                    stroke="currentColor"
+                    fill="transparent"
+                  />
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r={radius}
+                    stroke={timerColor}
+                    strokeWidth="5"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    fill="transparent"
+                    className="transition-all duration-500 ease-linear"
+                  />
+                </svg>
+                <button
+                  onClick={toggleTimerPause}
+                  title={isTimerPaused ? 'ดำเนินการจับเวลาต่อ' : 'หยุดเวลาชั่วคราว'}
+                  className="absolute inset-0 flex items-center justify-center text-slate-700 hover:text-[#E91E63] transition-colors cursor-pointer"
+                >
+                  {isTimerPaused ? <Play size={6} className="fill-current ml-0.5" /> : <Pause size={6} />}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* 2. ROLE FILTER BUTTONS — Distinct segmented control */}
-      <div className="flex items-center justify-between gap-1.5 px-3 py-1.5 bg-[#FFF8FB] border-b border-[#F3D5E2] overflow-x-auto no-scrollbar">
-        <div className="flex items-center gap-1 sm:gap-1.5 flex-nowrap flex-shrink-0">
+      {/* 2. ROLE FILTER BUTTONS — Streamlined Segmented Control */}
+      <div className="flex items-center justify-between gap-1 px-2 sm:px-2.5 py-1 bg-[#FFF8FB] border-b border-[#F3D5E2] overflow-x-auto no-scrollbar flex-shrink-0">
+        <div className="flex items-center gap-0.5 sm:gap-1 flex-nowrap flex-shrink-0">
           {ROLES.map((r) => {
             const isActive = roleFilter === r.key;
             return (
               <button
                 key={r.key}
                 onClick={() => setRoleFilter(r.key)}
-                className={`font-['Prompt'] text-[10.5px] sm:text-[11px] font-bold tracking-wider px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg border transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                className={`font-['Prompt'] text-[9px] sm:text-[10px] font-bold tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md border transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
                   isActive ? r.activeClass : `border-[#F3D5E2] bg-white ${r.colorClass}`
                 }`}
               >
@@ -330,28 +333,25 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
         </div>
 
         <div className="flex items-center gap-1 pl-1 flex-shrink-0 ml-auto">
-          <span className="text-[10px] sm:text-[11px] font-['Prompt'] font-bold text-slate-500 whitespace-nowrap px-2 py-0.5 rounded-lg bg-white border border-[#F3D5E2] shadow-2xs flex-shrink-0">
+          <span className="text-[8.5px] sm:text-[9.5px] font-['Prompt'] font-bold text-slate-500 whitespace-nowrap px-1.5 py-0.5 rounded-md bg-white border border-[#F3D5E2] shadow-2xs flex-shrink-0">
             {filteredHeroes.length} HEROES
-            {playerPoolFilter === 'signature' && ' (⭐ SIG)'}
-            {playerPoolFilter === 'comfortable' && ' (★ COMF)'}
-            {playerPoolFilter === 'player_all' && ' (👥 POOL)'}
           </span>
         </div>
       </div>
 
-      {/* 2.5 PLAYER HERO POOL FILTER BAR (⭐ SIGNATURE / ★ COMFORTABLE / OUR POOL) */}
-      <div className="flex items-center justify-between gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 bg-[#FFF0F5]/80 border-b border-[#F3D5E2] overflow-x-auto no-scrollbar flex-wrap">
-        <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar flex-nowrap py-0.5">
-          <span className="text-[10px] font-['Prompt'] font-bold text-[#E91E63] uppercase whitespace-nowrap flex items-center gap-1 mr-0.5 flex-shrink-0">
+      {/* 2.5 PLAYER HERO POOL FILTER BAR (Clean, Single Line, No-Wrap) */}
+      <div className="flex items-center justify-between gap-1.5 px-2.5 py-1 bg-[#FFF0F5]/80 border-b border-[#F3D5E2] overflow-x-auto no-scrollbar flex-shrink-0">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-nowrap py-0.5">
+          <span className="text-[9px] font-['Prompt'] font-bold text-[#E91E63] uppercase whitespace-nowrap flex items-center gap-0.5 mr-0.5 flex-shrink-0">
             <span>👤</span>
-            <span className="hidden sm:inline">พูลนักกีฬา:</span>
+            <span>พูล:</span>
           </span>
 
           {/* All RoV Heroes */}
           <button
             type="button"
             onClick={() => setPlayerPoolFilter('all')}
-            className={`px-2 sm:px-2.5 py-0.5 rounded-lg text-[9.5px] sm:text-[10.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-1 flex-shrink-0 shadow-2xs ${
+            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[9.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-0.5 flex-shrink-0 shadow-2xs ${
               playerPoolFilter === 'all'
                 ? 'bg-slate-800 border-slate-800 text-white shadow-xs'
                 : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -364,42 +364,42 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
           <button
             type="button"
             onClick={() => setPlayerPoolFilter('player_all')}
-            className={`px-2 sm:px-2.5 py-0.5 rounded-lg text-[9.5px] sm:text-[10.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-1 flex-shrink-0 shadow-2xs ${
+            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[9.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-0.5 flex-shrink-0 shadow-2xs ${
               playerPoolFilter === 'player_all'
-                ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs ring-2 ring-[#E91E63]/40'
+                ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs ring-1 ring-[#E91E63]/40'
                 : 'bg-white border-[#F3D5E2] text-slate-700 hover:border-[#E91E63] hover:text-[#E91E63]'
             }`}
-            title="แสดงฮีโร่ทั้งหมดที่นักกีฬาของเราบันทึกไว้ในพูล (ทั้ง Signature และ Comfortable)"
+            title="แสดงฮีโร่ทั้งหมดในพูลนักกีฬาเรา"
           >
-            <span>👥 พูลนักกีฬาเรา ({poolHeroCounts.total})</span>
+            <span>👥 พูลเรา ({poolHeroCounts.total})</span>
           </button>
 
           {/* Signature Heroes (⭐) */}
           <button
             type="button"
             onClick={() => setPlayerPoolFilter('signature')}
-            className={`px-2 sm:px-2.5 py-0.5 rounded-lg text-[9.5px] sm:text-[10.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-1 flex-shrink-0 shadow-2xs ${
+            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[9.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-0.5 flex-shrink-0 shadow-2xs ${
               playerPoolFilter === 'signature'
-                ? 'bg-[#D97706] border-[#B45309] text-white shadow-xs ring-2 ring-amber-400'
+                ? 'bg-[#D97706] border-[#B45309] text-white shadow-xs ring-1 ring-amber-400'
                 : 'bg-[#FFFBEB] border-[#FDE68A] text-[#B45309] hover:bg-[#FEF3C7]'
             }`}
             title="แสดงเฉพาะ SIGNATURE HEROES (⭐ ตัวถนัดพิเศษ 100%) ของนักกีฬาเรา"
           >
-            <span>⭐ SIGNATURE ({poolHeroCounts.signature})</span>
+            <span>⭐ SIG ({poolHeroCounts.signature})</span>
           </button>
 
           {/* Comfortable Heroes (★) */}
           <button
             type="button"
             onClick={() => setPlayerPoolFilter('comfortable')}
-            className={`px-2 sm:px-2.5 py-0.5 rounded-lg text-[9.5px] sm:text-[10.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-1 flex-shrink-0 shadow-2xs ${
+            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[9.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-0.5 flex-shrink-0 shadow-2xs ${
               playerPoolFilter === 'comfortable'
-                ? 'bg-[#0284C7] border-[#0369A1] text-white shadow-xs ring-2 ring-sky-400'
+                ? 'bg-[#0284C7] border-[#0369A1] text-white shadow-xs ring-1 ring-sky-400'
                 : 'bg-[#F0F9FF] border-[#BAE6FD] text-[#0369A1] hover:bg-[#E0F2FE]'
             }`}
             title="แสดงเฉพาะ COMFORTABLE HEROES (★ ตัวเล่นได้ดี) ของนักกีฬาเรา"
           >
-            <span>★ COMFORTABLE ({poolHeroCounts.comfortable})</span>
+            <span>★ COMF ({poolHeroCounts.comfortable})</span>
           </button>
         </div>
 
@@ -408,116 +408,15 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
           <button
             type="button"
             onClick={() => setPlayerPoolFilter('all')}
-            className="text-[9.5px] font-['Prompt'] font-bold text-slate-500 hover:text-red-500 flex items-center gap-0.5 cursor-pointer ml-auto flex-shrink-0"
+            className="text-[9px] font-['Prompt'] font-bold text-slate-500 hover:text-red-500 flex items-center gap-0.5 cursor-pointer ml-auto flex-shrink-0 whitespace-nowrap"
           >
-            <span>✕ ล้างตัวกรองพูล</span>
+            <span>✕ ล้าง</span>
           </button>
         )}
       </div>
 
-      {/* 3. DRAFT SCORE BAR (Live Synergy & Advantage with % Display) */}
-      {showScoreBar && (
-        <div className="px-3 sm:px-4 py-2 bg-[#FFF0F5] border-b-2 border-[#F3D5E2] flex flex-col gap-1.5 transition-all">
-          <div className="flex items-center justify-between gap-2 sm:gap-3 text-[12px]">
-            {/* Blue Side */}
-            <div className="flex items-center gap-2 sm:gap-2.5 flex-1 min-w-0">
-              <span className="font-['Prompt'] font-bold text-[#0284C7] tracking-wider text-[11.5px] sm:text-[13px] truncate">
-                🔵 {blueTeamName || 'BLUE SIDE'}
-              </span>
-              <div className="flex-1 h-2.5 bg-white border border-sky-200 rounded-full overflow-hidden shadow-2xs min-w-[30px]">
-                <div
-                  className="h-full bg-gradient-to-r from-[#0284c7] to-[#38bdf8] rounded-full transition-all duration-500 shadow-2xs"
-                  style={{ width: `${bluePercent}%` }}
-                />
-              </div>
-              <span className="font-['Orbitron'] font-black text-[#0284C7] text-xs sm:text-[13px] min-w-[36px]">
-                {bluePercent}%
-              </span>
-            </div>
-
-            {/* Advantage center */}
-            <div className="px-2.5 sm:px-3 py-1 bg-white rounded-xl border border-[#F3D5E2] text-center min-w-[125px] sm:min-w-[145px] shadow-2xs flex flex-col items-center justify-center flex-shrink-0">
-              <div className="text-[7.5px] sm:text-[8px] font-['Orbitron'] font-black text-slate-400 tracking-wider uppercase">
-                WIN ADVANTAGE
-              </div>
-              <div
-                className={`font-['Prompt'] font-black text-[11px] sm:text-[12px] leading-tight flex items-center gap-1 ${
-                  advantageSide === 'blue'
-                    ? 'text-[#0284C7]'
-                    : advantageSide === 'red'
-                    ? 'text-[#E11D48]'
-                    : 'text-slate-600'
-                }`}
-              >
-                {advantageSide === 'blue' ? (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#0284C7] animate-pulse flex-shrink-0" />
-                    <span className="truncate">น้ำเงินได้เปรียบ {bluePercent}%</span>
-                  </>
-                ) : advantageSide === 'red' ? (
-                  <>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#E11D48] animate-pulse flex-shrink-0" />
-                    <span className="truncate">แดงได้เปรียบ {redPercent}%</span>
-                  </>
-                ) : (
-                  <span>≈ สูสีสมดุล 50%:50%</span>
-                )}
-              </div>
-              <div className="text-[8.5px] font-['Prompt'] font-semibold text-slate-400 leading-none mt-0.5">
-                {advantageSide === 'blue'
-                  ? `🔵 นำอยู่ +${percentDiff}%`
-                  : advantageSide === 'red'
-                  ? `🔴 นำอยู่ +${Math.abs(percentDiff)}%`
-                  : 'โอกาสชนะใกล้เคียงกัน'}
-              </div>
-            </div>
-
-            {/* Red Side */}
-            <div className="flex items-center gap-2 sm:gap-2.5 flex-1 justify-end flex-row-reverse min-w-0">
-              <span className="font-['Prompt'] font-bold text-[#E11D48] tracking-wider text-[11.5px] sm:text-[13px] truncate">
-                🔴 {redTeamName || 'RED SIDE'}
-              </span>
-              <div className="flex-1 h-2.5 bg-white border border-rose-200 rounded-full overflow-hidden shadow-2xs min-w-[30px]">
-                <div
-                  className="h-full bg-gradient-to-l from-[#e11d48] to-[#f43f5e] rounded-full transition-all duration-500 shadow-2xs"
-                  style={{ width: `${redPercent}%` }}
-                />
-              </div>
-              <span className="font-['Orbitron'] font-black text-[#E11D48] text-xs sm:text-[13px] min-w-[36px] text-right">
-                {redPercent}%
-              </span>
-            </div>
-          </div>
-
-          {/* Synergy & Counter Alerts */}
-          {(blueScore.synPairs.length > 0 ||
-            redScore.synPairs.length > 0 ||
-            blueScore.ctrAlerts.length > 0 ||
-            redScore.ctrAlerts.length > 0) && (
-            <div className="flex items-center gap-2 text-[10px] font-['Prompt'] font-semibold text-slate-600 overflow-x-auto no-scrollbar">
-              {[...blueScore.synPairs, ...redScore.synPairs].slice(0, 3).map((s, idx) => (
-                <span
-                  key={`syn-${idx}`}
-                  className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-300 text-emerald-800 whitespace-nowrap shadow-2xs"
-                >
-                  ⚡ Synergy: {s.pair} ({s.wr}% WR)
-                </span>
-              ))}
-              {[...blueScore.ctrAlerts, ...redScore.ctrAlerts].slice(0, 3).map((c, idx) => (
-                <span
-                  key={`ctr-${idx}`}
-                  className="px-2 py-0.5 rounded-md bg-rose-50 border border-rose-300 text-rose-800 whitespace-nowrap shadow-2xs"
-                >
-                  ⚔ Counter: {c.attacker} → {c.victim} ({c.victimWr}%)
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* 4. DRAFT PROGRESS BAR (15 Segments with High Contrast) */}
-      <div className="flex gap-1.5 px-4 py-2 bg-[#FFF8FB] border-b border-[#F3D5E2]">
+      <div className="flex gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 bg-[#FFF8FB] border-b border-[#F3D5E2]">
         {DRAFT_TURNS.map((t, idx) => {
           const isDone = draftTurnIdx > idx;
           const isCur = draftTurnIdx === idx && draftActive;
@@ -528,7 +427,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
             <div
               key={`seg-${idx}`}
               title={`Turn ${idx + 1}: ${t.team === 'blue' ? 'BLUE' : 'RED'} — ${t.label}`}
-              className={`h-2.5 rounded-sm flex-1 relative overflow-hidden transition-all duration-300 border ${
+              className={`h-2 sm:h-2.5 rounded-xs flex-1 relative overflow-hidden transition-all duration-300 border ${
                 isCur
                   ? 'bg-[#E91E63] border-[#D81B60] shadow-[0_0_10px_rgba(233,30,99,0.5)] ring-2 ring-[#E91E63]/40'
                   : isDone
@@ -575,7 +474,13 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2">
+          <div
+            className={`grid ${
+              compact
+                ? 'grid-cols-[repeat(auto-fill,minmax(54px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(60px,1fr))] gap-1.5'
+                : 'grid-cols-[repeat(auto-fill,minmax(56px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(64px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(68px,1fr))] gap-1.5 sm:gap-2'
+            }`}
+          >
             {filteredHeroes.map((hero) => {
               const isBanned = bannedHeroNames.has(hero.name);
               const isPicked = pickedHeroNames.has(hero.name);
@@ -767,6 +672,17 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
             })}
           </div>
         )}
+      </div>
+
+      {/* Crisp bottom frame footer bar — clearly delimiting arena boundary level with Blue Pick 5 */}
+      <div className="px-3 py-1 bg-[#FFF0F5] border-t-2 border-[#F3D5E2] flex items-center justify-between text-[9.5px] font-['Prompt'] text-slate-500 font-bold select-none flex-shrink-0">
+        <span className="flex items-center gap-1 text-slate-600">
+          <span>📜</span>
+          <span>เลื่อนดูฮีโร่ทั้งหมด ({filteredHeroes.length} ตัว)</span>
+        </span>
+        <span className="text-[#E91E63] font-semibold flex items-center gap-1">
+          <span>↕ เลื่อนขึ้น-ลง</span>
+        </span>
       </div>
     </div>
   );

@@ -69,9 +69,9 @@ export const TeamColumn: React.FC<TeamColumnProps> = ({
     teamName.trim().toUpperCase() !== 'BLUE SIDE' &&
     teamName.trim().toUpperCase() !== 'RED SIDE';
 
-  const containerWidthClass = compact
+  const containerWidthClass = className || (compact
     ? 'w-full min-w-0'
-    : className || 'w-[195px] md:w-[215px] lg:w-[240px] xl:w-[260px] flex-shrink-0';
+    : 'w-[195px] md:w-[215px] lg:w-[240px] xl:w-[260px] flex-shrink-0');
 
   return (
     <div

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useDraconmindDraft } from './hooks/useDraconmindDraft';
 import { usePlayers } from './hooks/usePlayers';
 import { useDraftHistory } from './hooks/useDraftHistory';
@@ -18,6 +18,9 @@ import { AppView } from './components/BrandBar';
 import { PreDraftModal } from './components/PreDraftModal';
 import { SaveDraftModal } from './components/SaveDraftModal';
 import { DraftTacticalRadar } from './components/DraftTacticalRadar';
+import { TacticalSplitPanel, TacticalTab } from './components/TacticalSplitPanel';
+import { ProCompsModal } from './components/ProCompsModal';
+import { RPL_2026_PRO_COMPS } from './data/proMetaComps';
 import { Toast } from './components/Toast';
 import { statsDataProvider } from './services/statsDataProvider';
 import { Hero } from './types/draft';
@@ -268,7 +271,8 @@ export default function App() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const isMobileScreen = windowWidth < 840;
+  // Small phone screen detection (< 680px). Tablets (>= 680px: iPads, Galaxy Tabs) get first-class responsive arena!
+  const isPhoneScreen = windowWidth < 680;
 
   // Scaled 3-column PC layout on mobile (Heroes in center, Blue left, Red right - scaled to fit screen)
   const arenaBaseWidth = 780;
@@ -277,25 +281,47 @@ export default function App() {
   const [mobileZoomMode, setMobileZoomMode] = useState<'fit' | 'zoom'>('fit');
 
   // Measure Blue Side column height so that Center Draft Arena strictly matches it
-  // and hero grid never overflows past Blue Pick 5
-  const blueColumnRef = useRef<HTMLDivElement>(null);
-  const [blueColumnHeight, setBlueColumnHeight] = useState<number | null>(null);
+  // and hero grid NEVER overflows past Blue Pick 5
+  const [blueColumnHeight, setBlueColumnHeight] = useState<number>(685);
+  const blueColumnObserverRef = useRef<ResizeObserver | null>(null);
 
-  useEffect(() => {
-    if (!blueColumnRef.current) return;
-    const updateHeight = () => {
-      if (blueColumnRef.current) {
-        const h = blueColumnRef.current.offsetHeight;
-        if (h > 0) {
+  const setBlueColumnRef = useCallback((node: HTMLDivElement | null) => {
+    if (blueColumnObserverRef.current) {
+      blueColumnObserverRef.current.disconnect();
+      blueColumnObserverRef.current = null;
+    }
+    if (node) {
+      const updateHeight = () => {
+        const h = node.offsetHeight;
+        if (h > 150) {
           setBlueColumnHeight(h);
         }
-      }
-    };
-    updateHeight();
-    const observer = new ResizeObserver(updateHeight);
-    observer.observe(blueColumnRef.current);
-    return () => observer.disconnect();
+      };
+      updateHeight();
+      const observer = new ResizeObserver(updateHeight);
+      observer.observe(node);
+      blueColumnObserverRef.current = observer;
+    }
   }, []);
+
+  // Tactical Radar active tab (controllable from top DraftHeader toolbar)
+  const [radarActiveTab, setRadarActiveTab] = useState<'recommendations' | 'synergy' | 'predictions'>('recommendations');
+  const [isProCompsOpen, setIsProCompsOpen] = useState<boolean>(false);
+
+  // Split Screen 3-Part Tactical Panel (2 parts Draft : 1 part Tactical Information)
+  // When active ('recommendations' | 'synergy' | 'predictions' | 'pro_comps'):
+  // Screen splits into 3 parts side-by-side!
+  // When null: Draft takes 100% full width.
+  const [activeTacticalTab, setActiveTacticalTab] = useState<TacticalTab | null>(null);
+
+  const handleToggleTacticalTab = (tab: TacticalTab) => {
+    setActiveTacticalTab((prev) => (prev === tab ? null : tab));
+  };
+
+  const handleSelectRadarTab = (tab: 'recommendations' | 'synergy' | 'predictions') => {
+    setRadarActiveTab(tab);
+    setActiveTacticalTab(tab);
+  };
 
   // Container ref to measure exact available width
   const arenaContainerRef = useRef<HTMLDivElement>(null);
@@ -343,7 +369,7 @@ export default function App() {
     });
     observer.observe(scaledArenaContentRef.current);
     return () => observer.disconnect();
-  }, [isMobileScreen]);
+  }, [isPhoneScreen]);
 
   const mobileScale = useMemo(() => {
     const available = Math.max(100, arenaContainerWidth);
@@ -740,6 +766,13 @@ export default function App() {
             selectedTeamCategory={selectedTeamCategory}
             onChangeTeamCategory={changeTeamCategory}
             playerCounts={playerCounts}
+            activeTacticalPanelTab={activeTacticalTab}
+            onToggleTacticalTab={handleToggleTacticalTab}
+            radarActiveTab={radarActiveTab}
+            onSelectRadarTab={handleSelectRadarTab}
+            isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
+            onOpenProComps={() => handleToggleTacticalTab('pro_comps')}
+            proCompsCount={RPL_2026_PRO_COMPS.length}
           />
 
           {/* Main Draft Area - Zero horizontal scroll on any device */}
@@ -747,8 +780,8 @@ export default function App() {
             ref={arenaContainerRef}
             className="w-full overflow-x-hidden pb-2 select-none"
           >
-            {isMobileScreen ? (
-              /* Mobile View: Exactly like PC (Blue Left | Heroes in Center | Red Right) auto-scaled to 100% screen width */
+            {isPhoneScreen ? (
+              /* Phone View (< 680px): Auto-scaled to 100% screen width */
               <div
                 className={`w-full ${mobileZoomMode === 'zoom' ? 'overflow-x-auto custom-scrollbar' : 'overflow-hidden'} flex flex-col items-center`}
                 style={{
@@ -766,7 +799,11 @@ export default function App() {
                 >
                   <main className="w-[780px] flex flex-row items-stretch gap-2 min-h-0">
                     {/* Left: Blue Side */}
-                    <div id="blue-team-column" className="w-[175px] flex-shrink-0">
+                    <div
+                      id="blue-team-column"
+                      ref={setBlueColumnRef}
+                      className="w-[175px] flex-shrink-0"
+                    >
                       <TeamColumn
                         side="blue"
                         compact={true}
@@ -786,8 +823,15 @@ export default function App() {
                       />
                     </div>
 
-                    {/* Center: Draft Center Arena (Heroes in center, just like PC!) */}
-                    <div id="center-draft-arena" className="flex-1 min-w-0">
+                    {/* Center: Draft Center Arena (Heroes in center, bounded to Blue Pick 5) */}
+                    <div
+                      id="center-draft-arena"
+                      className="flex-1 min-w-0 overflow-hidden flex flex-col"
+                      style={{
+                        height: `${blueColumnHeight}px`,
+                        maxHeight: `${blueColumnHeight}px`,
+                      }}
+                    >
                       <DraftCenter
                         draftActive={draftActive}
                         draftTurnIdx={draftTurnIdx}
@@ -823,7 +867,14 @@ export default function App() {
                     </div>
 
                     {/* Right: Red Side */}
-                    <div id="red-team-column" className="w-[175px] flex-shrink-0">
+                    <div
+                      id="red-team-column"
+                      className="w-[175px] flex-shrink-0"
+                      style={{
+                        height: `${blueColumnHeight}px`,
+                        maxHeight: `${blueColumnHeight}px`,
+                      }}
+                    >
                       <TeamColumn
                         side="red"
                         compact={true}
@@ -845,14 +896,162 @@ export default function App() {
                   </main>
                 </div>
               </div>
+            ) : activeTacticalTab ? (
+              /* Split Screen Mode: 3 Parts (2 Parts Draft [~67%], 1 Part Info [~33%]) — Spacious, Organized, Never Cramped */
+              <main className="w-full flex flex-row items-start gap-2 lg:gap-2.5 min-h-0 overflow-x-hidden">
+                {/* 2 PARTS: Draft Arena (Flexible, takes ~67% screen width) */}
+                <div className="flex-[2] min-w-0 flex flex-row items-start gap-1.5 sm:gap-2">
+                  {/* Left: Blue Side */}
+                  <div
+                    id="blue-team-column"
+                    ref={setBlueColumnRef}
+                    className="w-[130px] sm:w-[140px] md:w-[150px] lg:w-[170px] xl:w-[190px] flex-shrink-0"
+                  >
+                    <TeamColumn
+                      side="blue"
+                      compact={true}
+                      className="w-full h-full"
+                      teamName={blueTeamName}
+                      isUs={blueIsUs}
+                      bans={blueBans}
+                      picks={bluePicks}
+                      currentTurnSlot={currentTurnSlot}
+                      onSlotClick={(phase, index) => setManualTarget({ team: 'blue', phase, index })}
+                      onClearSlot={(phase, index) => clearSlot('blue', phase, index)}
+                      onChangePickPos={(index, pos) => changePickPos('blue', index, pos)}
+                      onInspectHero={handleInspectHero}
+                      inspectedHeroName={inspectedHeroName}
+                      players={players}
+                      onAssignPlayer={(slotIndex, player) => assignPlayerToPickSlot('blue', slotIndex, player)}
+                      teamCategory={selectedTeamCategory}
+                    />
+                  </div>
+
+                  {/* Center: Draft Center Arena — Strictly bounded to Blue Column height */}
+                  <div
+                    id="center-draft-arena"
+                    className="flex-1 flex flex-col min-w-0 overflow-hidden"
+                    style={{
+                      height: `${blueColumnHeight}px`,
+                      maxHeight: `${blueColumnHeight}px`,
+                    }}
+                  >
+                    <DraftCenter
+                      compact={true}
+                      draftActive={draftActive}
+                      draftTurnIdx={draftTurnIdx}
+                      draftTurnSel={draftTurnSel}
+                      isDraftComplete={isDraftComplete}
+                      currentTurnSlot={currentTurnSlot}
+                      blueTeamName={blueTeamName}
+                      redTeamName={redTeamName}
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      roleFilter={roleFilter}
+                      setRoleFilter={setRoleFilter}
+                      timerSec={timerSec}
+                      timerMax={timerMax}
+                      isTimerPaused={isTimerPaused}
+                      toggleTimerPause={toggleTimerPause}
+                      bannedHeroNames={bannedHeroNames}
+                      pickedHeroNames={pickedHeroNames}
+                      onSelectHero={handleSelectHero}
+                      blueScore={draftScore}
+                      redScore={redDraftScore}
+                      heroToPlayersMap={heroToPlayersMap}
+                      inspectedHeroName={inspectedHeroName}
+                      onInspectHero={handleInspectHero}
+                      isStatsOpen={isSidePanelOpen && sidePanelTab === 'stats'}
+                      onToggleStats={handleToggleStatsPanel}
+                      onOpenCoachPanel={handleToggleCoachPanel}
+                      selectedTeamCategory={selectedTeamCategory}
+                      onChangeTeamCategory={changeTeamCategory}
+                      bluePicks={bluePicks}
+                      redPicks={redPicks}
+                    />
+                  </div>
+
+                  {/* Right: Red Side */}
+                  <div
+                    id="red-team-column"
+                    className="w-[130px] sm:w-[140px] md:w-[150px] lg:w-[170px] xl:w-[190px] flex-shrink-0"
+                    style={{
+                      height: `${blueColumnHeight}px`,
+                      maxHeight: `${blueColumnHeight}px`,
+                    }}
+                  >
+                    <TeamColumn
+                      side="red"
+                      compact={true}
+                      className="w-full h-full"
+                      teamName={redTeamName}
+                      isUs={!blueIsUs}
+                      bans={redBans}
+                      picks={redPicks}
+                      currentTurnSlot={currentTurnSlot}
+                      onSlotClick={(phase, index) => setManualTarget({ team: 'red', phase, index })}
+                      onClearSlot={(phase, index) => clearSlot('red', phase, index)}
+                      onChangePickPos={(index, pos) => changePickPos('red', index, pos)}
+                      onInspectHero={handleInspectHero}
+                      inspectedHeroName={inspectedHeroName}
+                      players={players}
+                      onAssignPlayer={(slotIndex, player) => assignPlayerToPickSlot('red', slotIndex, player)}
+                      teamCategory={selectedTeamCategory}
+                    />
+                  </div>
+                </div>
+
+                {/* 1 PART: Tactical Information Panel (Proportional Sidebar Dock ~33% width) */}
+                <div
+                  id="tactical-split-panel-column"
+                  className="flex-1 min-w-[260px] max-w-[420px] flex-shrink-0 flex flex-col"
+                  style={{
+                    height: `${blueColumnHeight}px`,
+                    maxHeight: `${blueColumnHeight}px`,
+                  }}
+                >
+                  <TacticalSplitPanel
+                    activeTab={activeTacticalTab}
+                    onTabChange={setActiveTacticalTab}
+                    onClose={() => setActiveTacticalTab(null)}
+                    onExpandModal={() => setIsProCompsOpen(true)}
+                    blueBans={blueBans}
+                    redBans={redBans}
+                    bluePicks={bluePicks}
+                    redPicks={redPicks}
+                    bannedHeroNames={bannedHeroNames}
+                    pickedHeroNames={pickedHeroNames}
+                    onInspectHero={handleInspectHero}
+                    onPickHeroDirectly={(heroName) => {
+                      const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
+                      if (h) handleSelectHero(h);
+                    }}
+                    onBanHeroDirectly={(heroName) => {
+                      const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
+                      if (h) handleSelectHero(h);
+                    }}
+                    isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
+                    isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
+                    activeTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
+                    blueTeamName={blueTeamName}
+                    redTeamName={redTeamName}
+                    blueScore={draftScore}
+                    redScore={redDraftScore}
+                    players={players}
+                    heroToPlayersMap={heroToPlayersMap}
+                    inspectedHeroName={inspectedHeroName}
+                    height={blueColumnHeight}
+                  />
+                </div>
+              </main>
             ) : (
-              /* PC / Desktop View: 100% Fluid 3-Column Arena */
-              <main className="w-full flex flex-row items-start gap-2.5 lg:gap-3 min-h-0 overflow-x-hidden">
+              /* PC / Tablet View: 100% Fluid 3-Column Arena (when tactical panel is closed) */
+              <main className="w-full flex flex-row items-start gap-2 sm:gap-2.5 lg:gap-3 min-h-0 overflow-x-hidden">
                 {/* Left: Blue Side */}
                 <div
                   id="blue-team-column"
-                  ref={blueColumnRef}
-                  className="w-[195px] md:w-[215px] lg:w-[240px] xl:w-[260px] flex-shrink-0"
+                  ref={setBlueColumnRef}
+                  className="w-[160px] sm:w-[180px] md:w-[200px] lg:w-[230px] xl:w-[250px] flex-shrink-0"
                 >
                   <TeamColumn
                     side="blue"
@@ -875,12 +1074,11 @@ export default function App() {
                 {/* Center: Draft Center Arena — Strictly bounded to Blue Column height (no overflow past Blue Pick 5) */}
                 <div
                   id="center-draft-arena"
-                  className="flex-1 flex flex-col min-w-0"
-                  style={
-                    blueColumnHeight
-                      ? { height: `${blueColumnHeight}px`, maxHeight: `${blueColumnHeight}px` }
-                      : undefined
-                  }
+                  className="flex-1 flex flex-col min-w-0 overflow-hidden"
+                  style={{
+                    height: `${blueColumnHeight}px`,
+                    maxHeight: `${blueColumnHeight}px`,
+                  }}
                 >
                   <DraftCenter
                     draftActive={draftActive}
@@ -919,12 +1117,11 @@ export default function App() {
                 {/* Right: Red Side */}
                 <div
                   id="red-team-column"
-                  className="w-[195px] md:w-[215px] lg:w-[240px] xl:w-[260px] flex-shrink-0"
-                  style={
-                    blueColumnHeight
-                      ? { height: `${blueColumnHeight}px`, maxHeight: `${blueColumnHeight}px` }
-                      : undefined
-                  }
+                  className="w-[160px] sm:w-[180px] md:w-[200px] lg:w-[230px] xl:w-[250px] flex-shrink-0"
+                  style={{
+                    height: `${blueColumnHeight}px`,
+                    maxHeight: `${blueColumnHeight}px`,
+                  }}
                 >
                   <TeamColumn
                     side="red"
@@ -957,36 +1154,82 @@ export default function App() {
             )}
           </div>
 
-          {/* Real-time Draft Tactical Radar: Ban Intents, Pick Combos, Counter Recommendations */}
-          <div className="w-full mb-3 select-none">
-            <DraftTacticalRadar
-              blueBans={blueBans}
-              redBans={redBans}
-              bluePicks={bluePicks}
-              redPicks={redPicks}
-              bannedHeroNames={bannedHeroNames}
-              pickedHeroNames={pickedHeroNames}
-              onInspectHero={handleInspectHero}
-              onPickHeroDirectly={(heroName) => {
-                const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
-                if (h) handleSelectHero(h);
-              }}
-              isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
-              isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
-              activeTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
-              onBanHeroDirectly={(heroName) => {
-                const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
-                if (h) handleSelectHero(h);
-              }}
-              blueTeamName={blueTeamName}
-              redTeamName={redTeamName}
-              blueScore={draftScore}
-              redScore={redDraftScore}
-              players={players}
-              heroToPlayersMap={heroToPlayersMap}
-              inspectedHeroName={inspectedHeroName}
-            />
-          </div>
+          {/* Phone View: Render Tactical Panel below if activated on small phone */}
+          {isPhoneScreen && activeTacticalTab && (
+            <div className="w-full mb-3 px-1">
+              <TacticalSplitPanel
+                activeTab={activeTacticalTab}
+                onTabChange={setActiveTacticalTab}
+                onClose={() => setActiveTacticalTab(null)}
+                onExpandModal={() => setIsProCompsOpen(true)}
+                blueBans={blueBans}
+                redBans={redBans}
+                bluePicks={bluePicks}
+                redPicks={redPicks}
+                bannedHeroNames={bannedHeroNames}
+                pickedHeroNames={pickedHeroNames}
+                onInspectHero={handleInspectHero}
+                onPickHeroDirectly={(heroName) => {
+                  const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
+                  if (h) handleSelectHero(h);
+                }}
+                onBanHeroDirectly={(heroName) => {
+                  const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
+                  if (h) handleSelectHero(h);
+                }}
+                isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
+                isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
+                activeTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
+                blueTeamName={blueTeamName}
+                redTeamName={redTeamName}
+                blueScore={draftScore}
+                redScore={redDraftScore}
+                players={players}
+                heroToPlayersMap={heroToPlayersMap}
+                inspectedHeroName={inspectedHeroName}
+                height={540}
+              />
+            </div>
+          )}
+
+          {/* Real-time Draft Tactical Radar: Ban Intents, Pick Combos, Counter Recommendations (Only visible if split panel is not active) */}
+          {!activeTacticalTab && (
+            <div id="draft-tactical-radar-section" className="w-full mb-3 select-none">
+              <DraftTacticalRadar
+                blueBans={blueBans}
+                redBans={redBans}
+                bluePicks={bluePicks}
+                redPicks={redPicks}
+                bannedHeroNames={bannedHeroNames}
+                pickedHeroNames={pickedHeroNames}
+                onInspectHero={handleInspectHero}
+                onPickHeroDirectly={(heroName) => {
+                  const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
+                  if (h) handleSelectHero(h);
+                }}
+                isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
+                isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
+                activeTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
+                onBanHeroDirectly={(heroName) => {
+                  const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
+                  if (h) handleSelectHero(h);
+                }}
+                blueTeamName={blueTeamName}
+                redTeamName={redTeamName}
+                blueScore={draftScore}
+                redScore={redDraftScore}
+                players={players}
+                heroToPlayersMap={heroToPlayersMap}
+                inspectedHeroName={inspectedHeroName}
+                activeTab={radarActiveTab}
+                onTabChange={(tab) => {
+                  if (tab !== 'overview') {
+                    setRadarActiveTab(tab);
+                  }
+                }}
+              />
+            </div>
+          )}
 
           {/* Slide-out Coach Drawer overlay for screens < 1280px & mobile */}
           {isSidePanelOpen && (
@@ -1068,6 +1311,28 @@ export default function App() {
         bluePicks={bluePicks}
         redPicks={redPicks}
         onSave={handleSaveDraftRecord}
+      />
+
+      {/* RPL Pro Comps Modal */}
+      <ProCompsModal
+        isOpen={isProCompsOpen}
+        onClose={() => setIsProCompsOpen(false)}
+        bannedHeroNames={bannedHeroNames}
+        pickedHeroNames={pickedHeroNames}
+        bluePicks={bluePicks}
+        redPicks={redPicks}
+        activeTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
+        onInspectHero={handleInspectHero}
+        onPickHeroDirectly={(heroName) => {
+          const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
+          if (h) handleSelectHero(h);
+        }}
+        onBanHeroDirectly={(heroName) => {
+          const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
+          if (h) handleSelectHero(h);
+        }}
+        isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
+        isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
       />
 
       {/* 4. Mobile Floating Bottom Quick Action Dock (Compact, Ergonomic, Clean) */}
