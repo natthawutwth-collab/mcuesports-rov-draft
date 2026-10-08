@@ -274,6 +274,14 @@ export default function App() {
   // Small phone screen detection (< 680px). Tablets (>= 680px: iPads, Galaxy Tabs) get first-class responsive arena!
   const isPhoneScreen = windowWidth < 680;
 
+  // Tablet screen detection (680px to 1180px, including iPad portrait & landscape, Galaxy tabs)
+  const isTabletScreen =
+    (windowWidth >= 680 && windowWidth <= 1180) ||
+    (typeof navigator !== 'undefined' &&
+      navigator.maxTouchPoints > 1 &&
+      windowWidth <= 1200 &&
+      windowWidth >= 680);
+
   // Scaled 3-column PC layout on mobile (Heroes in center, Blue left, Red right - scaled to fit screen)
   const arenaBaseWidth = 780;
   const scaledArenaContentRef = useRef<HTMLDivElement>(null);
@@ -607,7 +615,7 @@ export default function App() {
   }, [inspectedHeroName, bluePicks, redPicks, currentTurn, currentTurnSlot]);
 
   return (
-    <div className="relative min-h-screen text-[#ffffff] flex flex-col p-2 sm:p-3.5 md:p-5 pb-20 md:pb-6 max-w-[1600px] mx-auto gap-2 sm:gap-3 w-full overflow-x-hidden">
+    <div className="relative min-h-screen text-[#ffffff] flex flex-col p-1.5 sm:p-2.5 md:p-3 lg:p-4 xl:p-5 pb-20 md:pb-6 max-w-[1600px] mx-auto gap-2 sm:gap-2.5 lg:gap-3 w-full overflow-x-hidden">
       {/* 1. Brand Bar with Draft / History / Players Tab Navigation */}
       <BrandBar
         status={brandStatus}
@@ -833,6 +841,7 @@ export default function App() {
                       }}
                     >
                       <DraftCenter
+                        isTablet={false}
                         draftActive={draftActive}
                         draftTurnIdx={draftTurnIdx}
                         draftTurnSel={draftTurnSel}
@@ -938,6 +947,7 @@ export default function App() {
                   >
                     <DraftCenter
                       compact={true}
+                      isTablet={isTabletScreen}
                       draftActive={draftActive}
                       draftTurnIdx={draftTurnIdx}
                       draftTurnSel={draftTurnSel}
@@ -1046,15 +1056,18 @@ export default function App() {
               </main>
             ) : (
               /* PC / Tablet View: 100% Fluid 3-Column Arena (when tactical panel is closed) */
-              <main className="w-full flex flex-row items-start gap-2 sm:gap-2.5 lg:gap-3 min-h-0 overflow-x-hidden">
-                {/* Left: Blue Side */}
+              <main className={`w-full flex flex-row items-start ${
+                isTabletScreen ? 'justify-center gap-2' : 'gap-2 lg:gap-3'
+              } min-h-0 overflow-x-hidden`}>
+                {/* Left: Blue Side (Full size, uncompressed) */}
                 <div
                   id="blue-team-column"
                   ref={setBlueColumnRef}
-                  className="w-[160px] sm:w-[180px] md:w-[200px] lg:w-[230px] xl:w-[250px] flex-shrink-0"
+                  className="w-[190px] sm:w-[205px] md:w-[220px] lg:w-[240px] xl:w-[260px] flex-shrink-0"
                 >
                   <TeamColumn
                     side="blue"
+                    className="w-full h-full"
                     teamName={blueTeamName}
                     isUs={blueIsUs}
                     bans={blueBans}
@@ -1074,13 +1087,16 @@ export default function App() {
                 {/* Center: Draft Center Arena — Strictly bounded to Blue Column height (no overflow past Blue Pick 5) */}
                 <div
                   id="center-draft-arena"
-                  className="flex-1 flex flex-col min-w-0 overflow-hidden"
+                  className={`flex-1 flex flex-col min-w-0 overflow-hidden ${
+                    isTabletScreen ? 'max-w-[450px] md:max-w-[490px]' : ''
+                  }`}
                   style={{
                     height: `${blueColumnHeight}px`,
                     maxHeight: `${blueColumnHeight}px`,
                   }}
                 >
                   <DraftCenter
+                    isTablet={isTabletScreen}
                     draftActive={draftActive}
                     draftTurnIdx={draftTurnIdx}
                     draftTurnSel={draftTurnSel}
@@ -1114,10 +1130,10 @@ export default function App() {
                   />
                 </div>
 
-                {/* Right: Red Side */}
+                {/* Right: Red Side (Full size, uncompressed) */}
                 <div
                   id="red-team-column"
-                  className="w-[160px] sm:w-[180px] md:w-[200px] lg:w-[230px] xl:w-[250px] flex-shrink-0"
+                  className="w-[190px] sm:w-[205px] md:w-[220px] lg:w-[240px] xl:w-[260px] flex-shrink-0"
                   style={{
                     height: `${blueColumnHeight}px`,
                     maxHeight: `${blueColumnHeight}px`,
@@ -1125,6 +1141,7 @@ export default function App() {
                 >
                   <TeamColumn
                     side="red"
+                    className="w-full h-full"
                     teamName={redTeamName}
                     isUs={!blueIsUs}
                     bans={redBans}

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Hero, PositionKey, TeamSide, SlotType } from '../types/draft';
 import { HeroPlayerBadge, TeamCategory } from '../types/player';
 import { DRAFT_TURNS } from '../data/draftSteps';
@@ -42,6 +42,7 @@ interface DraftCenterProps {
   bluePicks?: { hero: Hero | null }[];
   redPicks?: { hero: Hero | null }[];
   compact?: boolean;
+  isTablet?: boolean;
 }
 
 export type PlayerPoolFilter = 'all' | 'player_all' | 'signature' | 'comfortable';
@@ -87,8 +88,29 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
   bluePicks = [],
   redPicks = [],
   compact = false,
+  isTablet,
 }) => {
   const currentTurn = DRAFT_TURNS[draftTurnIdx];
+
+  // Tablet screen detection (680px - 1180px, including iPad portrait & landscape, Galaxy tabs)
+  const [internalIsTablet, setInternalIsTablet] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const w = window.innerWidth;
+    const isTouch = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1;
+    return (w >= 680 && w <= 1180) || (isTouch && w >= 680 && w <= 1200);
+  });
+
+  useEffect(() => {
+    const checkTablet = () => {
+      const w = window.innerWidth;
+      const isTouch = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1;
+      setInternalIsTablet((w >= 680 && w <= 1180) || (isTouch && w >= 680 && w <= 1200));
+    };
+    window.addEventListener('resize', checkTablet);
+    return () => window.removeEventListener('resize', checkTablet);
+  }, []);
+
+  const isTabletMode = isTablet !== undefined ? isTablet : internalIsTablet;
 
   // Player Hero Pool Filter state (Signature / Comfortable / All in Pool / All RoV)
   const [playerPoolFilter, setPlayerPoolFilter] = useState<PlayerPoolFilter>('all');
@@ -229,21 +251,27 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
   return (
     <div className="flex-1 min-w-0 w-full h-full min-h-0 flex flex-col bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-md overflow-hidden ring-1 ring-[#F3D5E2]/60">
       {/* 1. TOP BAR: Search Hero & Timer */}
-      <div className="flex items-center justify-between gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex-shrink-0">
+      <div className={`flex items-center justify-between gap-1 sm:gap-2 ${
+        isTabletMode ? 'px-2 sm:px-2.5 py-1' : 'px-2.5 sm:px-3 py-1 sm:py-1.5'
+      } bg-[#FFF0F5] border-b border-[#F3D5E2] flex-shrink-0`}>
         {/* Search Input */}
-        <div className="relative flex-1 min-w-[100px] max-w-[260px]">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+        <div className={`relative flex-1 ${
+          isTabletMode ? 'min-w-[100px] max-w-[200px]' : 'min-w-[100px] max-w-[260px]'
+        }`}>
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={isTabletMode ? 12 : 13} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="ค้นหา Hero..."
-            className="w-full bg-white border border-[#F3D5E2] text-[#1F2937] placeholder-slate-400 text-[10.5px] sm:text-[11px] font-['Prompt'] pl-7 pr-2 py-0.5 sm:py-1 rounded-lg outline-none focus:border-[#E91E63] focus:ring-1 focus:ring-[#E91E63]/30 transition-all shadow-2xs"
+            className={`w-full bg-white border border-[#F3D5E2] text-[#1F2937] placeholder-slate-400 ${
+              isTabletMode ? 'text-[11px] pl-7 pr-2 py-0.5 sm:py-1' : 'text-[11px] sm:text-[11.5px] pl-7 pr-2 py-0.5 sm:py-1'
+            } font-['Prompt'] rounded-lg outline-none focus:border-[#E91E63] focus:ring-1 focus:ring-[#E91E63]/30 transition-all shadow-2xs`}
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
             >
               ✕
             </button>
@@ -251,32 +279,46 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
         </div>
 
         {/* Turn Phase Badge */}
-        <div className="flex items-center gap-1.5">
-          <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white border border-[#F3D5E2] shadow-2xs">
-            <span className={`text-[8.5px] font-['Orbitron'] font-black px-1.5 py-0.2 rounded ${turnBadgeClass}`}>
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          <div className={`flex items-center gap-1.5 ${
+            isTabletMode ? 'px-2 py-0.5 sm:py-1' : 'px-2.5 py-1'
+          } rounded-lg bg-white border border-[#F3D5E2] shadow-2xs`}>
+            <span className={`${
+              isTabletMode ? 'text-[8.5px] px-1.5 py-0.2' : 'text-[9px] px-2 py-0.5'
+            } font-['Orbitron'] font-black rounded ${turnBadgeClass}`}>
               {turnBadgeText}
             </span>
-            <span className="font-['Prompt'] font-bold text-[9.5px] text-slate-700 truncate max-w-[90px] sm:max-w-[120px]">
+            <span className={`font-['Prompt'] font-bold ${
+              isTabletMode ? 'text-[9.5px] max-w-[90px] sm:max-w-[120px]' : 'text-[10px] max-w-[100px] sm:max-w-[130px]'
+            } text-slate-700 truncate`}>
               {activeTeamTitle}
             </span>
           </div>
 
           {/* Timer pill (active during draft) */}
           {draftActive && (
-            <div className="flex items-center gap-1.5 bg-white px-2 py-0.5 rounded-lg border border-[#F3D5E2] shadow-2xs flex-shrink-0">
+            <div className={`flex items-center gap-1.5 ${
+              isTabletMode ? 'px-2 py-0.5 sm:py-1' : 'px-2.5 py-1'
+            } bg-white rounded-lg border border-[#F3D5E2] shadow-2xs flex-shrink-0`}>
               <div className="flex flex-col items-end leading-none">
-                <span className="font-['Prompt'] text-[7px] font-bold tracking-wider text-slate-400 uppercase">
+                <span className={`font-['Prompt'] ${
+                  isTabletMode ? 'text-[7.5px]' : 'text-[8px]'
+                } font-bold tracking-wider text-slate-400 uppercase`}>
                   {currentTurn?.phase === 'pick' ? 'PICK' : 'BAN'}
                 </span>
                 <span
-                  className="font-['Orbitron'] font-black text-[11px] sm:text-[12px] leading-tight"
+                  className={`font-['Orbitron'] font-black ${
+                    isTabletMode ? 'text-[11.5px]' : 'text-[12px] sm:text-[13px]'
+                  } leading-tight`}
                   style={{ color: timerColor }}
                 >
                   {timerSec}
                 </span>
               </div>
 
-              <div className="relative w-[18px] h-[18px] flex items-center justify-center flex-shrink-0">
+              <div className={`relative ${
+                isTabletMode ? 'w-[18px] h-[18px]' : 'w-[20px] h-[20px]'
+              } flex items-center justify-center flex-shrink-0`}>
                 <svg className="w-full h-full -rotate-90" viewBox="0 0 48 48">
                   <circle
                     cx="24"
@@ -305,7 +347,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                   title={isTimerPaused ? 'ดำเนินการจับเวลาต่อ' : 'หยุดเวลาชั่วคราว'}
                   className="absolute inset-0 flex items-center justify-center text-slate-700 hover:text-[#E91E63] transition-colors cursor-pointer"
                 >
-                  {isTimerPaused ? <Play size={6} className="fill-current ml-0.5" /> : <Pause size={6} />}
+                  {isTimerPaused ? <Play size={isTabletMode ? 6 : 7} className="fill-current ml-0.5" /> : <Pause size={isTabletMode ? 6 : 7} />}
                 </button>
               </div>
             </div>
@@ -314,15 +356,19 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
       </div>
 
       {/* 2. ROLE FILTER BUTTONS — Streamlined Segmented Control */}
-      <div className="flex items-center justify-between gap-1 px-2 sm:px-2.5 py-1 bg-[#FFF8FB] border-b border-[#F3D5E2] overflow-x-auto no-scrollbar flex-shrink-0">
-        <div className="flex items-center gap-0.5 sm:gap-1 flex-nowrap flex-shrink-0">
+      <div className={`flex items-center justify-between gap-1 ${
+        isTabletMode ? 'px-2 py-1' : 'px-2 sm:px-2.5 py-1'
+      } bg-[#FFF8FB] border-b border-[#F3D5E2] overflow-x-auto no-scrollbar flex-shrink-0`}>
+        <div className="flex items-center gap-1 flex-nowrap flex-shrink-0">
           {ROLES.map((r) => {
             const isActive = roleFilter === r.key;
             return (
               <button
                 key={r.key}
                 onClick={() => setRoleFilter(r.key)}
-                className={`font-['Prompt'] text-[9px] sm:text-[10px] font-bold tracking-wider px-1.5 sm:px-2 py-0.5 rounded-md border transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
+                className={`font-['Prompt'] ${
+                  isTabletMode ? 'text-[9.5px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 sm:py-1' : 'text-[9.5px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 sm:py-1'
+                } font-bold tracking-wider rounded-md border transition-all cursor-pointer whitespace-nowrap shadow-2xs ${
                   isActive ? r.activeClass : `border-[#F3D5E2] bg-white ${r.colorClass}`
                 }`}
               >
@@ -333,16 +379,22 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
         </div>
 
         <div className="flex items-center gap-1 pl-1 flex-shrink-0 ml-auto">
-          <span className="text-[8.5px] sm:text-[9.5px] font-['Prompt'] font-bold text-slate-500 whitespace-nowrap px-1.5 py-0.5 rounded-md bg-white border border-[#F3D5E2] shadow-2xs flex-shrink-0">
+          <span className={`${
+            isTabletMode ? 'text-[8.5px] sm:text-[9px] px-1.5 py-0.5' : 'text-[8.5px] sm:text-[9.5px] px-1.5 py-0.5'
+          } font-['Prompt'] font-bold text-slate-500 whitespace-nowrap rounded-md bg-white border border-[#F3D5E2] shadow-2xs flex-shrink-0`}>
             {filteredHeroes.length} HEROES
           </span>
         </div>
       </div>
 
       {/* 2.5 PLAYER HERO POOL FILTER BAR (Clean, Single Line, No-Wrap) */}
-      <div className="flex items-center justify-between gap-1.5 px-2.5 py-1 bg-[#FFF0F5]/80 border-b border-[#F3D5E2] overflow-x-auto no-scrollbar flex-shrink-0">
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar flex-nowrap py-0.5">
-          <span className="text-[9px] font-['Prompt'] font-bold text-[#E91E63] uppercase whitespace-nowrap flex items-center gap-0.5 mr-0.5 flex-shrink-0">
+      <div className={`flex items-center justify-between gap-1 ${
+        isTabletMode ? 'px-2 py-1' : 'px-2.5 py-1'
+      } bg-[#FFF0F5]/80 border-b border-[#F3D5E2] overflow-x-auto no-scrollbar flex-shrink-0`}>
+        <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar flex-nowrap py-0.5">
+          <span className={`${
+            isTabletMode ? 'text-[9px]' : 'text-[9.5px]'
+          } font-['Prompt'] font-bold text-[#E91E63] uppercase whitespace-nowrap flex items-center gap-0.5 mr-0.5 flex-shrink-0`}>
             <span>👤</span>
             <span>พูล:</span>
           </span>
@@ -351,7 +403,9 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
           <button
             type="button"
             onClick={() => setPlayerPoolFilter('all')}
-            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[9.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-0.5 flex-shrink-0 shadow-2xs ${
+            className={`${
+              isTabletMode ? 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[9.5px]' : 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[9.5px]'
+            } rounded-md font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-0.5 flex-shrink-0 shadow-2xs ${
               playerPoolFilter === 'all'
                 ? 'bg-slate-800 border-slate-800 text-white shadow-xs'
                 : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -364,7 +418,9 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
           <button
             type="button"
             onClick={() => setPlayerPoolFilter('player_all')}
-            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[9.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-0.5 flex-shrink-0 shadow-2xs ${
+            className={`${
+              isTabletMode ? 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[9.5px]' : 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[9.5px]'
+            } rounded-md font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-0.5 flex-shrink-0 shadow-2xs ${
               playerPoolFilter === 'player_all'
                 ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs ring-1 ring-[#E91E63]/40'
                 : 'bg-white border-[#F3D5E2] text-slate-700 hover:border-[#E91E63] hover:text-[#E91E63]'
@@ -378,7 +434,9 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
           <button
             type="button"
             onClick={() => setPlayerPoolFilter('signature')}
-            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[9.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-0.5 flex-shrink-0 shadow-2xs ${
+            className={`${
+              isTabletMode ? 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[9.5px]' : 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[9.5px]'
+            } rounded-md font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-0.5 flex-shrink-0 shadow-2xs ${
               playerPoolFilter === 'signature'
                 ? 'bg-[#D97706] border-[#B45309] text-white shadow-xs ring-1 ring-amber-400'
                 : 'bg-[#FFFBEB] border-[#FDE68A] text-[#B45309] hover:bg-[#FEF3C7]'
@@ -392,7 +450,9 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
           <button
             type="button"
             onClick={() => setPlayerPoolFilter('comfortable')}
-            className={`px-1.5 sm:px-2 py-0.5 rounded-md text-[9px] sm:text-[9.5px] font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-0.5 flex-shrink-0 shadow-2xs ${
+            className={`${
+              isTabletMode ? 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[9.5px]' : 'px-1.5 sm:px-2 py-0.5 sm:py-1 text-[9px] sm:text-[9.5px]'
+            } rounded-md font-['Prompt'] font-bold tracking-wide transition-all cursor-pointer border whitespace-nowrap flex items-center gap-0.5 flex-shrink-0 shadow-2xs ${
               playerPoolFilter === 'comfortable'
                 ? 'bg-[#0284C7] border-[#0369A1] text-white shadow-xs ring-1 ring-sky-400'
                 : 'bg-[#F0F9FF] border-[#BAE6FD] text-[#0369A1] hover:bg-[#E0F2FE]'
@@ -408,7 +468,9 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
           <button
             type="button"
             onClick={() => setPlayerPoolFilter('all')}
-            className="text-[9px] font-['Prompt'] font-bold text-slate-500 hover:text-red-500 flex items-center gap-0.5 cursor-pointer ml-auto flex-shrink-0 whitespace-nowrap"
+            className={`font-['Prompt'] font-bold text-slate-500 hover:text-red-500 flex items-center gap-0.5 cursor-pointer ml-auto flex-shrink-0 whitespace-nowrap ${
+              isTabletMode ? 'text-[9px]' : 'text-[9.5px]'
+            }`}
           >
             <span>✕ ล้าง</span>
           </button>
@@ -416,7 +478,9 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
       </div>
 
       {/* 4. DRAFT PROGRESS BAR (15 Segments with High Contrast) */}
-      <div className="flex gap-0.5 sm:gap-1 px-2 sm:px-3 py-1 bg-[#FFF8FB] border-b border-[#F3D5E2]">
+      <div className={`flex gap-0.5 ${
+        isTabletMode ? 'px-2 py-0.5' : 'px-2 sm:px-3 py-1'
+      } bg-[#FFF8FB] border-b border-[#F3D5E2]`}>
         {DRAFT_TURNS.map((t, idx) => {
           const isDone = draftTurnIdx > idx;
           const isCur = draftTurnIdx === idx && draftActive;
@@ -427,7 +491,9 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
             <div
               key={`seg-${idx}`}
               title={`Turn ${idx + 1}: ${t.team === 'blue' ? 'BLUE' : 'RED'} — ${t.label}`}
-              className={`h-2 sm:h-2.5 rounded-xs flex-1 relative overflow-hidden transition-all duration-300 border ${
+              className={`${
+                isTabletMode ? 'h-2' : 'h-2 sm:h-2.5'
+              } rounded-xs flex-1 relative overflow-hidden transition-all duration-300 border ${
                 isCur
                   ? 'bg-[#E91E63] border-[#D81B60] shadow-[0_0_10px_rgba(233,30,99,0.5)] ring-2 ring-[#E91E63]/40'
                   : isDone
@@ -448,7 +514,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
       </div>
 
       {/* 5. HERO GRID — Strictly bounded within arena height, no overflow past Blue Pick 5 */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-2 sm:p-2.5 custom-scrollbar bg-[#FFF8FB]/30">
+      <div className={`flex-1 min-h-0 overflow-y-auto ${isTabletMode ? 'p-1.5' : 'p-2 sm:p-2.5'} custom-scrollbar bg-[#FFF8FB]/30`}>
         {filteredHeroes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-48 text-slate-500 font-['Prompt'] text-sm px-4 text-center">
             <span>ไม่พบฮีโร่ที่ตรงกับเงื่อนไข</span>
@@ -476,7 +542,11 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
         ) : (
           <div
             className={`grid ${
-              compact
+              isTabletMode
+                ? compact
+                  ? 'grid-cols-4 gap-1 sm:gap-1.5'
+                  : 'grid-cols-6 gap-1 sm:gap-1.5'
+                : compact
                 ? 'grid-cols-[repeat(auto-fill,minmax(54px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(60px,1fr))] gap-1.5'
                 : 'grid-cols-[repeat(auto-fill,minmax(56px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(64px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(68px,1fr))] gap-1.5 sm:gap-2'
             }`}
@@ -507,7 +577,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
               return (
                 <div
                   key={hero.id}
-                  className="relative group/card flex flex-col"
+                  className="relative group/card flex flex-col min-w-0"
                 >
                   <div
                     onClick={() => {
@@ -515,7 +585,9 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                         onSelectHero(hero);
                       }
                     }}
-                    className={`w-full relative flex flex-col items-center rounded-xl overflow-hidden border-2 p-1.5 transition-all select-none text-left ${
+                    className={`w-full relative flex flex-col items-center rounded-lg sm:rounded-xl overflow-hidden border ${
+                      isTabletMode ? 'p-1 border' : 'p-1.5 border-2'
+                    } transition-all select-none text-left ${
                       isInspected
                         ? 'border-[#E91E63] ring-2 ring-[#E91E63] shadow-[0_0_14px_rgba(233,30,99,0.3)] bg-[#FCE4EC]/50 scale-102'
                         : isBanned
@@ -526,15 +598,21 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                     }`}
                   >
                     {/* Position Tag */}
-                    <div className="absolute top-1.5 left-1.5 z-10 text-[8.5px] font-['Barlow_Condensed'] font-black px-1.5 py-0.2 rounded bg-white/95 text-slate-800 tracking-wider border border-slate-300 uppercase shadow-2xs pointer-events-none">
+                    <div className={`absolute top-0.5 left-0.5 z-10 ${
+                      isTabletMode ? 'text-[8px] px-1 py-0.2' : 'text-[8.5px] px-1.5 py-0.2'
+                    } font-['Barlow_Condensed'] font-black rounded bg-white/95 text-slate-800 tracking-wider border border-slate-300 uppercase shadow-2xs pointer-events-none`}>
                       {hero.primaryPos}
                     </div>
 
                     {/* Role Color Dot */}
-                    <div className={`absolute top-2 right-2 z-10 w-2.5 h-2.5 rounded-full ${posColor} ring-1 ring-white shadow-2xs pointer-events-none`} />
+                    <div className={`absolute ${
+                      isTabletMode ? 'top-1 right-1 w-2 sm:w-2.5 h-2 sm:h-2.5' : 'top-2 right-2 w-2.5 h-2.5'
+                    } z-10 rounded-full ${posColor} ring-1 ring-white shadow-2xs pointer-events-none`} />
 
                     {/* Hero Portrait */}
-                    <div className="relative w-full aspect-square rounded-lg overflow-hidden bg-slate-100 mb-1 border border-slate-200">
+                    <div className={`relative w-full aspect-square rounded-md sm:rounded-lg overflow-hidden bg-slate-100 ${
+                      isTabletMode ? 'mb-0.5' : 'mb-0.5 sm:mb-1'
+                    } border border-slate-200`}>
                       <img
                         src={hero.avatarUrl || getHeroImageUrl(hero.name)}
                         alt={hero.name}
@@ -545,7 +623,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                         }}
                       />
 
-                      {/* Quick Inspect Button (Compact, doesn't block character artwork) */}
+                      {/* Quick Inspect Button (Accessible size on tablets) */}
                       <button
                         type="button"
                         onClick={(e) => {
@@ -554,64 +632,78 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                           if (onInspectHero) onInspectHero(hero.name);
                         }}
                         title={`ดูสถิติและคู่ต่อสู้ ${hero.name}`}
-                        className="absolute bottom-0.5 right-0.5 z-30 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded bg-white/90 hover:bg-[#0284c7] text-[#0284c7] hover:text-white flex items-center justify-center border border-slate-300/80 transition-all shadow-2xs cursor-pointer active:scale-90"
+                        className={`absolute bottom-0.5 right-0.5 z-30 ${
+                          isTabletMode ? 'w-3.5 h-3.5 sm:w-4 sm:h-4' : 'w-3.5 h-3.5 sm:w-4 sm:h-4'
+                        } rounded bg-white/90 hover:bg-[#0284c7] text-[#0284c7] hover:text-white flex items-center justify-center border border-slate-300/80 transition-all shadow-2xs cursor-pointer active:scale-90`}
                       >
-                        <BarChart2 size={9} strokeWidth={2.5} />
+                        <BarChart2 size={isTabletMode ? 8.5 : 9} strokeWidth={2.5} />
                       </button>
 
                       {/* Banned Overlay */}
                       {isBanned && (
                         <div className="absolute inset-0 bg-rose-950/80 flex flex-col items-center justify-center text-white z-20 pointer-events-none">
-                          <Ban size={20} strokeWidth={2.5} className="text-rose-200" />
-                          <span className="text-[8px] font-['Orbitron'] font-black mt-0.5 tracking-wider text-rose-100">BANNED</span>
+                          <Ban size={isTabletMode ? 16 : 20} strokeWidth={2.5} className="text-rose-200" />
+                          <span className={`${
+                            isTabletMode ? 'text-[7.5px] sm:text-[8px]' : 'text-[7px] sm:text-[8px]'
+                          } font-['Orbitron'] font-black mt-0.5 tracking-wider text-rose-100`}>BANNED</span>
                         </div>
                       )}
 
                       {/* Picked Overlay */}
                       {isPicked && (
                         <div className="absolute inset-0 bg-slate-900/75 flex flex-col items-center justify-center text-emerald-300 z-20 pointer-events-none">
-                          <Check size={20} strokeWidth={2.5} className="text-emerald-300" />
-                          <span className="text-[8px] font-['Orbitron'] font-black mt-0.5 tracking-wider text-emerald-200">PICKED</span>
+                          <Check size={isTabletMode ? 16 : 20} strokeWidth={2.5} className="text-emerald-300" />
+                          <span className={`${
+                            isTabletMode ? 'text-[7.5px] sm:text-[8px]' : 'text-[7px] sm:text-[8px]'
+                          } font-['Orbitron'] font-black mt-0.5 tracking-wider text-emerald-200`}>PICKED</span>
                         </div>
                       )}
                     </div>
 
                     {/* Hero Name */}
-                    <div className="w-full truncate text-center font-['Prompt'] font-bold text-[12px] text-[#1F2937] group-hover/card:text-[#E91E63] transition-colors mt-0.5">
+                    <div className={`w-full truncate text-center font-['Prompt'] font-bold ${
+                      isTabletMode ? 'text-[10px] sm:text-[11px]' : 'text-[12px]'
+                    } text-[#1F2937] group-hover/card:text-[#E91E63] transition-colors mt-0.5 leading-tight`}>
                       {hero.name}
                     </div>
-                    <div className="w-full truncate text-center text-[10px] font-['Prompt'] text-slate-500">
+                    <div className={`w-full truncate text-center ${
+                      isTabletMode ? 'text-[8.5px] sm:text-[9px]' : 'text-[10px]'
+                    } font-['Prompt'] text-slate-500 leading-tight`}>
                       {hero.nameTh}
                     </div>
 
                     {/* PLAYER HERO POOL BADGES (⭐ Gold / ★ Silver) */}
                     {playerBadges.length > 0 && (
-                      <div className="w-full flex flex-col gap-1 mt-1 pt-1 border-t border-[#F3D5E2]">
+                      <div className="w-full flex flex-col gap-0.5 mt-0.5 pt-0.5 border-t border-[#F3D5E2] min-w-0">
                         {playerBadges.slice(0, 2).map((b) => {
                           const isSig = b.tier === 'signature';
                           return (
                             <div
                               key={b.playerId}
-                              className={`w-full flex items-center justify-between px-1.5 py-0.5 rounded text-[9.5px] font-['Prompt'] font-bold leading-tight truncate transition-colors ${
+                              className={`w-full flex items-center justify-between px-1 py-0.2 sm:py-0.5 rounded ${
+                                isTabletMode ? 'text-[8px] sm:text-[8.5px]' : 'text-[9.5px]'
+                              } font-['Prompt'] font-bold leading-tight truncate transition-colors min-w-0 ${
                                 isSig
                                   ? 'bg-[#FEF3C7] border border-[#F59E0B] text-[#B45309] shadow-2xs'
                                   : 'bg-slate-100 border border-slate-300 text-slate-700'
                               }`}
                             >
-                              <span className="truncate flex items-center gap-1">
+                              <span className="truncate flex items-center gap-0.5 min-w-0">
                                 <span className={isSig ? 'text-[#F59E0B]' : 'text-slate-400'}>
                                   {isSig ? '⭐' : '★'}
                                 </span>
                                 <span className="truncate">{b.playerNickname}</span>
                               </span>
-                              <span className="text-[8px] font-bold opacity-80 uppercase ml-0.5">
+                              <span className="text-[7px] sm:text-[7.5px] font-bold opacity-80 uppercase ml-0.5 flex-shrink-0">
                                 {b.position}
                               </span>
                             </div>
                           );
                         })}
                         {playerBadges.length > 2 && (
-                          <div className="text-[8.5px] text-center text-slate-500 font-['Prompt'] font-bold leading-tight">
+                          <div className={`${
+                            isTabletMode ? 'text-[7.5px] sm:text-[8px]' : 'text-[8.5px]'
+                          } text-center text-slate-500 font-['Prompt'] font-bold leading-tight`}>
                             +{playerBadges.length - 2} คนในทีม
                           </div>
                         )}
@@ -675,7 +767,9 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
       </div>
 
       {/* Crisp bottom frame footer bar — clearly delimiting arena boundary level with Blue Pick 5 */}
-      <div className="px-3 py-1 bg-[#FFF0F5] border-t-2 border-[#F3D5E2] flex items-center justify-between text-[9.5px] font-['Prompt'] text-slate-500 font-bold select-none flex-shrink-0">
+      <div className={`${
+        isTabletMode ? 'px-2.5 py-1 text-[9px] sm:text-[9.5px]' : 'px-3 py-1 text-[9.5px]'
+      } bg-[#FFF0F5] border-t border-[#F3D5E2] flex items-center justify-between font-['Prompt'] text-slate-500 font-bold select-none flex-shrink-0`}>
         <span className="flex items-center gap-1 text-slate-600">
           <span>📜</span>
           <span>เลื่อนดูฮีโร่ทั้งหมด ({filteredHeroes.length} ตัว)</span>

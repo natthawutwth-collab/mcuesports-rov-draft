@@ -18,6 +18,8 @@ import {
   getBlueSideRecommendedBans,
   getRedSideRecommendedBans,
   BanRecommendationItem,
+  LIQUIPEDIA_RPL_2026_URL,
+  getMissingRoles,
 } from '../services/banRecommendationService';
 import {
   X,
@@ -225,6 +227,9 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
   const redSideBans = useMemo(() => {
     return getRedSideRecommendedBans(bannedHeroNames, pickedHeroNames, redPickNames, bluePickNames, 10);
   }, [bannedHeroNames, pickedHeroNames, redPickNames, bluePickNames]);
+
+  const blueMissingRoles = useMemo(() => getMissingRoles(bluePickNames), [bluePickNames]);
+  const redMissingRoles = useMemo(() => getMissingRoles(redPickNames), [redPickNames]);
 
   const currentBanList = useMemo(() => {
     if (banCategoryTab === 'pro_league') return proLeagueBans;
@@ -470,40 +475,101 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
 
             {/* Sub-Filters */}
             {recommendationMode === 'bans' ? (
-              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5">
-                <button
-                  type="button"
-                  onClick={() => setBanCategoryTab('pro_league')}
-                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap cursor-pointer transition-colors border ${
-                    banCategoryTab === 'pro_league'
-                      ? 'bg-amber-500 border-amber-500 text-white'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
-                >
-                  🔥 โปรลีกแบนบ่อย ({proLeagueBans.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBanCategoryTab('blue')}
-                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap cursor-pointer transition-colors border ${
-                    banCategoryTab === 'blue'
-                      ? 'bg-sky-600 border-sky-600 text-white'
-                      : 'bg-white border-slate-200 text-sky-800 hover:bg-sky-50'
-                  }`}
-                >
-                  🔵 แบนฝั่ง Blue ({blueSideBans.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBanCategoryTab('red')}
-                  className={`px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap cursor-pointer transition-colors border ${
-                    banCategoryTab === 'red'
-                      ? 'bg-rose-600 border-rose-600 text-white'
-                      : 'bg-white border-slate-200 text-rose-800 hover:bg-rose-50'
-                  }`}
-                >
-                  🔴 แบนฝั่ง Red ({redSideBans.length})
-                </button>
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setBanCategoryTab('pro_league')}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap cursor-pointer transition-colors border ${
+                      banCategoryTab === 'pro_league'
+                        ? 'bg-amber-500 border-amber-500 text-white'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    🔥 โปรลีกแบนบ่อย ({proLeagueBans.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBanCategoryTab('blue')}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap cursor-pointer transition-colors border ${
+                      banCategoryTab === 'blue'
+                        ? 'bg-sky-600 border-sky-600 text-white'
+                        : 'bg-white border-slate-200 text-sky-800 hover:bg-sky-50'
+                    }`}
+                  >
+                    🔵 แบนฝั่ง Blue ({blueSideBans.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBanCategoryTab('red')}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap cursor-pointer transition-colors border ${
+                      banCategoryTab === 'red'
+                        ? 'bg-rose-600 border-rose-600 text-white'
+                        : 'bg-white border-slate-200 text-rose-800 hover:bg-rose-50'
+                    }`}
+                  >
+                    🔴 แบนฝั่ง Red ({redSideBans.length})
+                  </button>
+                </div>
+
+                {/* Live Draft Intelligence Box (Analysis of Opponent & Our Draft from Liquipedia) */}
+                <div className="p-2 sm:p-2.5 rounded-xl border bg-gradient-to-br from-white to-[#FFF0F5]/60 flex flex-col gap-1.5 shadow-2xs">
+                  <div className="flex items-center justify-between gap-1 text-[10px] font-['Prompt'] font-bold border-b border-[#F3D5E2] pb-1">
+                    <div className="flex items-center gap-1 text-slate-800">
+                      <span>🎯</span>
+                      <span>
+                        วิเคราะห์ดราฟต์สองฝั่ง ({banCategoryTab === 'blue' ? 'มุมมอง Blue Side' : banCategoryTab === 'red' ? 'มุมมอง Red Side' : 'ภาพรวมโปรลีก'})
+                      </span>
+                    </div>
+                    <a
+                      href={LIQUIPEDIA_RPL_2026_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[8.5px] sm:text-[9px] text-[#0284C7] hover:underline flex items-center gap-0.5 font-bold bg-sky-50 px-1.5 py-0.2 rounded border border-sky-200"
+                      title="ดูสถิติต้นทางจาก Liquipedia RoV Pro League 2026 Summer"
+                    >
+                      <span>Liquipedia Data</span>
+                      <ArrowUpRight size={10} />
+                    </a>
+                  </div>
+
+                  {banCategoryTab !== 'pro_league' ? (
+                    <div className="grid grid-cols-2 gap-1.5 text-[9.5px] font-['Prompt']">
+                      {/* ฝั่งเรา */}
+                      <div className="p-1.5 rounded-lg bg-sky-50/70 border border-sky-100 flex flex-col gap-0.5">
+                        <span className="font-bold text-sky-900 flex items-center gap-1">
+                          <span>{banCategoryTab === 'blue' ? '🔵 ดราฟต์ Blue (ฝั่งเรา)' : '🔴 ดราฟต์ Red (ฝั่งเรา)'}</span>
+                        </span>
+                        <span className="text-slate-600 truncate font-medium">
+                          {(banCategoryTab === 'blue' ? bluePickNames : redPickNames).length > 0
+                            ? (banCategoryTab === 'blue' ? bluePickNames : redPickNames).join(', ')
+                            : 'ยังไม่มีตัวเลือก (Phase 1)'}
+                        </span>
+                      </div>
+
+                      {/* ฝั่งตรงข้าม */}
+                      <div className="p-1.5 rounded-lg bg-rose-50/70 border border-rose-100 flex flex-col gap-0.5">
+                        <span className="font-bold text-rose-900 flex items-center gap-1">
+                          <span>{banCategoryTab === 'blue' ? '🔴 ดราฟต์ Red (คู่แข่ง)' : '🔵 ดราฟต์ Blue (คู่แข่ง)'}</span>
+                        </span>
+                        <span className="text-slate-600 truncate font-medium">
+                          {(banCategoryTab === 'blue' ? redPickNames : bluePickNames).length > 0
+                            ? (banCategoryTab === 'blue' ? redPickNames : bluePickNames).join(', ')
+                            : 'ยังไม่มีตัวเลือก (Phase 1)'}
+                        </span>
+                        {(banCategoryTab === 'blue' ? redMissingRoles : blueMissingRoles).length < 5 && (
+                          <span className="text-[8.5px] text-rose-700 font-bold truncate">
+                            ⚠️ คู่แข่งขาด: {(banCategoryTab === 'blue' ? redMissingRoles : blueMissingRoles).map(r => r.toUpperCase()).join(', ')}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[9px] text-slate-600 font-['Prompt']">
+                      อ้างอิงสถิติการแบนรวม 291 เกมทางการจาก Liquipedia RPL 2026 Summer เพื่อตัดตัวอันตรายสูงสุดของเมต้า
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5">
@@ -537,7 +603,7 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
                 {currentBanList.map((item) => (
                   <div
                     key={item.hero.id}
-                    className="p-2 bg-white rounded-xl border border-rose-200 hover:border-rose-400 shadow-2xs flex flex-col gap-1.5 transition-all"
+                    className="p-2 sm:p-2.5 bg-white rounded-xl border border-rose-200 hover:border-rose-400 shadow-2xs flex flex-col gap-1.5 transition-all"
                   >
                     <div className="flex items-center justify-between gap-1.5">
                       <div className="flex items-center gap-2 min-w-0">
@@ -576,7 +642,7 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
                               if (onBanHeroDirectly) onBanHeroDirectly(item.hero.name);
                               else if (onPickHeroDirectly) onPickHeroDirectly(item.hero.name);
                             }}
-                            className="px-2 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold cursor-pointer transition-colors shadow-2xs"
+                            className="px-2 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold cursor-pointer transition-colors shadow-2xs active:scale-95"
                           >
                             แบน
                           </button>
@@ -584,15 +650,49 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[9.5px] text-slate-500 bg-rose-50/50 px-2 py-0.5 rounded-md border border-rose-100">
-                      <span>แบน {item.stats.banRate}% ({item.stats.bans} เกม)</span>
-                      <span>WR {item.stats.winRate}%</span>
-                      <span>P&B {item.stats.presenceRate}%</span>
+                    {/* Tactical Category Badge */}
+                    {item.categoryLabel && (
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <span
+                          className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded-md ${
+                            item.categoryType === 'target_missing_role'
+                              ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                              : item.categoryType === 'protect_our_pick'
+                              ? 'bg-sky-100 text-sky-900 border border-sky-300'
+                              : item.categoryType === 'deny_opp_combo'
+                              ? 'bg-purple-100 text-purple-900 border border-purple-300'
+                              : item.categoryType === 'side_advantage'
+                              ? 'bg-rose-100 text-rose-900 border border-rose-300'
+                              : 'bg-slate-100 text-slate-800 border border-slate-200'
+                          }`}
+                        >
+                          {item.categoryLabel}
+                        </span>
+                        {item.countersFriendlyPick && (
+                          <span className="text-[8px] bg-rose-50 text-rose-700 px-1 py-0.2 rounded border border-rose-200 font-semibold truncate">
+                            แก้ทาง {item.countersFriendlyPick.ourHero}
+                          </span>
+                        )}
+                        {item.deniesOppCombo && (
+                          <span className="text-[8px] bg-purple-50 text-purple-700 px-1 py-0.2 rounded border border-purple-200 font-semibold truncate">
+                            คู่หู {item.deniesOppCombo.oppHero}
+                          </span>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Detailed Analysis based on Opponent & Our Draft */}
+                    <div className="text-[9.5px] text-slate-700 bg-slate-50/80 p-1.5 rounded-lg border border-slate-200/70 leading-relaxed font-['Prompt']">
+                      {item.detailedAnalysis || item.reason}
                     </div>
 
-                    <p className="text-[9.5px] text-slate-600 line-clamp-2 leading-relaxed">
-                      {item.reason}
-                    </p>
+                    {/* Tournament Statistics Row from Liquipedia RPL 2026 Summer */}
+                    <div className="flex items-center justify-between text-[9px] text-slate-500 bg-rose-50/40 px-2 py-0.5 rounded-md border border-rose-100 font-['Prompt'] flex-wrap gap-1">
+                      <span>แบนในโปรลีก {item.stats.banRate}% ({item.stats.bans} เกม)</span>
+                      <span>P&B {item.stats.presenceRate}%</span>
+                      <span>WR {item.stats.winRate}%</span>
+                      {item.sideContext && <span>{item.sideContext}</span>}
+                    </div>
                   </div>
                 ))}
               </div>
