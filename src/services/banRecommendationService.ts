@@ -20,6 +20,7 @@ export type BanCategoryType =
   | 'protect_our_pick' // แบนปกป้องตัวที่เราเลือกไปแล้ว (กันแก้ทาง)
   | 'deny_opp_combo' // ตัดคอมโบโปรลีกที่คู่แข่งกำลังจะต่อยอด
   | 'side_advantage' // ตัดตัวเก่งของฝั่งคู่แข่ง (Side Win Rate สูง)
+  | 'opp_player_signature' // ฮีโร่ประจำตัว/ความถนัดของคู่แข่ง
   | 'pro_meta_power'; // ตัวเมต้าแบนสูงสุดประจำทัวร์นาเมนต์
 
 export interface CounterProtectDetail {
@@ -48,6 +49,11 @@ export interface BanRecommendationItem {
   targetRole?: string;
   countersFriendlyPick?: CounterProtectDetail;
   deniesOppCombo?: ComboDenialDetail;
+  oppSignatureDetail?: {
+    playerNickname: string;
+    tier: 'signature' | 'comfortable';
+    position: string;
+  };
   sideContext?: string;
   liquipediaUrl: string;
 }
@@ -170,7 +176,8 @@ export function getBlueSideRecommendedBans(
   pickedHeroNames: Set<string>,
   friendlyBluePicks: (string | null | undefined)[] = [],
   enemyRedPicks: (string | null | undefined)[] = [],
-  limit: number = 10
+  limit: number = 10,
+  oppHeroToPlayersMap?: Record<string, { playerNickname: string; tier: 'signature' | 'comfortable'; position: string }[]>
 ): BanRecommendationItem[] {
   const availableCandidates = HEROES.filter(
     (h) => !bannedHeroNames.has(h.name) && !pickedHeroNames.has(h.name)
@@ -237,7 +244,8 @@ export function getBlueSideRecommendedBans(
       for (const redHero of validRedPicks) {
         const duoMatch = candidateAllies.find((a) => a.allyHero === redHero);
         if (duoMatch && duoMatch.games >= 2 && duoMatch.winRate >= 54) {
-          const comboBonus = isPhase2 ? 22 : 16;
+          const sampleDamping = duoMatch.games >= 8 ? 1.0 : duoMatch.games >= 4 ? 0.8 : 0.65;
+          const comboBonus = Math.round((isPhase2 ? 22 : 16) * sampleDamping);
           score += comboBonus;
           comboDetail = {
             oppHero: redHero,
@@ -272,7 +280,8 @@ export function getBlueSideRecommendedBans(
       for (const blueHero of validBluePicks) {
         const h2hMatch = candidateMatchups.find((m) => m.opponentHero === blueHero);
         if (h2hMatch && h2hMatch.games >= 2 && h2hMatch.winRate >= 53) {
-          const protectBonus = isPhase2 ? 24 : 18;
+          const sampleDamping = h2hMatch.games >= 8 ? 1.0 : h2hMatch.games >= 4 ? 0.8 : 0.65;
+          const protectBonus = Math.round((isPhase2 ? 24 : 18) * sampleDamping);
           score += protectBonus;
           counterDetail = {
             ourHero: blueHero,
@@ -288,7 +297,29 @@ export function getBlueSideRecommendedBans(
       }
 
       // -------------------------------------------------------------
-      // DRAFT ANALYSIS FACTOR 4: Fallback to Red Side Advantage / Meta Power
+      // DRAFT ANALYSIS FACTOR 4: ฮีโร่ประจำตัวของคู่แข่ง (Opponent Player Signature)
+      // -------------------------------------------------------------
+      if (oppHeroToPlayersMap && oppHeroToPlayersMap[hero.name]) {
+        const oppBadges = oppHeroToPlayersMap[hero.name];
+        const oppSig = oppBadges.find((b) => b.tier === 'signature');
+        const oppComf = oppBadges.find((b) => b.tier === 'comfortable');
+        if (oppSig) {
+          score += 24;
+          categoryType = 'opp_player_signature';
+          categoryLabel = `⭐ แบน Signature ของ ${oppSig.playerNickname}`;
+          reason = `แบนตัดตัวเก่งเฉพาะตัว: ⭐ Signature Hero ของ ${oppSig.playerNickname} (${oppSig.position}) ฝั่ง Red`;
+          detailedAnalysis = `วิเคราะห์ผู้เล่นฝั่ง Red: ${hero.name} เป็นตัวเก่ง Signature ประจำตัวของ ${oppSig.playerNickname} (${oppSig.position}) แบนเพื่อทำลายความมั่นใจของคู่แข่ง`;
+        } else if (oppComf && !reason) {
+          score += 15;
+          categoryType = 'opp_player_signature';
+          categoryLabel = `★ แบนตัดตัวถนัดของ ${oppComf.playerNickname}`;
+          reason = `แบนตัด Comfort Pick: ★ ตัวถนัดของ ${oppComf.playerNickname} (${oppComf.position}) ฝั่ง Red`;
+          detailedAnalysis = `วิเคราะห์ผู้เล่นฝั่ง Red: ${hero.name} เป็นตัวเล่นถนัด (Comfortable) ของ ${oppComf.playerNickname} แบนเพื่อบีบให้ต้องเล่นตัวนอกพูล`;
+        }
+      }
+
+      // -------------------------------------------------------------
+      // DRAFT ANALYSIS FACTOR 5: Fallback to Red Side Advantage / Meta Power
       // -------------------------------------------------------------
       if (!reason) {
         if (redGames >= 7 && redWR >= 58) {
@@ -309,7 +340,9 @@ export function getBlueSideRecommendedBans(
         }
       }
 
-      const clampedScore = Math.min(99, Math.max(30, Math.round(score)));
+      // Score Compression: Soft diminishing returns curve above 85 to prevent flat 99 ban score collisions
+      const compressedScore = score > 85 ? 85 + (score - 85) * 0.62 : score;
+      const clampedScore = Math.min(99, Math.max(30, Math.round(compressedScore)));
 
       return {
         hero,
@@ -360,7 +393,8 @@ export function getRedSideRecommendedBans(
   pickedHeroNames: Set<string>,
   friendlyRedPicks: (string | null | undefined)[] = [],
   enemyBluePicks: (string | null | undefined)[] = [],
-  limit: number = 10
+  limit: number = 10,
+  oppHeroToPlayersMap?: Record<string, { playerNickname: string; tier: 'signature' | 'comfortable'; position: string }[]>
 ): BanRecommendationItem[] {
   const availableCandidates = HEROES.filter(
     (h) => !bannedHeroNames.has(h.name) && !pickedHeroNames.has(h.name)
@@ -439,7 +473,8 @@ export function getRedSideRecommendedBans(
       for (const blueHero of validBluePicks) {
         const duoMatch = candidateAllies.find((a) => a.allyHero === blueHero);
         if (duoMatch && duoMatch.games >= 2 && duoMatch.winRate >= 54) {
-          const comboBonus = isPhase2 ? 22 : 16;
+          const sampleDamping = duoMatch.games >= 8 ? 1.0 : duoMatch.games >= 4 ? 0.8 : 0.65;
+          const comboBonus = Math.round((isPhase2 ? 22 : 16) * sampleDamping);
           score += comboBonus;
           comboDetail = {
             oppHero: blueHero,
@@ -473,7 +508,8 @@ export function getRedSideRecommendedBans(
       for (const redHero of validRedPicks) {
         const h2hMatch = candidateMatchups.find((m) => m.opponentHero === redHero);
         if (h2hMatch && h2hMatch.games >= 2 && h2hMatch.winRate >= 53) {
-          const protectBonus = isPhase2 ? 24 : 18;
+          const sampleDamping = h2hMatch.games >= 8 ? 1.0 : h2hMatch.games >= 4 ? 0.8 : 0.65;
+          const protectBonus = Math.round((isPhase2 ? 24 : 18) * sampleDamping);
           score += protectBonus;
           counterDetail = {
             ourHero: redHero,
@@ -489,7 +525,29 @@ export function getRedSideRecommendedBans(
       }
 
       // -------------------------------------------------------------
-      // DRAFT ANALYSIS FACTOR 5: Fallback to Blue Side Advantage / Meta Power
+      // DRAFT ANALYSIS FACTOR 5: ฮีโร่ประจำตัวของคู่แข่ง (Opponent Player Signature)
+      // -------------------------------------------------------------
+      if (oppHeroToPlayersMap && oppHeroToPlayersMap[hero.name]) {
+        const oppBadges = oppHeroToPlayersMap[hero.name];
+        const oppSig = oppBadges.find((b) => b.tier === 'signature');
+        const oppComf = oppBadges.find((b) => b.tier === 'comfortable');
+        if (oppSig) {
+          score += 24;
+          categoryType = 'opp_player_signature';
+          categoryLabel = `⭐ แบน Signature ของ ${oppSig.playerNickname}`;
+          reason = `แบนตัดตัวเก่งเฉพาะตัว: ⭐ Signature Hero ของ ${oppSig.playerNickname} (${oppSig.position}) ฝั่ง Blue`;
+          detailedAnalysis = `วิเคราะห์ผู้เล่นฝั่ง Blue: ${hero.name} เป็นตัวเก่ง Signature ประจำตัวของ ${oppSig.playerNickname} (${oppSig.position}) แบนเพื่อทำลายความมั่นใจของคู่แข่ง`;
+        } else if (oppComf && !reason) {
+          score += 15;
+          categoryType = 'opp_player_signature';
+          categoryLabel = `★ แบนตัดตัวถนัดของ ${oppComf.playerNickname}`;
+          reason = `แบนตัด Comfort Pick: ★ ตัวถนัดของ ${oppComf.playerNickname} (${oppComf.position}) ฝั่ง Blue`;
+          detailedAnalysis = `วิเคราะห์ผู้เล่นฝั่ง Blue: ${hero.name} เป็นตัวเล่นถนัด (Comfortable) ของ ${oppComf.playerNickname} แบนเพื่อบีบให้ต้องเล่นตัวนอกพูล`;
+        }
+      }
+
+      // -------------------------------------------------------------
+      // DRAFT ANALYSIS FACTOR 6: Fallback to Blue Side Advantage / Meta Power
       // -------------------------------------------------------------
       if (!reason) {
         if (blueGames >= 7 && blueWR >= 56) {
@@ -510,7 +568,9 @@ export function getRedSideRecommendedBans(
         }
       }
 
-      const clampedScore = Math.min(99, Math.max(30, Math.round(score)));
+      // Score Compression: Soft diminishing returns curve above 85 to prevent flat 99 ban score collisions
+      const compressedScore = score > 85 ? 85 + (score - 85) * 0.62 : score;
+      const clampedScore = Math.min(99, Math.max(30, Math.round(compressedScore)));
 
       return {
         hero,
@@ -553,7 +613,8 @@ export function getRecommendedBans(
   currentTeam: 'blue' | 'red' = 'blue',
   friendlyPicks: (string | null | undefined)[] = [],
   enemyPicks: (string | null | undefined)[] = [],
-  limit: number = 10
+  limit: number = 10,
+  oppHeroToPlayersMap?: Record<string, { playerNickname: string; tier: 'signature' | 'comfortable'; position: string }[]>
 ): BanRecommendationItem[] {
   if (currentTeam === 'blue') {
     return getBlueSideRecommendedBans(
@@ -561,7 +622,8 @@ export function getRecommendedBans(
       pickedHeroNames,
       friendlyPicks,
       enemyPicks,
-      limit
+      limit,
+      oppHeroToPlayersMap
     );
   } else {
     return getRedSideRecommendedBans(
@@ -569,7 +631,8 @@ export function getRecommendedBans(
       pickedHeroNames,
       friendlyPicks,
       enemyPicks,
-      limit
+      limit,
+      oppHeroToPlayersMap
     );
   }
 }

@@ -133,6 +133,13 @@ export interface SuggestedPickItem {
   cautions: string[];
   strongCounters: string[];
   weakCounters: string[];
+  missingData?: string[];
+  riskPoints?: string[];
+  statsSummary?: {
+    games?: number;
+    winRate?: number;
+    hasProStats: boolean;
+  };
 }
 
 export interface CoachAnalysisResult {
@@ -416,9 +423,24 @@ export function analyzeCoachDraft(params: {
     }
   }
 
-  // 5. Suggested Picks Engine
-  // Consider: Player Hero Pool, Matchup against enemy picks, Team Comp missing roles, Exclude already picked/banned
+  // 5. Suggested Picks Engine (Professional RoV Esports Draft Analyst Grade)
+  // Evaluates: Role fit, Player proficiency, Matchups, RPL stats & sample size, Allies synergy, Team balance (dmg/cc/peel/wave), Timing
   const candidateScores: SuggestedPickItem[] = [];
+
+  // Current drafted allies for synergy & balance evaluation
+  const draftedAllies = myPicks.map((p) => p.hero).filter((h): h is Hero => h !== null);
+  const draftedAllyNames = draftedAllies.map((h) => h.name);
+
+  // Analyze team balance before this pick
+  const hasMagicAlly = draftedAllies.some(
+    (h) => h.roles.includes('mage') || h.r === 'mage' || h.primaryPos === 'mid'
+  );
+  const hasPhysicalCarryAlly = draftedAllies.some(
+    (h) => h.roles.includes('marksman') || h.primaryPos === 'adl'
+  );
+  const hasFrontlineAlly = draftedAllies.some(
+    (h) => h.roles.includes('tank') || (h.roles.includes('support') && h.primaryPos === 'roam')
+  );
 
   allHeroes.forEach((hero) => {
     // Exclude if already picked or banned
@@ -426,82 +448,210 @@ export function analyzeCoachDraft(params: {
       return;
     }
 
-    let score = 50; // Base score
+    let score = 35; // Calibrated baseline score (avoids artificial ceiling saturation)
     const reasons: string[] = [];
     const cautions: string[] = [];
     const strongCounters: string[] = [];
     const weakCounters: string[] = [];
+    const missingData: string[] = [];
+    const riskPoints: string[] = [];
 
     const heroCompRoles = getHeroCompRoles(hero);
     const heroPrimaryComp = mapToCompRole(hero.primaryPos) || heroCompRoles[0];
 
-    // Factor A: Team Composition (Fills missing role)
+    // Factor 1: Team Composition & Missing Role Fit (Weight: ~25-30)
     const fillsMissing = heroCompRoles.find((r) => myTeamComp.missingRoles.includes(r));
     if (fillsMissing) {
-      score += 45;
+      const rolePriorityBonus = pickedCount >= 4 ? 30 : pickedCount === 3 ? 28 : 26;
+      score += rolePriorityBonus;
       reasons.push(`เติมตำแหน่ง ${fillsMissing} ที่ยังขาด`);
     } else if (myTeamComp.missingRoles.length > 0) {
-      // Hero does not fill any missing role
-      score -= 25;
+      // Escalating penalty in late draft (pickedCount >= 3) to strictly preserve essential lane integrity
+      const roleClashPenalty = pickedCount >= 4 ? 36 : pickedCount === 3 ? 28 : 22;
+      score -= roleClashPenalty;
       cautions.push(`ตำแหน่ง ${heroCompRoles.join('/')} มีผู้เล่นแล้ว`);
+      riskPoints.push(`อาจทำให้ขาดตำแหน่ง ${myTeamComp.missingRoles.join(', ')}`);
     }
 
-    // Factor B: Player Hero Pool
+    // Factor 2: Player Hero Pool (Signature > Comfortable > Out of Pool) (Weight: ~12-22)
     const playerBadges = heroToPlayersMap[hero.name] || [];
     const sigBadge = playerBadges.find((b) => b.tier === 'signature');
     const comfBadge = playerBadges.find((b) => b.tier === 'comfortable');
 
     if (sigBadge) {
       const isRoleMatched = mapToCompRole(sigBadge.position) === fillsMissing;
-      score += isRoleMatched ? 45 : 30;
+      score += isRoleMatched ? 22 : 14;
       reasons.push(`⭐ Signature ของ ${sigBadge.playerNickname} (${sigBadge.position})`);
     } else if (comfBadge) {
       const isRoleMatched = mapToCompRole(comfBadge.position) === fillsMissing;
-      score += isRoleMatched ? 30 : 20;
+      score += isRoleMatched ? 12 : 7;
       reasons.push(`★ Comfortable ของ ${comfBadge.playerNickname} (${comfBadge.position})`);
     } else {
-      score -= 10;
+      score -= 6;
+      missingData.push('ไม่อยู่ใน Signature/Comfortable ของผู้เล่น');
     }
 
-    // Factor C: Matchups vs Enemy Picks
+    // Factor 3: Matchups vs Enemy Picks (Grounding with sample size >= 2 & Bayesian confidence damping)
+    let matchupAdvantageCount = 0;
+    let matchupDisadvantageCount = 0;
+
     validOppHeroNames.forEach((oppName) => {
       const h2h = statsDataProvider.getHeadToHead(hero.name, oppName);
-      if (h2h) {
+      if (h2h && h2h.games >= 2) {
+        // Sample size confidence damping:
+        // >= 8 games: 1.0 (statistically solid sample)
+        // 4-7 games: 0.8
+        // 2-3 games: 0.55 (early sample, prevent 2-game 100% fluke from dominating)
+        const sampleDamping = h2h.games >= 8 ? 1.0 : h2h.games >= 4 ? 0.8 : 0.55;
+        // Off-role heroes receive dampened matchup credit because they will not lane against them
+        const roleRelevance = fillsMissing ? 1.0 : 0.5;
+
         if (h2h.diff >= 4) {
-          score += Math.min(30, Math.round(h2h.diff * 2));
+          matchupAdvantageCount++;
+          const bonus = Math.min(14, Math.round(h2h.diff * 1.1 * sampleDamping * roleRelevance));
+          score += bonus;
           strongCounters.push(oppName);
-          reasons.push(`⚔️ ชนะทาง ${oppName} (+${h2h.diff.toFixed(1)}%)`);
+          const sampleNote = h2h.games < 4 ? ` (สถิติตัวอย่างน้อย: ${h2h.games} เกม)` : ` (${h2h.games} เกม)`;
+          reasons.push(`⚔️ ชนะทาง ${oppName} (+${h2h.diff.toFixed(1)}% ใน${sampleNote})`);
         } else if (h2h.diff <= -4) {
-          score -= Math.min(35, Math.round(Math.abs(h2h.diff) * 2));
+          matchupDisadvantageCount++;
+          const penalty = Math.min(18, Math.round(Math.abs(h2h.diff) * 1.3 * sampleDamping));
+          score -= penalty;
           weakCounters.push(oppName);
-          cautions.push(`⚠️ เสียเปรียบ ${oppName} (${h2h.diff.toFixed(1)}%)`);
+          const sampleNote = h2h.games < 4 ? ` (ตัวอย่างน้อย: ${h2h.games} เกม)` : ` (${h2h.games} เกม)`;
+          cautions.push(`⚠️ เสียเปรียบ ${oppName} (${h2h.diff.toFixed(1)}% ใน${sampleNote})`);
+          riskPoints.push(`ระวังโดน ${oppName} กดดันในเกม`);
         }
       }
     });
 
-    // Factor D: RPL Competitive Win Rate
+    if (validOppHeroNames.length > 0 && matchupAdvantageCount === 0 && matchupDisadvantageCount === 0) {
+      missingData.push('ยังไม่มีสถิติ H2H ตรงกับคู่แข่งในโปรลีก');
+    }
+
+    // Factor 4: Synergy with Drafted Allies (Played With >= 2 games with sample damping)
+    draftedAllyNames.forEach((allyName) => {
+      const synergy = statsDataProvider.getHeroSynergyPair(hero.name, allyName);
+      if (synergy && synergy.games >= 2) {
+        const sampleDamping = synergy.games >= 8 ? 1.0 : synergy.games >= 4 ? 0.8 : 0.6;
+        if (synergy.winRate >= 55 || (synergy.diff !== undefined && synergy.diff >= 3)) {
+          score += Math.min(10, Math.round((synergy.winRate - 50) * 0.6 * sampleDamping));
+          const sampleNote = synergy.games < 4 ? ` (ตัวอย่างน้อย ${synergy.games} เกม)` : '';
+          reasons.push(`🤝 คอมโบเข้าขา ${allyName} (WR ${synergy.winRate.toFixed(1)}%${sampleNote})`);
+        } else if (synergy.winRate <= 42 || (synergy.diff !== undefined && synergy.diff <= -5)) {
+          score -= Math.round(8 * sampleDamping);
+          cautions.push(`คอมโบกับ ${allyName} สถิติไม่เด่น (${synergy.winRate.toFixed(1)}%)`);
+        }
+      }
+    });
+
+    // Factor 5: RPL Competitive Win Rate & Games Played
+    // Anti-slop rule: Win rate bonus only applies IF role fits or player fits. Never inflate isolated high WR!
     const heroStats = statsDataProvider.getHeroStats(hero.name);
+    let hasProStats = false;
+    let proGames: number | undefined = undefined;
+    let proWr: number | undefined = undefined;
+
     if (heroStats) {
-      if (heroStats.winRate >= 58 && heroStats.games >= 15) {
-        score += 15;
-        reasons.push(`🔥 เมต้าเด่น RPL (Win Rate ${heroStats.winRate.toFixed(1)}%)`);
-      } else if (heroStats.winRate <= 42 && heroStats.games >= 15) {
-        score -= 12;
-        cautions.push(`สถิติทัวร์ Win Rate ต่ำ (${heroStats.winRate.toFixed(1)}%)`);
+      hasProStats = true;
+      proGames = heroStats.games;
+      proWr = heroStats.winRate;
+
+      if (heroStats.games >= 15) {
+        if (heroStats.winRate >= 56) {
+          // Gated bonus: only fully rewarded if player fits or role fits
+          const synergyMultiplier = (fillsMissing || sigBadge || comfBadge) ? 1.0 : 0.4;
+          const statBonus = Math.round(10 * synergyMultiplier);
+          score += statBonus;
+          reasons.push(`🔥 เมต้าเด่น RPL (WR ${heroStats.winRate.toFixed(1)}%, ${heroStats.games} เกม)`);
+        } else if (heroStats.winRate <= 44) {
+          score -= 8;
+          cautions.push(`สถิติทัวร์ Win Rate ต่ำ (${heroStats.winRate.toFixed(1)}%)`);
+          riskPoints.push('Win Rate ในโปรลีกต่ำกว่าเกณฑ์มาตรฐาน');
+        }
+      } else if (heroStats.games >= 5) {
+        if (heroStats.winRate >= 58 && (fillsMissing || sigBadge)) {
+          score += 5;
+          reasons.push(`สถิติดีในโปรลีก (${heroStats.winRate.toFixed(1)}% จาก ${heroStats.games} เกม)`);
+        }
+      } else {
+        missingData.push(`สถิติโปรลีกตัวอย่างน้อย (${heroStats.games} เกม)`);
+      }
+
+      // Factor 5.5: Asymmetric Side Advantage (Blue vs Red in official RPL 2026 tournament statistics)
+      const bWins = heroStats.blueWins || 0;
+      const bLosses = heroStats.blueLosses || 0;
+      const bTotal = bWins + bLosses;
+      const rWins = heroStats.redWins || 0;
+      const rLosses = heroStats.redLosses || 0;
+      const rTotal = rWins + rLosses;
+
+      if (activeTeam === 'blue' && bTotal >= 5) {
+        const bWr = (bWins / bTotal) * 100;
+        if (bWr >= 58) {
+          const sideBonus = Math.min(6, Math.round((bWr - 50) * 0.35));
+          score += sideBonus;
+          reasons.push(`🔵 สถิติเด่นฝั่ง Blue (WR ${bWr.toFixed(1)}% ใน ${bTotal} เกม)`);
+        } else if (bWr <= 40 && bTotal >= 8) {
+          score -= 4;
+          cautions.push(`สถิติเล่นฝั่ง Blue ในโปรลีกต่ำ (WR ${bWr.toFixed(1)}% จาก ${bTotal} เกม)`);
+        }
+      } else if (activeTeam === 'red' && rTotal >= 5) {
+        const rWr = (rWins / rTotal) * 100;
+        if (rWr >= 58) {
+          const sideBonus = Math.min(6, Math.round((rWr - 50) * 0.35));
+          score += sideBonus;
+          reasons.push(`🔴 สถิติเด่นฝั่ง Red (WR ${rWr.toFixed(1)}% ใน ${rTotal} เกม)`);
+        } else if (rWr <= 40 && rTotal >= 8) {
+          score -= 4;
+          cautions.push(`สถิติเล่นฝั่ง Red ในโปรลีกต่ำ (WR ${rWr.toFixed(1)}% จาก ${rTotal} เกม)`);
+        }
+      }
+    } else {
+      missingData.push('ไม่มีสถิติการเล่นใน RPL 2026 Summer');
+    }
+
+    // Factor 6: Team Balance (Physical/Magic, Frontline/Engage, Backline Protection, Wave Clear)
+    const isMagicHero = hero.roles.includes('mage') || hero.r === 'mage';
+    const isFrontlineHero = hero.roles.includes('tank') || (hero.roles.includes('support') && hero.pos.includes('roam'));
+    const isWaveClearHero = hero.roles.includes('mage') || hero.pos.includes('mid') || hero.roles.includes('marksman');
+
+    if (!hasMagicAlly && isMagicHero && fillsMissing) {
+      score += 8;
+      reasons.push('เติมดาเมจเวทให้ทีม (ป้องกันอีกฝ่ายออกเกราะกายภาพล้วน)');
+    }
+    if (!hasFrontlineAlly && isFrontlineHero && fillsMissing) {
+      score += 9;
+      reasons.push('เติมตัวเปิดไฟต์/รับดาเมจแนวหน้าให้ทีม');
+    }
+    if (!hasPhysicalCarryAlly && hero.roles.includes('marksman') && fillsMissing === 'ADL') {
+      score += 10;
+      reasons.push('เติมดาเมจทำลายป้อมหลักช่วงเลทเกม');
+    }
+
+    // Factor 7: Timing Curve (Early / Mid / Late Game evaluation grounded in hero kit)
+    if (hero.tags.includes('early') || hero.primaryPos === 'mid') {
+      if (draftedAllies.filter((a) => a.primaryPos === 'adl').length > 0 && isWaveClearHero) {
+        score += 4;
       }
     }
 
+    // Score Calibration: Soft diminishing returns curve above 85 to prevent flat 99 score clustering
+    // Note: Score is a calibrated Draft Priority Ranking Index (0-100), NOT a Win Probability percentage!
+    const compressedScore = score > 85 ? 85 + (score - 85) * 0.62 : score;
+    const clampedScore = Math.min(99, Math.max(20, Math.round(compressedScore)));
+
     // Confidence tier
     let confidence: 'high' | 'medium' | 'situational' = 'situational';
-    if (score >= 105) {
+    if (clampedScore >= 80 && (fillsMissing && (sigBadge || comfBadge || (proWr !== undefined && proWr >= 55)))) {
       confidence = 'high';
-    } else if (score >= 75) {
+    } else if (clampedScore >= 60 && (fillsMissing || sigBadge || comfBadge)) {
       confidence = 'medium';
     }
 
     candidateScores.push({
       hero,
-      score,
+      score: clampedScore,
       targetRole: fillsMissing || heroPrimaryComp,
       confidence,
       playerFits: playerBadges,
@@ -509,11 +659,44 @@ export function analyzeCoachDraft(params: {
       cautions,
       strongCounters,
       weakCounters,
+      missingData: missingData.length > 0 ? missingData : undefined,
+      riskPoints: riskPoints.length > 0 ? riskPoints : undefined,
+      statsSummary: {
+        games: proGames,
+        winRate: proWr,
+        hasProStats,
+      },
     });
   });
 
-  // Sort candidates by score descending
-  candidateScores.sort((a, b) => b.score - a.score);
+  // Sort candidates by score descending with strict multi-level tie-breaking:
+  // 1. Clamped score
+  // 2. Player proficiency tier (signature > comfortable > none)
+  // 3. Pro League Win Rate (if pro stats available)
+  // 4. Pro League Games played
+  candidateScores.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+
+    const aPlayerTier = a.playerFits.some((f) => f.tier === 'signature')
+      ? 2
+      : a.playerFits.some((f) => f.tier === 'comfortable')
+      ? 1
+      : 0;
+    const bPlayerTier = b.playerFits.some((f) => f.tier === 'signature')
+      ? 2
+      : b.playerFits.some((f) => f.tier === 'comfortable')
+      ? 1
+      : 0;
+    if (bPlayerTier !== aPlayerTier) return bPlayerTier - aPlayerTier;
+
+    const bWr = b.statsSummary?.winRate ?? 50;
+    const aWr = a.statsSummary?.winRate ?? 50;
+    if (bWr !== aWr) return bWr - aWr;
+
+    const bGames = b.statsSummary?.games ?? 0;
+    const aGames = a.statsSummary?.games ?? 0;
+    return bGames - aGames;
+  });
 
   // Take top 8 suggested picks
   const suggestedPicks = candidateScores.slice(0, 8);

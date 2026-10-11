@@ -42,12 +42,14 @@ class StatsDataProviderService {
 
   private initFromLocalStorage() {
     try {
-      const saved = localStorage.getItem(this.storageKey);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.heroes && typeof parsed.heroes === 'object') {
-          this.dataset = parsed;
-          this.sourceType = 'json';
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        const saved = localStorage.getItem(this.storageKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.heroes && typeof parsed.heroes === 'object') {
+            this.dataset = parsed;
+            this.sourceType = 'json';
+          }
         }
       }
     } catch (e) {

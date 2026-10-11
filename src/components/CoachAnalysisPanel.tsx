@@ -854,7 +854,7 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                 </span>
               </div>
               <p className="text-[10px] text-slate-500 mt-0.5">
-                คำนวณจาก Player Pool + Matchup + ขาดตำแหน่ง + หักตัวแบน/เลือกแล้ว
+                ดัชนีจัดอันดับความสำคัญ (Draft Priority Index 0-100 ไม่ใช่ Win Probability) • คำนวณจาก Player Pool + Matchup + ขาดตำแหน่ง + ฝั่ง Blue/Red
               </p>
             </div>
           </div>
@@ -901,13 +901,14 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                         {/* Fit Score Badge */}
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <span
+                            title="ดัชนีจัดอันดับความสำคัญในการดราฟต์ (Draft Priority Index 0-100) ไม่ใช่อัตราการชนะ Win Rate ของเกม"
                             className={`font-['Prompt'] text-[9.5px] font-bold px-2 py-0.5 rounded-md tracking-wider ${
                               sug.confidence === 'high'
                                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
                                 : 'bg-sky-50 text-sky-700 border border-sky-300'
                             }`}
                           >
-                            SCORE {sug.score}
+                            PRIORITY {sug.score}
                           </span>
                         </div>
                       </div>
@@ -930,6 +931,24 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                             {c}
                           </span>
                         ))}
+                        {sug.riskPoints &&
+                          sug.riskPoints.map((risk, i) => (
+                            <span
+                              key={`rk-${i}`}
+                              className="text-[9.5px] px-1.5 py-0.2 rounded-md bg-amber-50 border border-amber-300 text-amber-800"
+                            >
+                              ⚡ {risk}
+                            </span>
+                          ))}
+                        {sug.missingData &&
+                          sug.missingData.map((m, i) => (
+                            <span
+                              key={`m-${i}`}
+                              className="text-[9.5px] px-1.5 py-0.2 rounded-md bg-slate-50 border border-slate-200 text-slate-500 italic"
+                            >
+                              ℹ️ {m}
+                            </span>
+                          ))}
                       </div>
 
                       {/* Quick Pick Action */}

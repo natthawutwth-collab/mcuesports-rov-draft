@@ -221,12 +221,26 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
   }, [bannedHeroNames, pickedHeroNames]);
 
   const blueSideBans = useMemo(() => {
-    return getBlueSideRecommendedBans(bannedHeroNames, pickedHeroNames, bluePickNames, redPickNames, 10);
-  }, [bannedHeroNames, pickedHeroNames, bluePickNames, redPickNames]);
+    return getBlueSideRecommendedBans(
+      bannedHeroNames,
+      pickedHeroNames,
+      bluePickNames,
+      redPickNames,
+      10,
+      heroToPlayersMap
+    );
+  }, [bannedHeroNames, pickedHeroNames, bluePickNames, redPickNames, heroToPlayersMap]);
 
   const redSideBans = useMemo(() => {
-    return getRedSideRecommendedBans(bannedHeroNames, pickedHeroNames, redPickNames, bluePickNames, 10);
-  }, [bannedHeroNames, pickedHeroNames, redPickNames, bluePickNames]);
+    return getRedSideRecommendedBans(
+      bannedHeroNames,
+      pickedHeroNames,
+      redPickNames,
+      bluePickNames,
+      10,
+      heroToPlayersMap
+    );
+  }, [bannedHeroNames, pickedHeroNames, redPickNames, bluePickNames, heroToPlayersMap]);
 
   const blueMissingRoles = useMemo(() => getMissingRoles(bluePickNames), [bluePickNames]);
   const redMissingRoles = useMemo(() => getMissingRoles(redPickNames), [redPickNames]);
