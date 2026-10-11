@@ -841,7 +841,7 @@ export default function App() {
                       }}
                     >
                       <DraftCenter
-                        isTablet={false}
+                        isTablet={isTabletScreen}
                         draftActive={draftActive}
                         draftTurnIdx={draftTurnIdx}
                         draftTurnSel={draftTurnSel}

@@ -46,6 +46,42 @@ import {
 
 export type TacticalTab = 'recommendations' | 'synergy' | 'predictions' | 'pro_comps';
 
+export const getLaneDisplayName = (posKey?: string): string => {
+  if (!posKey) return 'FLEX';
+  const p = posKey.toLowerCase();
+  if (p === 'jg' || p === 'jungle') return 'Jungle';
+  if (p === 'roam' || p === 'support' || p === 'sp') return 'Support';
+  if (p === 'dsl') return 'Dark Slayer';
+  if (p === 'mid') return 'Mid';
+  if (p === 'adl') return 'Abyssal';
+  return posKey.toUpperCase();
+};
+
+export const matchesLaneFilter = (hero: Hero, filter: string): boolean => {
+  if (!filter || filter === 'all') return true;
+  const f = filter.toLowerCase();
+  const primary = (hero.primaryPos || (hero.pos && hero.pos[0]) || '').toLowerCase();
+  const positions = (hero.pos || []).map((p) => p.toLowerCase());
+  const roles = (hero.roles || []).map((r) => r.toLowerCase());
+
+  if (f === 'jungle' || f === 'jg') {
+    return primary === 'jg' || positions.includes('jg');
+  }
+  if (f === 'support' || f === 'roam' || f === 'sp') {
+    return primary === 'roam' || positions.includes('roam') || roles.includes('support');
+  }
+  if (f === 'dsl' || f === 'dark slayer' || f === 'darkslayer') {
+    return primary === 'dsl' || positions.includes('dsl');
+  }
+  if (f === 'mid') {
+    return primary === 'mid' || positions.includes('mid');
+  }
+  if (f === 'adl' || f === 'abyssal') {
+    return primary === 'adl' || positions.includes('adl');
+  }
+  return primary === f || positions.includes(f);
+};
+
 interface TacticalSplitPanelProps {
   activeTab: TacticalTab;
   onTabChange: (tab: TacticalTab) => void;
@@ -273,10 +309,11 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
       const reasons: string[] = [];
 
       const heroPrimaryPos = hero.primaryPos || (hero.pos && hero.pos[0]) || 'dsl';
+      const roleDisplayName = getLaneDisplayName(heroPrimaryPos);
       const isRoleNeeded = !friendlyRolesTaken.has(heroPrimaryPos);
       if (isRoleNeeded) {
         score += 15;
-        reasons.push(`เติมเต็มเลน ${heroPrimaryPos.toUpperCase()} ที่ทีมยังขาด`);
+        reasons.push(`เติมเต็มตำแหน่ง ${roleDisplayName} ที่ทีมยังขาด`);
       }
 
       const tourneyStats = RPL_2026_HEROES_DATA[hero.name];
@@ -307,6 +344,21 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
         }
       });
 
+      const badges = heroToPlayersMap[hero.name] || [];
+      if (badges.length > 0) {
+        const sig = badges.find((b) => b.tier === 'signature');
+        if (sig) {
+          score += 12;
+          reasons.push(`⭐ ซิกเนเจอร์ ${sig.playerName}`);
+        } else {
+          const comf = badges.find((b) => b.tier === 'comfortable');
+          if (comf) {
+            score += 6;
+            reasons.push(`ฮีโร่ถนัด ${comf.playerName}`);
+          }
+        }
+      }
+
       const clampedScore = Math.min(99, Math.max(30, Math.round(score)));
       return {
         hero,
@@ -318,14 +370,21 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
 
     let filtered = scored;
     if (laneFilter !== 'all') {
-      filtered = filtered.filter((item) => {
-        const p = item.hero.primaryPos || (item.hero.pos && item.hero.pos[0]);
-        return p?.toLowerCase() === laneFilter.toLowerCase();
-      });
+      filtered = filtered.filter((item) => matchesLaneFilter(item.hero, laneFilter));
     }
 
     return filtered.sort((a, b) => b.score - a.score).slice(0, 15);
-  }, [activeTeam, bluePickNames, redPickNames, bluePicks, redPicks, pickedHeroNames, bannedHeroNames, laneFilter]);
+  }, [
+    activeTeam,
+    bluePickNames,
+    redPickNames,
+    bluePicks,
+    redPicks,
+    pickedHeroNames,
+    bannedHeroNames,
+    laneFilter,
+    heroToPlayersMap,
+  ]);
 
   // Filtered Pro Comps
   const filteredComps = useMemo(() => {
@@ -594,20 +653,27 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
                   { id: 'mid', label: 'Mid' },
                   { id: 'adl', label: 'Abyssal' },
                   { id: 'support', label: 'Support' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => setLaneFilter(item.id)}
-                    className={`px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap cursor-pointer transition-colors border ${
-                      laneFilter === item.id
-                        ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-2xs'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
+                ].map((item) => {
+                  const isActive =
+                    laneFilter === item.id ||
+                    (item.id === 'jungle' && (laneFilter === 'jg' || laneFilter === 'jungle')) ||
+                    (item.id === 'support' && (laneFilter === 'roam' || laneFilter === 'support' || laneFilter === 'sp'));
+
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => setLaneFilter(item.id)}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold whitespace-nowrap cursor-pointer transition-colors border ${
+                        isActive
+                          ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-2xs'
+                          : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
               </div>
             )}
 
@@ -639,8 +705,8 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
                           >
                             {item.hero.name}
                           </button>
-                          <span className="text-[9.5px] text-slate-400 font-semibold uppercase">
-                            {item.hero.primaryPos || (item.hero.pos && item.hero.pos[0])}
+                          <span className="text-[9.5px] text-slate-500 font-bold px-1.5 py-0.2 rounded bg-slate-100 border border-slate-200 uppercase">
+                            {getLaneDisplayName(item.hero.primaryPos || (item.hero.pos && item.hero.pos[0]))}
                           </span>
                         </div>
                       </div>
@@ -712,67 +778,88 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
               </div>
             ) : (
               <div className="flex flex-col gap-2">
-                {smartPickRecommendations.map((item, idx) => (
-                  <div
-                    key={item.hero.id}
-                    className="p-2 bg-white rounded-xl border border-amber-200 hover:border-amber-400 shadow-2xs flex flex-col gap-1.5 transition-all"
-                  >
-                    <div className="flex items-center justify-between gap-1.5">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-200 flex-shrink-0">
-                          <img
-                            src={item.hero.avatarUrl || getHeroImageUrl(item.hero.name)}
-                            alt={item.hero.name}
-                            className="w-full h-full object-cover"
-                          />
-                          <span className="absolute top-0 left-0 bg-amber-500 text-white text-[8px] font-['Orbitron'] font-black px-1 rounded-br">
-                            #{idx + 1}
-                          </span>
-                        </div>
-                        <div className="min-w-0">
-                          <button
-                            type="button"
-                            onClick={() => onInspectHero(item.hero.name)}
-                            className="font-bold text-xs text-slate-900 hover:text-amber-600 truncate text-left cursor-pointer block leading-tight"
-                          >
-                            {item.hero.name}
-                          </button>
-                          <span className="text-[9.5px] text-slate-400 font-semibold uppercase">
-                            {item.hero.primaryPos || (item.hero.pos && item.hero.pos[0])}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <span className="font-['Orbitron'] font-black text-[10px] px-1.5 py-0.2 rounded bg-amber-50 text-amber-900 border border-amber-300">
-                          {item.score} pt
-                        </span>
-                        {onPickHeroDirectly && (
-                          <button
-                            type="button"
-                            onClick={() => onPickHeroDirectly(item.hero.name)}
-                            className="px-2 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold cursor-pointer transition-colors shadow-2xs"
-                          >
-                            เลือก
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {item.reasons.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {item.reasons.slice(0, 2).map((r, rIdx) => (
-                          <span
-                            key={rIdx}
-                            className="text-[9px] bg-slate-50 border border-slate-200 text-slate-700 px-1.5 py-0.2 rounded"
-                          >
-                            ✓ {r}
-                          </span>
-                        ))}
-                      </div>
-                    )}
+                {smartPickRecommendations.length === 0 ? (
+                  <div className="p-6 text-center bg-white rounded-xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-1.5 text-slate-500 font-['Prompt']">
+                    <span className="text-xl">🛡️</span>
+                    <span className="text-xs font-bold text-slate-700">
+                      ไม่พบฮีโร่ที่แนะนำในตำแหน่ง {getLaneDisplayName(laneFilter)}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      ลองเลือกตัวกรองตำแหน่งอื่นหรือกด "ทั้งหมด"
+                    </span>
                   </div>
-                ))}
+                ) : (
+                  smartPickRecommendations.map((item, idx) => (
+                    <div
+                      key={item.hero.id}
+                      className="p-2 bg-white rounded-xl border border-amber-200 hover:border-amber-400 shadow-2xs flex flex-col gap-1.5 transition-all"
+                    >
+                      <div className="flex items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-200 flex-shrink-0">
+                            <img
+                              src={item.hero.avatarUrl || getHeroImageUrl(item.hero.name)}
+                              alt={item.hero.name}
+                              className="w-full h-full object-cover"
+                            />
+                            <span className="absolute top-0 left-0 bg-amber-500 text-white text-[8px] font-['Orbitron'] font-black px-1 rounded-br">
+                              #{idx + 1}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => onInspectHero(item.hero.name)}
+                              className="font-bold text-xs text-slate-900 hover:text-amber-600 truncate text-left cursor-pointer block leading-tight"
+                            >
+                              {item.hero.name}
+                            </button>
+                            <span className="text-[9.5px] text-slate-500 font-bold px-1.5 py-0.2 rounded bg-slate-100 border border-slate-200 uppercase">
+                              {getLaneDisplayName(item.hero.primaryPos || (item.hero.pos && item.hero.pos[0]))}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          <span className="font-['Orbitron'] font-black text-[10px] px-1.5 py-0.2 rounded bg-amber-50 text-amber-900 border border-amber-300">
+                            {item.score} pt
+                          </span>
+                          {onPickHeroDirectly && (
+                            <button
+                              type="button"
+                              onClick={() => onPickHeroDirectly(item.hero.name)}
+                              className="px-2 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold cursor-pointer transition-colors shadow-2xs"
+                            >
+                              เลือก
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {item.reasons.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {item.reasons.slice(0, 2).map((r, rIdx) => (
+                            <span
+                              key={rIdx}
+                              className="text-[9px] bg-slate-50 border border-slate-200 text-slate-700 px-1.5 py-0.2 rounded"
+                            >
+                              ✓ {r}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Tournament Statistics Row from RPL 2026 Summer */}
+                      {item.stats && (
+                        <div className="flex items-center justify-between text-[9px] text-slate-500 bg-amber-50/50 px-2 py-0.5 rounded-md border border-amber-100 font-['Prompt'] flex-wrap gap-1">
+                          <span>WR โปรลีก {item.stats.winRate}% ({item.stats.games} เกม)</span>
+                          <span>Presence {item.stats.presenceRate}%</span>
+                          <span>แบน {item.stats.banRate}%</span>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             )}
           </div>

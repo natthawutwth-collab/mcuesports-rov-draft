@@ -574,6 +574,26 @@ console.log('\n📦 Suite 12: Defensive Edge Cases & Null Safety');
 }
 
 // ---------------------------------------------------------------------------
+// SUITE 13: Tactical Split Panel Lane Filtering (Jungle & Support)
+// ---------------------------------------------------------------------------
+console.log('\n📦 Suite 13: Tactical Panel Lane Filter (Jungle & Support)');
+
+{
+  const { matchesLaneFilter, getLaneDisplayName } = await import('../src/components/TacticalSplitPanel');
+  
+  const jungleHeroes = HEROES.filter((h) => matchesLaneFilter(h, 'jungle'));
+  assert(jungleHeroes.length >= 20, `Jungle filter returns heroes (found: ${jungleHeroes.length})`);
+  assert(jungleHeroes.some((h) => h.name === 'Sinestrea' || h.name === 'Aoi'), 'Jungle filter includes meta junglers');
+
+  const supportHeroes = HEROES.filter((h) => matchesLaneFilter(h, 'support'));
+  assert(supportHeroes.length >= 20, `Support filter returns heroes (found: ${supportHeroes.length})`);
+  assert(supportHeroes.some((h) => h.name === 'Toro' || h.name === 'Rouie' || h.name === 'Chaugnar'), 'Support filter includes meta supports');
+
+  assert(getLaneDisplayName('jg') === 'Jungle', 'getLaneDisplayName correctly maps jg to Jungle');
+  assert(getLaneDisplayName('roam') === 'Support', 'getLaneDisplayName correctly maps roam to Support');
+}
+
+// ---------------------------------------------------------------------------
 // SUMMARY
 // ---------------------------------------------------------------------------
 console.log('\n================================================================');

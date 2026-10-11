@@ -178,9 +178,14 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
   // Filtered Heroes
   const filteredHeroes = useMemo(() => {
     return HEROES.filter((hero) => {
-      // 1. Role filter (DSL, JG, MAGE, SUPPORT, ADL)
+      // 1. Role filter (DSL, JG, MID, ADL, ROAM/SP)
       if (roleFilter !== 'all') {
-        if (!hero.pos.includes(roleFilter)) return false;
+        const matchesPrimary = hero.primaryPos === roleFilter;
+        const matchesPos = hero.pos && hero.pos.includes(roleFilter);
+        const matchesRole =
+          (roleFilter === 'roam' && hero.roles?.includes('support')) ||
+          (roleFilter === 'jg' && hero.roles?.includes('assassin'));
+        if (!matchesPrimary && !matchesPos && !matchesRole) return false;
       }
 
       // 2. Search Query
@@ -543,9 +548,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
           <div
             className={`grid ${
               isTabletMode
-                ? compact
-                  ? 'grid-cols-4 gap-1 sm:gap-1.5'
-                  : 'grid-cols-6 gap-1 sm:gap-1.5'
+                ? 'grid-cols-5 gap-1.5 sm:gap-2'
                 : compact
                 ? 'grid-cols-[repeat(auto-fill,minmax(54px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(60px,1fr))] gap-1.5'
                 : 'grid-cols-[repeat(auto-fill,minmax(56px,1fr))] sm:grid-cols-[repeat(auto-fill,minmax(64px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(68px,1fr))] gap-1.5 sm:gap-2'
@@ -577,7 +580,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
               return (
                 <div
                   key={hero.id}
-                  className="relative group/card flex flex-col min-w-0"
+                  className="relative group/card flex flex-col min-w-0 h-full"
                 >
                   <div
                     onClick={() => {
@@ -585,8 +588,8 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                         onSelectHero(hero);
                       }
                     }}
-                    className={`w-full relative flex flex-col items-center rounded-lg sm:rounded-xl overflow-hidden border ${
-                      isTabletMode ? 'p-1 border' : 'p-1.5 border-2'
+                    className={`w-full h-full relative flex flex-col items-center justify-between rounded-lg sm:rounded-xl overflow-hidden border ${
+                      isTabletMode ? 'p-1 sm:p-1.5 border' : 'p-1.5 border-2'
                     } transition-all select-none text-left ${
                       isInspected
                         ? 'border-[#E91E63] ring-2 ring-[#E91E63] shadow-[0_0_14px_rgba(233,30,99,0.3)] bg-[#FCE4EC]/50 scale-102'
@@ -597,91 +600,94 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                         : 'border-[#E2E8F0] bg-white hover:border-[#E91E63] hover:shadow-md hover:scale-105 active:scale-95 shadow-xs cursor-pointer'
                     }`}
                   >
-                    {/* Position Tag */}
-                    <div className={`absolute top-0.5 left-0.5 z-10 ${
-                      isTabletMode ? 'text-[8px] px-1 py-0.2' : 'text-[8.5px] px-1.5 py-0.2'
-                    } font-['Barlow_Condensed'] font-black rounded bg-white/95 text-slate-800 tracking-wider border border-slate-300 uppercase shadow-2xs pointer-events-none`}>
-                      {hero.primaryPos}
+                    {/* Top Section: Position Tag, Dot, Portrait, Names */}
+                    <div className="w-full flex flex-col items-center min-w-0">
+                      {/* Position Tag */}
+                      <div className={`absolute top-0.5 left-0.5 z-10 ${
+                        isTabletMode ? 'text-[7.5px] px-1 py-0.2' : 'text-[8.5px] px-1.5 py-0.2'
+                      } font-['Barlow_Condensed'] font-black rounded bg-white/95 text-slate-800 tracking-wider border border-slate-300 uppercase shadow-2xs pointer-events-none`}>
+                        {hero.primaryPos}
+                      </div>
+
+                      {/* Role Color Dot */}
+                      <div className={`absolute ${
+                        isTabletMode ? 'top-1 right-1 w-2 h-2' : 'top-2 right-2 w-2.5 h-2.5'
+                      } z-10 rounded-full ${posColor} ring-1 ring-white shadow-2xs pointer-events-none`} />
+
+                      {/* Hero Portrait */}
+                      <div className={`relative w-full aspect-square rounded-md sm:rounded-lg overflow-hidden bg-slate-100 ${
+                        isTabletMode ? 'mb-0.5' : 'mb-0.5 sm:mb-1'
+                      } border border-slate-200`}>
+                        <img
+                          src={hero.avatarUrl || getHeroImageUrl(hero.name)}
+                          alt={hero.name}
+                          className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-300 pointer-events-none"
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+
+                        {/* Quick Inspect Button (Accessible size on tablets) */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            if (onInspectHero) onInspectHero(hero.name);
+                          }}
+                          title={`ดูสถิติและคู่ต่อสู้ ${hero.name}`}
+                          className={`absolute bottom-0.5 right-0.5 z-30 ${
+                            isTabletMode ? 'w-3.5 h-3.5 sm:w-4 sm:h-4' : 'w-3.5 h-3.5 sm:w-4 sm:h-4'
+                          } rounded bg-white/90 hover:bg-[#0284c7] text-[#0284c7] hover:text-white flex items-center justify-center border border-slate-300/80 transition-all shadow-2xs cursor-pointer active:scale-90`}
+                        >
+                          <BarChart2 size={isTabletMode ? 8 : 9} strokeWidth={2.5} />
+                        </button>
+
+                        {/* Banned Overlay */}
+                        {isBanned && (
+                          <div className="absolute inset-0 bg-rose-950/80 flex flex-col items-center justify-center text-white z-20 pointer-events-none">
+                            <Ban size={isTabletMode ? 16 : 20} strokeWidth={2.5} className="text-rose-200" />
+                            <span className={`${
+                              isTabletMode ? 'text-[7.5px] sm:text-[8px]' : 'text-[7px] sm:text-[8px]'
+                            } font-['Orbitron'] font-black mt-0.5 tracking-wider text-rose-100`}>BANNED</span>
+                          </div>
+                        )}
+
+                        {/* Picked Overlay */}
+                        {isPicked && (
+                          <div className="absolute inset-0 bg-slate-900/75 flex flex-col items-center justify-center text-emerald-300 z-20 pointer-events-none">
+                            <Check size={isTabletMode ? 16 : 20} strokeWidth={2.5} className="text-emerald-300" />
+                            <span className={`${
+                              isTabletMode ? 'text-[7.5px] sm:text-[8px]' : 'text-[7px] sm:text-[8px]'
+                            } font-['Orbitron'] font-black mt-0.5 tracking-wider text-emerald-200`}>PICKED</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Hero Name */}
+                      <div className={`w-full truncate text-center font-['Prompt'] font-bold ${
+                        isTabletMode ? 'text-[9.5px] sm:text-[10px]' : 'text-[12px]'
+                      } text-[#1F2937] group-hover/card:text-[#E91E63] transition-colors mt-0.5 leading-tight`}>
+                        {hero.name}
+                      </div>
+                      <div className={`w-full truncate text-center ${
+                        isTabletMode ? 'text-[8px] sm:text-[8.5px]' : 'text-[10px]'
+                      } font-['Prompt'] text-slate-500 leading-tight`}>
+                        {hero.nameTh}
+                      </div>
                     </div>
 
-                    {/* Role Color Dot */}
-                    <div className={`absolute ${
-                      isTabletMode ? 'top-1 right-1 w-2 sm:w-2.5 h-2 sm:h-2.5' : 'top-2 right-2 w-2.5 h-2.5'
-                    } z-10 rounded-full ${posColor} ring-1 ring-white shadow-2xs pointer-events-none`} />
-
-                    {/* Hero Portrait */}
-                    <div className={`relative w-full aspect-square rounded-md sm:rounded-lg overflow-hidden bg-slate-100 ${
-                      isTabletMode ? 'mb-0.5' : 'mb-0.5 sm:mb-1'
-                    } border border-slate-200`}>
-                      <img
-                        src={hero.avatarUrl || getHeroImageUrl(hero.name)}
-                        alt={hero.name}
-                        className="w-full h-full object-cover group-hover/card:scale-110 transition-transform duration-300 pointer-events-none"
-                        loading="lazy"
-                        onError={(e) => {
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
-
-                      {/* Quick Inspect Button (Accessible size on tablets) */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          if (onInspectHero) onInspectHero(hero.name);
-                        }}
-                        title={`ดูสถิติและคู่ต่อสู้ ${hero.name}`}
-                        className={`absolute bottom-0.5 right-0.5 z-30 ${
-                          isTabletMode ? 'w-3.5 h-3.5 sm:w-4 sm:h-4' : 'w-3.5 h-3.5 sm:w-4 sm:h-4'
-                        } rounded bg-white/90 hover:bg-[#0284c7] text-[#0284c7] hover:text-white flex items-center justify-center border border-slate-300/80 transition-all shadow-2xs cursor-pointer active:scale-90`}
-                      >
-                        <BarChart2 size={isTabletMode ? 8.5 : 9} strokeWidth={2.5} />
-                      </button>
-
-                      {/* Banned Overlay */}
-                      {isBanned && (
-                        <div className="absolute inset-0 bg-rose-950/80 flex flex-col items-center justify-center text-white z-20 pointer-events-none">
-                          <Ban size={isTabletMode ? 16 : 20} strokeWidth={2.5} className="text-rose-200" />
-                          <span className={`${
-                            isTabletMode ? 'text-[7.5px] sm:text-[8px]' : 'text-[7px] sm:text-[8px]'
-                          } font-['Orbitron'] font-black mt-0.5 tracking-wider text-rose-100`}>BANNED</span>
-                        </div>
-                      )}
-
-                      {/* Picked Overlay */}
-                      {isPicked && (
-                        <div className="absolute inset-0 bg-slate-900/75 flex flex-col items-center justify-center text-emerald-300 z-20 pointer-events-none">
-                          <Check size={isTabletMode ? 16 : 20} strokeWidth={2.5} className="text-emerald-300" />
-                          <span className={`${
-                            isTabletMode ? 'text-[7.5px] sm:text-[8px]' : 'text-[7px] sm:text-[8px]'
-                          } font-['Orbitron'] font-black mt-0.5 tracking-wider text-emerald-200`}>PICKED</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Hero Name */}
-                    <div className={`w-full truncate text-center font-['Prompt'] font-bold ${
-                      isTabletMode ? 'text-[10px] sm:text-[11px]' : 'text-[12px]'
-                    } text-[#1F2937] group-hover/card:text-[#E91E63] transition-colors mt-0.5 leading-tight`}>
-                      {hero.name}
-                    </div>
-                    <div className={`w-full truncate text-center ${
-                      isTabletMode ? 'text-[8.5px] sm:text-[9px]' : 'text-[10px]'
-                    } font-['Prompt'] text-slate-500 leading-tight`}>
-                      {hero.nameTh}
-                    </div>
-
-                    {/* PLAYER HERO POOL BADGES (⭐ Gold / ★ Silver) */}
-                    {playerBadges.length > 0 && (
-                      <div className="w-full flex flex-col gap-0.5 mt-0.5 pt-0.5 border-t border-[#F3D5E2] min-w-0">
-                        {playerBadges.slice(0, 2).map((b) => {
+                    {/* Bottom Section: PLAYER HERO POOL BADGES (⭐ Gold / ★ Silver) */}
+                    {playerBadges.length > 0 ? (
+                      <div className="w-full flex flex-col gap-0.5 mt-auto pt-0.5 border-t border-[#F3D5E2] min-w-0">
+                        {playerBadges.slice(0, isTabletMode ? 1 : 2).map((b) => {
                           const isSig = b.tier === 'signature';
                           return (
                             <div
                               key={b.playerId}
                               className={`w-full flex items-center justify-between px-1 py-0.2 sm:py-0.5 rounded ${
-                                isTabletMode ? 'text-[8px] sm:text-[8.5px]' : 'text-[9.5px]'
+                                isTabletMode ? 'text-[7.5px] sm:text-[8px]' : 'text-[9.5px]'
                               } font-['Prompt'] font-bold leading-tight truncate transition-colors min-w-0 ${
                                 isSig
                                   ? 'bg-[#FEF3C7] border border-[#F59E0B] text-[#B45309] shadow-2xs'
@@ -694,21 +700,23 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                                 </span>
                                 <span className="truncate">{b.playerNickname}</span>
                               </span>
-                              <span className="text-[7px] sm:text-[7.5px] font-bold opacity-80 uppercase ml-0.5 flex-shrink-0">
+                              <span className="text-[7px] font-bold opacity-80 uppercase ml-0.5 flex-shrink-0">
                                 {b.position}
                               </span>
                             </div>
                           );
                         })}
-                        {playerBadges.length > 2 && (
+                        {playerBadges.length > (isTabletMode ? 1 : 2) && (
                           <div className={`${
-                            isTabletMode ? 'text-[7.5px] sm:text-[8px]' : 'text-[8.5px]'
+                            isTabletMode ? 'text-[7px] sm:text-[7.5px]' : 'text-[8.5px]'
                           } text-center text-slate-500 font-['Prompt'] font-bold leading-tight`}>
-                            +{playerBadges.length - 2} คนในทีม
+                            +{playerBadges.length - (isTabletMode ? 1 : 2)} คนในทีม
                           </div>
                         )}
                       </div>
-                    )}
+                    ) : isTabletMode ? (
+                      <div className="w-full h-1 mt-auto" />
+                    ) : null}
                   </div>
 
                   {/* HOVER TOOLTIP: Shows Player Name and Proficiency Details */}

@@ -15,6 +15,7 @@ import {
 } from '../services/draftPredictionService';
 import { ProCompsModal } from './ProCompsModal';
 import { RPL_2026_PRO_COMPS } from '../data/proMetaComps';
+import { matchesLaneFilter } from './TacticalSplitPanel';
 import {
   getRecommendedBans,
   getTopProLeagueBans,
@@ -359,7 +360,7 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
     // Apply lane filter
     if (recommendationLaneFilter === 'all') return scored.slice(0, 12);
     return scored
-      .filter((item) => item.hero.pos?.includes(recommendationLaneFilter as PositionKey))
+      .filter((item) => matchesLaneFilter(item.hero, recommendationLaneFilter))
       .slice(0, 12);
   }, [
     activeTeam,
@@ -1061,20 +1062,34 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
                       🏆 แนะนำตัวเลือกสำหรับฝั่ง {activeTeam === 'blue' ? blueTeamName : redTeamName} ({smartPickRecommendations.length} ตัว)
                     </span>
                     <div className="flex items-center gap-1 text-[10.5px] flex-wrap">
-                      {['all', 'dsl', 'jg', 'mid', 'roam', 'adl'].map((pos) => (
-                        <button
-                          key={pos}
-                          type="button"
-                          onClick={() => setRecommendationLaneFilter(pos)}
-                          className={`px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer uppercase ${
-                            recommendationLaneFilter === pos
-                              ? 'bg-[#E91E63] text-white shadow-2xs'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                          }`}
-                        >
-                          {pos === 'all' ? 'ทุกลำดับ' : pos}
-                        </button>
-                      ))}
+                      {[
+                        { key: 'all', label: 'ทุกลำดับ' },
+                        { key: 'dsl', label: 'DSL' },
+                        { key: 'jg', label: 'Jungle' },
+                        { key: 'mid', label: 'Mid' },
+                        { key: 'adl', label: 'ADL' },
+                        { key: 'roam', label: 'Support' },
+                      ].map((pos) => {
+                        const isActive =
+                          recommendationLaneFilter === pos.key ||
+                          (pos.key === 'jg' && (recommendationLaneFilter === 'jungle' || recommendationLaneFilter === 'jg')) ||
+                          (pos.key === 'roam' && (recommendationLaneFilter === 'support' || recommendationLaneFilter === 'roam' || recommendationLaneFilter === 'sp'));
+
+                        return (
+                          <button
+                            key={pos.key}
+                            type="button"
+                            onClick={() => setRecommendationLaneFilter(pos.key)}
+                            className={`px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer ${
+                              isActive
+                                ? 'bg-[#E91E63] text-white shadow-2xs'
+                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                            }`}
+                          >
+                            {pos.label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
