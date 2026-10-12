@@ -1121,49 +1121,112 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
                     </div>
                   </div>
 
-                  {/* Core Heroes Row */}
-                  <div className="flex items-center gap-1.5">
-                    {comp.coreHeroes.map((heroName) => {
-                      const isBanned = bannedHeroNames.has(heroName);
-                      const isPicked = pickedHeroNames.has(heroName);
-                      return (
-                        <button
-                          key={heroName}
-                          type="button"
-                          onClick={() => {
-                            if (!isBanned && !isPicked && onPickHeroDirectly) {
-                              onPickHeroDirectly(heroName);
-                            } else {
-                              onInspectHero(heroName);
-                            }
-                          }}
-                          className={`relative w-8 h-8 rounded-lg overflow-hidden border transition-transform hover:scale-105 cursor-pointer shadow-2xs ${
-                            isBanned
-                              ? 'opacity-40 grayscale border-rose-500'
-                              : isPicked
-                              ? 'ring-2 ring-sky-500 border-sky-400'
-                              : 'border-slate-200 hover:border-amber-400'
-                          }`}
-                          title={`${heroName} ${isBanned ? '(ถูกแบน)' : isPicked ? '(ถูกเลือกแล้ว)' : '(คลิกเพื่อเลือก)'}`}
-                        >
-                          <img
-                            src={getHeroImageUrl(heroName)}
-                            alt={heroName}
-                            className="w-full h-full object-cover"
-                          />
-                          {isBanned && (
-                            <span className="absolute inset-0 bg-rose-950/60 flex items-center justify-center text-white font-black text-[8px]">
-                              BAN
-                            </span>
-                          )}
-                          {isPicked && (
-                            <span className="absolute inset-0 bg-sky-950/60 flex items-center justify-center text-white font-black text-[8px]">
-                              PICK
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
+                  {/* Row: Core Heroes + Priority Bans (No text labels, clean avatars only) */}
+                  <div className="flex items-center gap-2 p-1.5 bg-slate-50/80 rounded-xl border border-slate-200/80 flex-nowrap overflow-x-auto no-scrollbar">
+                    {/* Left: Core Heroes */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {comp.coreHeroes.map((heroName) => {
+                        const isBanned = bannedHeroNames.has(heroName);
+                        const isPicked = pickedHeroNames.has(heroName);
+                        return (
+                          <button
+                            key={heroName}
+                            type="button"
+                            onClick={() => {
+                              if (!isBanned && !isPicked && onPickHeroDirectly) {
+                                onPickHeroDirectly(heroName);
+                              } else {
+                                onInspectHero(heroName);
+                              }
+                            }}
+                            className={`relative w-8 h-8 rounded-lg overflow-hidden border transition-transform hover:scale-110 cursor-pointer shadow-2xs ${
+                              isBanned
+                                ? 'opacity-40 grayscale border-rose-500'
+                                : isPicked
+                                ? 'ring-2 ring-sky-500 border-sky-400'
+                                : 'border-slate-200 hover:border-amber-400'
+                            }`}
+                            title={`${heroName} ${isBanned ? '(ถูกแบน)' : isPicked ? '(ถูกเลือกแล้ว)' : '(คลิกเพื่อเลือก)'}`}
+                          >
+                            <img
+                              src={getHeroImageUrl(heroName)}
+                              alt={heroName}
+                              className="w-full h-full object-cover"
+                            />
+                            {isBanned && (
+                              <span className="absolute inset-0 bg-rose-950/60 flex items-center justify-center text-white font-black text-[8px]">
+                                BAN
+                              </span>
+                            )}
+                            {isPicked && (
+                              <span className="absolute inset-0 bg-sky-950/60 flex items-center justify-center text-white font-black text-[8px]">
+                                PICK
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Divider */}
+                    <div className="h-6 w-px bg-slate-300 flex-shrink-0 mx-0.5" />
+
+                    {/* Right: ตัวที่ต้องแบน (Priority Bans) - No text labels */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {comp.priorityBans.map((banItem) => {
+                        const isBanned = bannedHeroNames.has(banItem.hero);
+                        const oppPickNames = activeTeam === 'blue' ? redPickNames : bluePickNames;
+                        const isPickedByOpp = oppPickNames.includes(banItem.hero);
+                        const isMustBan = banItem.priority === 'must_ban';
+
+                        return (
+                          <button
+                            key={banItem.hero}
+                            type="button"
+                            onClick={() => {
+                              if (!isBanned && onBanHeroDirectly) {
+                                onBanHeroDirectly(banItem.hero);
+                              } else {
+                                onInspectHero(banItem.hero);
+                              }
+                            }}
+                            className={`relative w-8 h-8 rounded-lg overflow-hidden border transition-transform hover:scale-110 cursor-pointer shadow-2xs ${
+                              isBanned
+                                ? 'opacity-40 grayscale border-slate-300'
+                                : isPickedByOpp
+                                ? 'ring-2 ring-rose-500 border-rose-500'
+                                : isMustBan
+                                ? 'border-rose-400 ring-1 ring-rose-300'
+                                : 'border-amber-300'
+                            }`}
+                            title={`${banItem.hero} (${isMustBan ? '🔥 ต้องแบน' : '⚠️ แนะนำแบน'} - ${banItem.phase})${isBanned ? ' • แบนแล้ว' : isPickedByOpp ? ' • ศัตรูหยิบแล้ว' : ''}\nเหตุผล: ${banItem.reason}`}
+                          >
+                            <img
+                              src={getHeroImageUrl(banItem.hero)}
+                              alt={banItem.hero}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                            {/* Top-right Ban badge */}
+                            <div className="absolute top-0 right-0 bg-rose-600 text-white rounded-bl p-0.5">
+                              <Ban size={7} strokeWidth={3} />
+                            </div>
+                            {isBanned && (
+                              <span className="absolute inset-0 bg-slate-900/65 flex items-center justify-center text-emerald-300 font-bold text-[8px]">
+                                ✓
+                              </span>
+                            )}
+                            {isPickedByOpp && (
+                              <span className="absolute inset-0 bg-rose-950/70 flex items-center justify-center text-rose-200 font-bold text-[7px] leading-tight text-center">
+                                ศัตรู
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <p className="text-[10px] text-slate-600 line-clamp-2 leading-relaxed">
