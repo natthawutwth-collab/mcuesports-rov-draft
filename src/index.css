@@ -190,3 +190,28 @@
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* Print Dossier Formatting */
+@media print {
+  @page {
+    margin: 12mm 10mm;
+    size: A4 portrait;
+  }
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  header, nav, .print\:hidden, button {
+    display: none !important;
+  }
+  .print\:border-black {
+    border-color: #333333 !important;
+  }
+  /* Avoid page breaks inside cards */
+  .p-5, .p-4, .p-3\.5 {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}

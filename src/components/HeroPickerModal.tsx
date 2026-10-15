@@ -8,6 +8,7 @@ interface HeroPickerModalProps {
   onClose: () => void;
   onSelect: (hero: Hero) => void;
   title?: string;
+  excludeHeroNames?: Set<string>;
 }
 
 const ROLES: { key: PositionKey; label: string }[] = [
@@ -24,13 +25,34 @@ export const HeroPickerModal: React.FC<HeroPickerModalProps> = ({
   onClose,
   onSelect,
   title = 'เลือก Hero สำหรับ Match Note',
+  excludeHeroNames,
 }) => {
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<PositionKey>('all');
 
   const filtered = useMemo(() => {
     return HEROES.filter((h) => {
-      if (roleFilter !== 'all' && !h.pos.includes(roleFilter)) return false;
+      if (excludeHeroNames && excludeHeroNames.has(h.name.toLowerCase())) {
+        return false;
+      }
+      if (roleFilter !== 'all') {
+        const rf = (roleFilter as string).toLowerCase();
+        const isJg = rf === 'jg' || rf === 'jungle';
+        const isRoam = rf === 'roam' || rf === 'support' || rf === 'sp';
+        const isDsl = rf === 'dsl';
+        const isMid = rf === 'mid';
+        const isAdl = rf === 'adl';
+
+        const matches =
+          (isJg && (h.primaryPos === 'jg' || h.pos?.includes('jg'))) ||
+          (isRoam && (h.primaryPos === 'roam' || h.pos?.includes('roam') || h.roles?.includes('support'))) ||
+          (isDsl && (h.primaryPos === 'dsl' || h.pos?.includes('dsl'))) ||
+          (isMid && (h.primaryPos === 'mid' || h.pos?.includes('mid'))) ||
+          (isAdl && (h.primaryPos === 'adl' || h.pos?.includes('adl'))) ||
+          h.pos?.includes(roleFilter);
+
+        if (!matches) return false;
+      }
       if (query.trim().length > 0) {
         const q = query.trim().toLowerCase();
         if (

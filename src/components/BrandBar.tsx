@@ -1,7 +1,7 @@
 import React from 'react';
-import { Users, Swords, History, LayoutDashboard, Gamepad2, Zap } from 'lucide-react';
+import { Users, Swords, History, LayoutDashboard, Gamepad2, Search, Trophy, Cpu, BarChart3, Scale, FileText } from 'lucide-react';
 
-export type AppView = 'dashboard' | 'draft' | 'players' | 'history';
+export type AppView = 'dashboard' | 'draft' | 'scouting' | 'series_prep' | 'simulator' | 'scrim' | 'calibration' | 'match_prep' | 'players' | 'history';
 
 interface BrandBarProps {
   status?: 'ready' | 'drafting' | 'complete';
@@ -79,6 +79,86 @@ export const BrandBar: React.FC<BrandBarProps> = ({
           {status === 'drafting' && (
             <span className="w-2 h-2 rounded-full bg-[#E91E63] animate-ping" title="กำลังดราฟต์อยู่" />
           )}
+        </button>
+
+        {/* 3. Opponent Scouting Tab */}
+        <button
+          onClick={() => onSelectView('scouting')}
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
+            currentView === 'scouting'
+              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
+              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
+          }`}
+        >
+          <Search size={14} className={currentView === 'scouting' ? 'text-[#E91E63]' : 'text-slate-400'} />
+          <span>สเกาต์คู่แข่ง</span>
+        </button>
+
+        {/* 4. Series Prep (BO3/5/7) Tab */}
+        <button
+          onClick={() => onSelectView('series_prep')}
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
+            currentView === 'series_prep'
+              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
+              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
+          }`}
+        >
+          <Trophy size={14} className={currentView === 'series_prep' ? 'text-[#E91E63]' : 'text-slate-400'} />
+          <span>แผนซีรีส์</span>
+        </button>
+
+        {/* 5. Draft Simulator Tab */}
+        <button
+          onClick={() => onSelectView('simulator')}
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
+            currentView === 'simulator'
+              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
+              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
+          }`}
+        >
+          <Cpu size={14} className={currentView === 'simulator' ? 'text-[#E91E63]' : 'text-slate-400'} />
+          <span>ซิมูเลเตอร์</span>
+        </button>
+
+        {/* 6. MCU Team Performance & Scrim Tab */}
+        <button
+          onClick={() => onSelectView('scrim')}
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
+            currentView === 'scrim'
+              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
+              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
+          }`}
+        >
+          <BarChart3 size={14} className={currentView === 'scrim' ? 'text-[#E91E63]' : 'text-slate-400'} />
+          <span>ผลงานทีม (Scrim)</span>
+        </button>
+
+        {/* 7. Draft Review & Calibration Tab */}
+        <button
+          onClick={() => onSelectView('calibration')}
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
+            currentView === 'calibration'
+              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
+              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
+          }`}
+        >
+          <Scale size={14} className={currentView === 'calibration' ? 'text-[#E91E63]' : 'text-slate-400'} />
+          <span>รีวิวและปรับสูตร</span>
+          <span className="hidden lg:inline text-[9.5px] opacity-75 font-normal">(Calibration)</span>
+        </button>
+
+        {/* 8. Match Preparation & Coach Report Tab */}
+        <button
+          onClick={() => onSelectView('match_prep')}
+          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
+            currentView === 'match_prep'
+              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
+              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
+          }`}
+        >
+          <FileText size={14} className={currentView === 'match_prep' ? 'text-[#E91E63]' : 'text-slate-400'} />
+          <span>รายงานเตรียมแข่ง</span>
+          <span className="hidden lg:inline text-[9.5px] opacity-75 font-normal">(Match Prep)</span>
         </button>
 
         {/* 3. Players Roster Tab */}

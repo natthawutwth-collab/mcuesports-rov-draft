@@ -190,6 +190,19 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
           </button>
         </div>
 
+        {/* Live Draft Overview Banner */}
+        <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-white border border-[#F3D5E2] text-[10.5px]">
+          <div className="flex items-center gap-1.5">
+            <span className="font-bold text-[#E91E63]">ดราฟต์สด:</span>
+            <span className="font-bold text-slate-800">{analysis.liveOverview.currentPhaseLabel}</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[9.5px] text-slate-600 font-medium">
+            <span>🔵 {analysis.liveOverview.activeTeam === 'blue' ? analysis.liveOverview.myPickCount : analysis.liveOverview.oppPickCount}/5 Picks</span>
+            <span>•</span>
+            <span>🔴 {analysis.liveOverview.activeTeam === 'red' ? analysis.liveOverview.myPickCount : analysis.liveOverview.oppPickCount}/5 Picks</span>
+          </div>
+        </div>
+
         {/* Perspective Toggle: Blue Side vs Red Side */}
         <div className="grid grid-cols-2 gap-2 p-1 bg-white rounded-xl border border-[#F3D5E2] shadow-2xs">
           <button
@@ -548,6 +561,111 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                 </div>
               );
             })}
+          </div>
+        </section>
+
+        {/* 3.5 BALANCED STRATEGY ASSESSMENT (7 DIMENSIONS) */}
+        <section className="bg-white border border-[#F3D5E2] rounded-xl p-3 space-y-2.5 shadow-xs font-['Prompt']">
+          <div className="flex items-center justify-between flex-wrap gap-1.5 pb-2 border-b border-[#F3D5E2]">
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-['Prompt'] text-[12px] font-bold tracking-wider uppercase text-[#1F2937] flex items-center gap-1">
+                  <span>⚖️</span>
+                  <span>BALANCED STRATEGY ASSESSMENT</span>
+                </span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-100 border border-slate-300 text-slate-600 font-bold">
+                  7 มิติ
+                </span>
+              </div>
+              <p className="text-[9.5px] text-slate-500 mt-0.5">
+                ประเมินโครงสร้างทีมตามคุณสมบัติฮีโร่ • ไม่ใช่โอกาสชนะ (Win Probability)
+              </p>
+            </div>
+
+            {/* Balanced Score Badge & Data Coverage */}
+            <div className="flex items-center gap-2 ml-auto">
+              <div className="flex flex-col items-end">
+                <span className="text-[8.5px] text-slate-400 font-medium">DATA COVERAGE</span>
+                <span className="text-[10px] font-bold text-slate-700 bg-slate-50 px-1.5 py-0.2 rounded border border-slate-200">
+                  {analysis.balancedStrategy.dataCoverage}%
+                </span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[8.5px] text-slate-400 font-medium">BALANCED SCORE</span>
+                <div className="flex items-center gap-1">
+                  <span
+                    className={`text-[12px] font-['Orbitron'] font-black px-2 py-0.5 rounded-lg border ${
+                      analysis.balancedStrategy.overallScore === null
+                        ? 'bg-slate-100 text-slate-500 border-slate-300'
+                        : analysis.balancedStrategy.overallScore >= 80
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                        : analysis.balancedStrategy.overallScore >= 65
+                        ? 'bg-sky-50 text-sky-800 border-sky-300'
+                        : 'bg-amber-50 text-amber-800 border-amber-300'
+                    }`}
+                  >
+                    {analysis.balancedStrategy.overallScore !== null
+                      ? `${analysis.balancedStrategy.overallScore}/100`
+                      : 'N/A'}
+                  </span>
+                  <span className="text-[10px] font-black text-slate-600">
+                    ({analysis.balancedStrategy.overallGrade})
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 7 Dimensions Breakdown */}
+          <div className="space-y-1.5">
+            {analysis.balancedStrategy.dimensions.map((dim) => (
+              <div
+                key={dim.key}
+                className="p-1.5 rounded-lg bg-[#FFF8FB] border border-[#F3D5E2]/80 flex flex-col gap-0.5 text-[10.5px]"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-semibold text-slate-800">{dim.label}</span>
+                    <span className="text-[9px] text-slate-400 font-bold">({dim.weight}%)</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={`font-['Orbitron'] text-[10px] font-bold ${
+                        dim.score === null
+                          ? 'text-slate-400'
+                          : dim.score >= 80
+                          ? 'text-emerald-700'
+                          : dim.score >= 60
+                          ? 'text-sky-700'
+                          : 'text-amber-700'
+                      }`}
+                    >
+                      {dim.score !== null ? `${dim.score}/100` : 'N/A'}
+                    </span>
+                    <span
+                      className={`text-[9px] px-1 rounded font-bold ${
+                        dim.grade === 'N/A'
+                          ? 'bg-slate-100 text-slate-500'
+                          : dim.grade.startsWith('A')
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : dim.grade.startsWith('B')
+                          ? 'bg-sky-100 text-sky-800'
+                          : 'bg-amber-100 text-amber-800'
+                      }`}
+                    >
+                      {dim.grade}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-[9.5px] text-slate-500 truncate" title={dim.details}>
+                  {dim.details}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-[8.5px] text-slate-400 italic pt-1 border-t border-[#F3D5E2]/60">
+            ℹ️ {analysis.balancedStrategy.disclaimer}
           </div>
         </section>
 
@@ -976,6 +1094,107 @@ export const CoachAnalysisPanel: React.FC<CoachAnalysisPanelProps> = ({
                 ไม่มีข้อมูลฮีโร่แนะนำสำหรับเงื่อนไขปัจจุบัน
               </div>
             )}
+          </div>
+        </section>
+
+        {/* 6. SMART BAN ADVISOR */}
+        {analysis.smartBans.length > 0 && (
+          <section className="bg-white border border-[#F3D5E2] rounded-xl p-3 space-y-2 shadow-xs font-['Prompt']">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <span className="font-['Prompt'] text-[12px] font-bold tracking-wider uppercase text-rose-700 flex items-center gap-1">
+                  <span>🚫</span>
+                  <span>SMART BAN ADVISOR</span>
+                </span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded bg-rose-50 border border-rose-200 text-rose-700 font-bold">
+                  {analysis.smartBans[0]?.phase || 'Phase 1'}
+                </span>
+              </div>
+              <span className="text-[9.5px] text-slate-500 font-medium">แนะนำตัวแบนเชิงกลยุทธ์</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              {analysis.smartBans.map((banItem) => (
+                <div
+                  key={banItem.hero.id}
+                  onClick={() => onSelectHeroToInspect(banItem.hero.name)}
+                  className="p-2 rounded-lg border border-rose-200 bg-rose-50/40 hover:bg-rose-50 flex items-center gap-2 transition-all shadow-2xs cursor-pointer group"
+                >
+                  <div className="relative w-8 h-8 rounded-lg overflow-hidden border border-rose-300 flex-shrink-0 group-hover:border-rose-500">
+                    <img
+                      src={banItem.hero.avatarUrl || getHeroImageUrl(banItem.hero.name)}
+                      alt={banItem.hero.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-rose-600 rounded-bl text-[7px] text-white flex items-center justify-center font-bold">
+                      ✕
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="font-bold text-[11px] text-slate-800 truncate group-hover:text-rose-700">
+                        {banItem.hero.name}
+                      </span>
+                      <span className="text-[8.5px] font-bold px-1 rounded bg-rose-100 text-rose-800 flex-shrink-0">
+                        {banItem.priority === 'must_ban' ? '🔥 MUST BAN' : '⚠️ HIGH'}
+                      </span>
+                    </div>
+                    <div className="text-[9px] text-slate-500 truncate mt-0.5" title={banItem.reason}>
+                      {banItem.reason}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 7. COACH INSIGHTS (Tactical Gameplan) */}
+        {analysis.coachInsights.length > 0 && (
+          <section className="bg-white border border-[#F3D5E2] rounded-xl p-3 space-y-2 shadow-xs font-['Prompt']">
+            <div className="flex items-center justify-between">
+              <span className="font-['Prompt'] text-[12px] font-bold tracking-wider uppercase text-slate-800 flex items-center gap-1">
+                <span>📋</span>
+                <span>COACH INSIGHTS (แผนการเล่น)</span>
+              </span>
+              <span className="text-[9.5px] text-slate-500 font-medium">Tactical Gameplan</span>
+            </div>
+
+            <div className="grid grid-cols-1 gap-1.5">
+              {analysis.coachInsights.map((insight) => (
+                <div
+                  key={insight.stage}
+                  className="p-2 rounded-lg bg-[#FFF8FB] border border-[#F3D5E2] flex flex-col gap-0.5 text-[10.5px]"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#E91E63] text-[10.5px]">{insight.title}</span>
+                    <span className="text-[9px] font-semibold text-slate-400 uppercase">{insight.stage}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-600 leading-relaxed font-normal">
+                    {insight.advice}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 8. DATA SOURCE & INTEGRITY STATUS */}
+        <section className="p-2.5 rounded-xl border border-slate-200 bg-slate-50/80 space-y-1 text-[9.5px] text-slate-600 font-['Prompt']">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-slate-700 flex items-center gap-1">
+              <span>📊</span>
+              <span>DATA SOURCE & INTEGRITY</span>
+            </span>
+            <span className="text-[8.5px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+              VERIFIED TOURNAMENT DATA
+            </span>
+          </div>
+          <div className="text-slate-500 leading-relaxed">
+            {analysis.dataSourceStatus.sourceName} • {analysis.dataSourceStatus.totalGames} Games ({analysis.dataSourceStatus.totalMatches} Matches) • Patch {analysis.dataSourceStatus.patch}
+          </div>
+          <div className="text-[8.5px] text-slate-400 italic">
+            {analysis.dataSourceStatus.note}
           </div>
         </section>
       </div>

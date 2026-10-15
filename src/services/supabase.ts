@@ -48,8 +48,9 @@ function resolveSupabaseCredentials(): { url: string; key: string } {
   }
 
   // 2. Check environment variables
-  const envUrl = cleanSupabaseUrl(import.meta.env.VITE_SUPABASE_URL as string | undefined);
-  const envAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim();
+  const metaEnv = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env : (typeof process !== 'undefined' && process.env ? process.env : {});
+  const envUrl = cleanSupabaseUrl(metaEnv.VITE_SUPABASE_URL as string | undefined);
+  const envAnonKey = (metaEnv.VITE_SUPABASE_ANON_KEY as string | undefined)?.trim();
 
   if (
     isValidHttpUrl(envUrl) &&

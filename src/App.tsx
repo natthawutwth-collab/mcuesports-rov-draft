@@ -10,16 +10,22 @@ import { DraftCenter } from './components/DraftCenter';
 import { HeroStatsSidePanel } from './components/HeroStatsSidePanel';
 import { CoachAnalysisPanel } from './components/CoachAnalysisPanel';
 import { StatsImportExportModal } from './components/StatsImportExportModal';
-import { MatchNotesSection } from './components/MatchNotesSection';
 import { PlayersPage } from './components/PlayersPage';
 import { DraftHistoryPage } from './components/DraftHistoryPage';
 import { DashboardView } from './components/DashboardView';
 import { AppView } from './components/BrandBar';
 import { PreDraftModal } from './components/PreDraftModal';
 import { SaveDraftModal } from './components/SaveDraftModal';
-import { DraftTacticalRadar } from './components/DraftTacticalRadar';
-import { TacticalSplitPanel, TacticalTab } from './components/TacticalSplitPanel';
 import { ProCompsModal } from './components/ProCompsModal';
+import { ScoutingView } from './components/ScoutingView';
+import { SeriesPrepView } from './components/SeriesPrepView';
+import { DraftSimulatorView } from './components/DraftSimulatorView';
+import { ScrimManagerView } from './components/scrim/ScrimManagerView';
+import { DraftReviewCalibrationView } from './components/DraftReviewCalibrationView';
+import { MatchPrepReportView } from './components/coachReport/MatchPrepReportView';
+import { PostDraftReportModal } from './components/PostDraftReportModal';
+import { GamePlan } from './types/seriesPrep';
+import { SimulatorScenario } from './types/simulator';
 import { RPL_2026_PRO_COMPS } from './data/proMetaComps';
 import { Toast } from './components/Toast';
 import { statsDataProvider } from './services/statsDataProvider';
@@ -32,28 +38,32 @@ const CURRENT_VIEW_KEY = 'mcu_rov_current_view';
 const SIDE_PANEL_OPEN_KEY = 'mcu_rov_side_panel_open';
 const SIDE_PANEL_TAB_KEY = 'mcu_rov_side_panel_tab';
 
+const VALID_VIEWS = new Set<AppView>([
+  'dashboard', 'draft', 'scouting', 'series_prep', 'simulator', 'scrim', 'calibration', 'match_prep', 'players', 'history'
+]);
+
 const getInitialView = (): AppView => {
   if (typeof window !== 'undefined') {
-    // 1. Check URL hash first (e.g. #dashboard, #players, #history, #draft)
-    const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
-    if (hash === 'dashboard' || hash === 'players' || hash === 'history' || hash === 'draft') {
-      return hash as AppView;
+    // 1. Check URL hash first (e.g. #dashboard, #players, #history, #draft, #scouting, #series_prep, #simulator)
+    const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase() as AppView;
+    if (VALID_VIEWS.has(hash)) {
+      return hash;
     }
-    // 2. Check query param (e.g. ?view=dashboard or ?tab=dashboard)
+    // 2. Check query param (e.g. ?view=scouting)
     try {
       const params = new URLSearchParams(window.location.search);
-      const queryView = params.get('view') || params.get('tab');
-      if (queryView === 'dashboard' || queryView === 'players' || queryView === 'history' || queryView === 'draft') {
-        return queryView as AppView;
+      const queryView = (params.get('view') || params.get('tab')) as AppView;
+      if (VALID_VIEWS.has(queryView)) {
+        return queryView;
       }
     } catch {
       // ignore
     }
     // 3. Check localStorage for last active page
     try {
-      const saved = localStorage.getItem(CURRENT_VIEW_KEY);
-      if (saved === 'dashboard' || saved === 'players' || saved === 'history' || saved === 'draft') {
-        return saved as AppView;
+      const saved = localStorage.getItem(CURRENT_VIEW_KEY) as AppView;
+      if (VALID_VIEWS.has(saved)) {
+        return saved;
       }
     } catch {
       // ignore
@@ -155,9 +165,9 @@ export default function App() {
   // Sync with browser back/forward and hash changes
   useEffect(() => {
     const onHashChange = () => {
-      const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase();
-      if (hash === 'players' || hash === 'history' || hash === 'draft') {
-        setCurrentView(hash as 'draft' | 'players' | 'history');
+      const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase() as AppView;
+      if (VALID_VIEWS.has(hash)) {
+        setCurrentView(hash);
         try {
           localStorage.setItem(CURRENT_VIEW_KEY, hash);
         } catch {
@@ -236,18 +246,6 @@ export default function App() {
     setRoleFilter,
     searchQuery,
     setSearchQuery,
-    matchGames,
-    blueSeriesNote,
-    setBlueSeriesNote,
-    redSeriesNote,
-    setRedSeriesNote,
-    saveToMatchNotes,
-    addEmptyGame,
-    clearAllGames,
-    updateGameWinner,
-    updateGameNote,
-    updateGameSlot,
-    deleteGame,
     toastMessage,
     showToast,
   } = useDraconmindDraft();
@@ -274,12 +272,12 @@ export default function App() {
   // Small phone screen detection (< 680px). Tablets (>= 680px: iPads, Galaxy Tabs) get first-class responsive arena!
   const isPhoneScreen = windowWidth < 680;
 
-  // Tablet screen detection (680px to 1180px, including iPad portrait & landscape, Galaxy tabs)
+  // Tablet screen detection (680px to 1280px, including iPad portrait & landscape, Galaxy tabs)
   const isTabletScreen =
-    (windowWidth >= 680 && windowWidth <= 1180) ||
+    (windowWidth >= 680 && windowWidth <= 1280) ||
     (typeof navigator !== 'undefined' &&
       navigator.maxTouchPoints > 1 &&
-      windowWidth <= 1200 &&
+      windowWidth <= 1366 &&
       windowWidth >= 680);
 
   // Scaled 3-column PC layout on mobile (Heroes in center, Blue left, Red right - scaled to fit screen)
@@ -312,24 +310,89 @@ export default function App() {
     }
   }, []);
 
-  // Tactical Radar active tab (controllable from top DraftHeader toolbar)
-  const [radarActiveTab, setRadarActiveTab] = useState<'recommendations' | 'synergy' | 'predictions'>('recommendations');
   const [isProCompsOpen, setIsProCompsOpen] = useState<boolean>(false);
+  const [isLivePostDraftReportOpen, setIsLivePostDraftReportOpen] = useState<boolean>(false);
+  const [simulatorInitialScenario, setSimulatorInitialScenario] = useState<SimulatorScenario | undefined>(undefined);
 
-  // Split Screen 3-Part Tactical Panel (2 parts Draft : 1 part Tactical Information)
-  // When active ('recommendations' | 'synergy' | 'predictions' | 'pro_comps'):
-  // Screen splits into 3 parts side-by-side!
-  // When null: Draft takes 100% full width.
-  const [activeTacticalTab, setActiveTacticalTab] = useState<TacticalTab | null>(null);
+  // Handler to load a game plan from Series Prep into Live Draft
+  const handleLoadGameFromSeriesPrepIntoLive = useCallback((game: GamePlan) => {
+    setBlueIsUs(game.side === 'blue');
+    showToast(`⚔️ โหลดแผน Game ${game.gameNumber} (${game.side.toUpperCase()}) เข้าสู่ห้องดราฟต์สดแล้ว`);
+    handleSelectView('draft');
+  }, [showToast, setBlueIsUs]);
 
-  const handleToggleTacticalTab = (tab: TacticalTab) => {
-    setActiveTacticalTab((prev) => (prev === tab ? null : tab));
-  };
+  // Handler to load a game plan from Series Prep into Draft Simulator
+  const handleLoadGameFromSeriesPrepIntoSimulator = useCallback((game: GamePlan, seriesName: string) => {
+    const blueBans = game.side === 'blue'
+      ? game.targetBans.map((name) => ({ hero: HEROES.find((h) => h.name.toLowerCase() === name.toLowerCase()) || null }))
+      : [{ hero: null }, { hero: null }, { hero: null }, { hero: null }];
+    const redBans = game.side === 'red'
+      ? game.targetBans.map((name) => ({ hero: HEROES.find((h) => h.name.toLowerCase() === name.toLowerCase()) || null }))
+      : [{ hero: null }, { hero: null }, { hero: null }, { hero: null }];
 
-  const handleSelectRadarTab = (tab: 'recommendations' | 'synergy' | 'predictions') => {
-    setRadarActiveTab(tab);
-    setActiveTacticalTab(tab);
-  };
+    const initialPicks = game.preferredPicks.map((p) => ({
+      hero: HEROES.find((h) => h.name.toLowerCase() === p.preferredHero?.toLowerCase()) || null,
+      pos: p.role as any,
+    }));
+
+    const sc: SimulatorScenario = {
+      id: `sim_series_${Date.now()}`,
+      name: `${seriesName} - Game ${game.gameNumber}`,
+      description: `สร้างจากแผนซีรีส์ Game ${game.gameNumber}`,
+      tags: ['series_prep'],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      blueTeamName: game.side === 'blue' ? 'MCU Esports' : 'Opponent Team',
+      redTeamName: game.side === 'red' ? 'MCU Esports' : 'Opponent Team',
+      blueBans: blueBans.slice(0, 4),
+      redBans: redBans.slice(0, 4),
+      bluePicks: game.side === 'blue' ? initialPicks : [
+        { hero: null, pos: 'DSL' }, { hero: null, pos: 'JG' }, { hero: null, pos: 'MID' }, { hero: null, pos: 'ROAM' }, { hero: null, pos: 'ADL' }
+      ],
+      redPicks: game.side === 'red' ? initialPicks : [
+        { hero: null, pos: 'DSL' }, { hero: null, pos: 'JG' }, { hero: null, pos: 'MID' }, { hero: null, pos: 'ROAM' }, { hero: null, pos: 'ADL' }
+      ],
+      turnIdx: 0,
+      turnSel: 0,
+      notes: game.coachNotes || '',
+    };
+
+    setSimulatorInitialScenario(sc);
+    showToast(`🧪 โหลด Game ${game.gameNumber} เข้าสู่ Draft Simulator แล้ว`);
+    handleSelectView('simulator');
+  }, [showToast]);
+
+  // Handler to fork current live draft into simulator without mutating live draft
+  const handleForkLiveDraftToSimulator = useCallback(() => {
+    const sc: SimulatorScenario = {
+      id: `sim_fork_${Date.now()}`,
+      name: `จำลองจาก Live Draft - ${blueTeamName} vs ${redTeamName}`,
+      description: 'โคลนสถานะจากห้องดราฟต์สดเพื่อทดลองต่อยอด',
+      tags: ['live_fork'],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      blueTeamName,
+      redTeamName,
+      blueBans: blueBans.map((b) => ({ hero: b })),
+      redBans: redBans.map((b) => ({ hero: b })),
+      bluePicks: bluePicks.map((p) => ({ hero: p.hero, pos: p.pos })),
+      redPicks: redPicks.map((p) => ({ hero: p.hero, pos: p.pos })),
+      turnIdx: draftTurnIdx,
+      turnSel: draftTurnSel,
+      notes: `จำลองต่อจาก Live Draft เทิร์นที่ ${draftTurnIdx + 1}`,
+    };
+    setSimulatorInitialScenario(sc);
+    handleSelectView('simulator');
+    showToast('⚔️ โคลนสถานะดราฟต์สดเข้าสู่ Draft Simulator เรียบร้อยแล้ว (ไม่กระทบเกมจริง)');
+  }, [blueTeamName, redTeamName, blueBans, redBans, bluePicks, redPicks, draftTurnIdx, draftTurnSel, showToast, handleSelectView]);
+
+  // Handler to apply scenario from Simulator into Live Draft
+  const handleApplySimulatorToLiveDraft = useCallback((scenario: SimulatorScenario) => {
+    setBlueTeamName(scenario.blueTeamName || 'Blue Team');
+    setRedTeamName(scenario.redTeamName || 'Red Team');
+    showToast(`⚔️ นำเข้าสถานะจำลอง "${scenario.name}" สู่ Live Draft สำเร็จ`);
+    handleSelectView('draft');
+  }, [showToast, setBlueTeamName, setRedTeamName]);
 
   // Container ref to measure exact available width
   const arenaContainerRef = useRef<HTMLDivElement>(null);
@@ -719,6 +782,48 @@ export default function App() {
             return ok;
           }}
         />
+      ) : currentView === 'scouting' ? (
+        <ScoutingView
+          onOpenDataModal={() => setIsDataModalOpen(true)}
+          onOpenNewDraft={() => {
+            handleSelectView('draft');
+            handleOpenPreDraft();
+          }}
+        />
+      ) : currentView === 'series_prep' ? (
+        <SeriesPrepView
+          onLoadIntoLiveDraft={handleLoadGameFromSeriesPrepIntoLive}
+          onLoadIntoSimulator={handleLoadGameFromSeriesPrepIntoSimulator}
+        />
+      ) : currentView === 'simulator' ? (
+        <DraftSimulatorView
+          initialScenario={simulatorInitialScenario}
+          onApplyToLiveDraft={handleApplySimulatorToLiveDraft}
+          players={players}
+          liveDraftSnapshot={{
+            blueTeamName,
+            redTeamName,
+            blueBans: blueBans.map((b) => ({ hero: b })),
+            redBans: redBans.map((b) => ({ hero: b })),
+            bluePicks: bluePicks.map((p) => ({ hero: p.hero, pos: p.pos })),
+            redPicks: redPicks.map((p) => ({ hero: p.hero, pos: p.pos })),
+            turnIdx: draftTurnIdx,
+          }}
+        />
+      ) : currentView === 'scrim' ? (
+        <ScrimManagerView
+          players={players}
+        />
+      ) : currentView === 'calibration' ? (
+        <DraftReviewCalibrationView
+          onSelectView={handleSelectView}
+          onOpenLiveDraft={() => handleSelectView('draft')}
+        />
+      ) : currentView === 'match_prep' ? (
+        <MatchPrepReportView
+          onSelectView={handleSelectView}
+          onOpenDraftWithPlan={() => handleSelectView('draft')}
+        />
       ) : currentView === 'history' ? (
         <DraftHistoryPage
           onInspectHero={handleInspectHero}
@@ -760,9 +865,10 @@ export default function App() {
             canUndo={canUndo}
             onReset={resetDraft}
             onStartNewDraft={handleOpenPreDraft}
-            onSaveMatchNote={saveToMatchNotes}
             onOpenSaveDraft={handleOpenSaveDraft}
+            onOpenPostDraftReport={() => setIsLivePostDraftReportOpen(true)}
             onOpenSetupModal={handleOpenPreDraft}
+            onForkToSimulator={handleForkLiveDraftToSimulator}
             isDraftComplete={isDraftComplete}
             matchMetadata={matchMetadata}
             draftActive={draftActive}
@@ -774,13 +880,7 @@ export default function App() {
             selectedTeamCategory={selectedTeamCategory}
             onChangeTeamCategory={changeTeamCategory}
             playerCounts={playerCounts}
-            activeTacticalPanelTab={activeTacticalTab}
-            onToggleTacticalTab={handleToggleTacticalTab}
-            radarActiveTab={radarActiveTab}
-            onSelectRadarTab={handleSelectRadarTab}
             isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
-            onOpenProComps={() => handleToggleTacticalTab('pro_comps')}
-            proCompsCount={RPL_2026_PRO_COMPS.length}
           />
 
           {/* Main Draft Area - Zero horizontal scroll on any device */}
@@ -905,157 +1005,8 @@ export default function App() {
                   </main>
                 </div>
               </div>
-            ) : activeTacticalTab ? (
-              /* Split Screen Mode: 3 Parts (2 Parts Draft [~67%], 1 Part Info [~33%]) — Spacious, Organized, Never Cramped */
-              <main className="w-full flex flex-row items-start gap-2 lg:gap-2.5 min-h-0 overflow-x-hidden">
-                {/* 2 PARTS: Draft Arena (Flexible, takes ~67% screen width) */}
-                <div className="flex-[2] min-w-0 flex flex-row items-start gap-1.5 sm:gap-2">
-                  {/* Left: Blue Side */}
-                  <div
-                    id="blue-team-column"
-                    ref={setBlueColumnRef}
-                    className="w-[130px] sm:w-[140px] md:w-[150px] lg:w-[170px] xl:w-[190px] flex-shrink-0"
-                  >
-                    <TeamColumn
-                      side="blue"
-                      compact={true}
-                      className="w-full h-full"
-                      teamName={blueTeamName}
-                      isUs={blueIsUs}
-                      bans={blueBans}
-                      picks={bluePicks}
-                      currentTurnSlot={currentTurnSlot}
-                      onSlotClick={(phase, index) => setManualTarget({ team: 'blue', phase, index })}
-                      onClearSlot={(phase, index) => clearSlot('blue', phase, index)}
-                      onChangePickPos={(index, pos) => changePickPos('blue', index, pos)}
-                      onInspectHero={handleInspectHero}
-                      inspectedHeroName={inspectedHeroName}
-                      players={players}
-                      onAssignPlayer={(slotIndex, player) => assignPlayerToPickSlot('blue', slotIndex, player)}
-                      teamCategory={selectedTeamCategory}
-                    />
-                  </div>
-
-                  {/* Center: Draft Center Arena — Strictly bounded to Blue Column height */}
-                  <div
-                    id="center-draft-arena"
-                    className="flex-1 flex flex-col min-w-0 overflow-hidden"
-                    style={{
-                      height: `${blueColumnHeight}px`,
-                      maxHeight: `${blueColumnHeight}px`,
-                    }}
-                  >
-                    <DraftCenter
-                      compact={true}
-                      isTablet={isTabletScreen}
-                      draftActive={draftActive}
-                      draftTurnIdx={draftTurnIdx}
-                      draftTurnSel={draftTurnSel}
-                      isDraftComplete={isDraftComplete}
-                      currentTurnSlot={currentTurnSlot}
-                      blueTeamName={blueTeamName}
-                      redTeamName={redTeamName}
-                      searchQuery={searchQuery}
-                      setSearchQuery={setSearchQuery}
-                      roleFilter={roleFilter}
-                      setRoleFilter={setRoleFilter}
-                      timerSec={timerSec}
-                      timerMax={timerMax}
-                      isTimerPaused={isTimerPaused}
-                      toggleTimerPause={toggleTimerPause}
-                      bannedHeroNames={bannedHeroNames}
-                      pickedHeroNames={pickedHeroNames}
-                      onSelectHero={handleSelectHero}
-                      blueScore={draftScore}
-                      redScore={redDraftScore}
-                      heroToPlayersMap={heroToPlayersMap}
-                      inspectedHeroName={inspectedHeroName}
-                      onInspectHero={handleInspectHero}
-                      isStatsOpen={isSidePanelOpen && sidePanelTab === 'stats'}
-                      onToggleStats={handleToggleStatsPanel}
-                      onOpenCoachPanel={handleToggleCoachPanel}
-                      selectedTeamCategory={selectedTeamCategory}
-                      onChangeTeamCategory={changeTeamCategory}
-                      bluePicks={bluePicks}
-                      redPicks={redPicks}
-                    />
-                  </div>
-
-                  {/* Right: Red Side */}
-                  <div
-                    id="red-team-column"
-                    className="w-[130px] sm:w-[140px] md:w-[150px] lg:w-[170px] xl:w-[190px] flex-shrink-0"
-                    style={{
-                      height: `${blueColumnHeight}px`,
-                      maxHeight: `${blueColumnHeight}px`,
-                    }}
-                  >
-                    <TeamColumn
-                      side="red"
-                      compact={true}
-                      className="w-full h-full"
-                      teamName={redTeamName}
-                      isUs={!blueIsUs}
-                      bans={redBans}
-                      picks={redPicks}
-                      currentTurnSlot={currentTurnSlot}
-                      onSlotClick={(phase, index) => setManualTarget({ team: 'red', phase, index })}
-                      onClearSlot={(phase, index) => clearSlot('red', phase, index)}
-                      onChangePickPos={(index, pos) => changePickPos('red', index, pos)}
-                      onInspectHero={handleInspectHero}
-                      inspectedHeroName={inspectedHeroName}
-                      players={players}
-                      onAssignPlayer={(slotIndex, player) => assignPlayerToPickSlot('red', slotIndex, player)}
-                      teamCategory={selectedTeamCategory}
-                    />
-                  </div>
-                </div>
-
-                {/* 1 PART: Tactical Information Panel (Proportional Sidebar Dock ~33% width) */}
-                <div
-                  id="tactical-split-panel-column"
-                  className="flex-1 min-w-[260px] max-w-[420px] flex-shrink-0 flex flex-col"
-                  style={{
-                    height: `${blueColumnHeight}px`,
-                    maxHeight: `${blueColumnHeight}px`,
-                  }}
-                >
-                  <TacticalSplitPanel
-                    activeTab={activeTacticalTab}
-                    onTabChange={setActiveTacticalTab}
-                    onClose={() => setActiveTacticalTab(null)}
-                    onExpandModal={() => setIsProCompsOpen(true)}
-                    blueBans={blueBans}
-                    redBans={redBans}
-                    bluePicks={bluePicks}
-                    redPicks={redPicks}
-                    bannedHeroNames={bannedHeroNames}
-                    pickedHeroNames={pickedHeroNames}
-                    onInspectHero={handleInspectHero}
-                    onPickHeroDirectly={(heroName) => {
-                      const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
-                      if (h) handleSelectHero(h);
-                    }}
-                    onBanHeroDirectly={(heroName) => {
-                      const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
-                      if (h) handleSelectHero(h);
-                    }}
-                    isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
-                    isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
-                    activeTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
-                    blueTeamName={blueTeamName}
-                    redTeamName={redTeamName}
-                    blueScore={draftScore}
-                    redScore={redDraftScore}
-                    players={players}
-                    heroToPlayersMap={heroToPlayersMap}
-                    inspectedHeroName={inspectedHeroName}
-                    height={blueColumnHeight}
-                  />
-                </div>
-              </main>
             ) : (
-              /* PC / Tablet View: 100% Fluid 3-Column Arena (when tactical panel is closed) */
+              /* PC / Tablet View: 100% Fluid 3-Column Arena */
               <main className={`w-full flex flex-row items-start ${
                 isTabletScreen ? 'justify-center gap-2' : 'gap-2 lg:gap-3'
               } min-h-0 overflow-x-hidden`}>
@@ -1171,82 +1122,7 @@ export default function App() {
             )}
           </div>
 
-          {/* Phone View: Render Tactical Panel below if activated on small phone */}
-          {isPhoneScreen && activeTacticalTab && (
-            <div className="w-full mb-3 px-1">
-              <TacticalSplitPanel
-                activeTab={activeTacticalTab}
-                onTabChange={setActiveTacticalTab}
-                onClose={() => setActiveTacticalTab(null)}
-                onExpandModal={() => setIsProCompsOpen(true)}
-                blueBans={blueBans}
-                redBans={redBans}
-                bluePicks={bluePicks}
-                redPicks={redPicks}
-                bannedHeroNames={bannedHeroNames}
-                pickedHeroNames={pickedHeroNames}
-                onInspectHero={handleInspectHero}
-                onPickHeroDirectly={(heroName) => {
-                  const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
-                  if (h) handleSelectHero(h);
-                }}
-                onBanHeroDirectly={(heroName) => {
-                  const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
-                  if (h) handleSelectHero(h);
-                }}
-                isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
-                isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
-                activeTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
-                blueTeamName={blueTeamName}
-                redTeamName={redTeamName}
-                blueScore={draftScore}
-                redScore={redDraftScore}
-                players={players}
-                heroToPlayersMap={heroToPlayersMap}
-                inspectedHeroName={inspectedHeroName}
-                height={540}
-              />
-            </div>
-          )}
 
-          {/* Real-time Draft Tactical Radar: Ban Intents, Pick Combos, Counter Recommendations (Only visible if split panel is not active) */}
-          {!activeTacticalTab && (
-            <div id="draft-tactical-radar-section" className="w-full mb-3 select-none">
-              <DraftTacticalRadar
-                blueBans={blueBans}
-                redBans={redBans}
-                bluePicks={bluePicks}
-                redPicks={redPicks}
-                bannedHeroNames={bannedHeroNames}
-                pickedHeroNames={pickedHeroNames}
-                onInspectHero={handleInspectHero}
-                onPickHeroDirectly={(heroName) => {
-                  const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
-                  if (h) handleSelectHero(h);
-                }}
-                isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
-                isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
-                activeTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
-                onBanHeroDirectly={(heroName) => {
-                  const h = HEROES.find((item) => item.name.toLowerCase() === heroName.toLowerCase());
-                  if (h) handleSelectHero(h);
-                }}
-                blueTeamName={blueTeamName}
-                redTeamName={redTeamName}
-                blueScore={draftScore}
-                redScore={redDraftScore}
-                players={players}
-                heroToPlayersMap={heroToPlayersMap}
-                inspectedHeroName={inspectedHeroName}
-                activeTab={radarActiveTab}
-                onTabChange={(tab) => {
-                  if (tab !== 'overview') {
-                    setRadarActiveTab(tab);
-                  }
-                }}
-              />
-            </div>
-          )}
 
           {/* Slide-out Coach Drawer overlay for screens < 1280px & mobile */}
           {isSidePanelOpen && (
@@ -1275,23 +1151,7 @@ export default function App() {
             </div>
           )}
 
-          {/* Match Notes Section (BO3..BO7 Series Notes) */}
-          <MatchNotesSection
-            games={matchGames}
-            blueTeamName={blueTeamName}
-            redTeamName={redTeamName}
-            blueIsUs={blueIsUs}
-            blueSeriesNote={blueSeriesNote}
-            setBlueSeriesNote={setBlueSeriesNote}
-            redSeriesNote={redSeriesNote}
-            setRedSeriesNote={setRedSeriesNote}
-            onAddEmptyGame={addEmptyGame}
-            onClearAllGames={clearAllGames}
-            onUpdateWinner={updateGameWinner}
-            onUpdateNote={updateGameNote}
-            onUpdateSlot={updateGameSlot}
-            onDeleteGame={deleteGame}
-          />
+
         </>
       )}
 
@@ -1350,6 +1210,16 @@ export default function App() {
         }}
         isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
         isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
+      />
+
+      {/* Live Draft Post-Draft Strategic Report Modal */}
+      <PostDraftReportModal
+        isOpen={isLivePostDraftReportOpen}
+        onClose={() => setIsLivePostDraftReportOpen(false)}
+        blueTeamName={blueTeamName}
+        redTeamName={redTeamName}
+        bluePicks={bluePicks}
+        redPicks={redPicks}
       />
 
       {/* 4. Mobile Floating Bottom Quick Action Dock (Compact, Ergonomic, Clean) */}

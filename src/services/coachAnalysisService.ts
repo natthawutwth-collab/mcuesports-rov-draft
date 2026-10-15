@@ -3,6 +3,7 @@ import { Player, HeroPlayerBadge, PlayerPosition } from '../types/player';
 import { PickSlotState } from '../hooks/useDraconmindDraft';
 import { statsDataProvider } from './statsDataProvider';
 import { HeroMatchup, HeroSynergy } from '../types/stats';
+import { calibrationService } from './calibrationService';
 
 export type CompRoleKey = 'DSL' | 'Jungle' | 'Mid' | 'Support' | 'ADL';
 
@@ -142,8 +143,65 @@ export interface SuggestedPickItem {
   };
 }
 
+export interface StrategyDimension {
+  key: string;
+  label: string;
+  weight: number; // e.g. 20 for 20%
+  score: number | null; // null if N/A
+  grade: string; // 'A+' | 'A' | 'B+' | 'B' | 'C' | 'N/A'
+  details: string;
+  hasData: boolean;
+}
+
+export interface BalancedStrategyAssessment {
+  dimensions: StrategyDimension[];
+  overallScore: number | null; // null if N/A
+  overallGrade: string; // 'A+' | 'A' | 'B+' | 'B' | 'C' | 'N/A'
+  dataCoverage: number; // 0 to 100 percentage
+  hasSufficientData: boolean;
+  disclaimer: string;
+}
+
+export interface SmartBanItem {
+  hero: Hero;
+  reason: string;
+  priority: 'must_ban' | 'high_priority' | 'situational';
+  categoryLabel: string;
+  phase: 'Phase 1 Ban' | 'Phase 2 Ban';
+  targetRole?: string;
+  isAvailable: boolean;
+}
+
+export interface CoachInsightItem {
+  stage: 'Early Game' | 'Mid Game' | 'Late Game' | 'Key Win Condition';
+  title: string;
+  advice: string;
+}
+
+export interface DataSourceStatus {
+  sourceName: string;
+  totalGames: number;
+  totalMatches: number;
+  patch: string;
+  coveragePercentage: number;
+  hasVerifiedStats: boolean;
+  note: string;
+}
+
+export interface LiveDraftOverviewInfo {
+  activeTeam: 'blue' | 'red';
+  myPickCount: number;
+  oppPickCount: number;
+  myBanCount: number;
+  oppBanCount: number;
+  currentPhaseLabel: string;
+}
+
 export interface CoachAnalysisResult {
-  // Inspected Hero Analysis
+  // 1. Live Draft Overview
+  liveOverview: LiveDraftOverviewInfo;
+
+  // 2. Inspected Hero Analysis
   inspectedHero: Hero | null;
   playerFit: {
     heroName: string;
@@ -173,15 +231,27 @@ export interface CoachAnalysisResult {
     worstWith: HeroSynergy[];
   };
 
-  // Team Comp
+  // 3. Team Composition Analyzer
   myTeamComp: TeamCompAnalysis;
   oppTeamComp: TeamCompAnalysis;
 
-  // Warnings
+  // 4. Balanced Strategy Assessment (7 Dimensions)
+  balancedStrategy: BalancedStrategyAssessment;
+
+  // 5. Smart Ban Advisor
+  smartBans: SmartBanItem[];
+
+  // 6. Draft Risk Detection (Warnings)
   warnings: DraftWarningItem[];
 
-  // Suggested Picks
+  // 7. Smart Pick Recommendation (Top 3-5)
   suggestedPicks: SuggestedPickItem[];
+
+  // 8. Coach Insight
+  coachInsights: CoachInsightItem[];
+
+  // 9. Data Source & Confidence Status
+  dataSourceStatus: DataSourceStatus;
 }
 
 export function analyzeCoachDraft(params: {
@@ -442,6 +512,8 @@ export function analyzeCoachDraft(params: {
     (h) => h.roles.includes('tank') || (h.roles.includes('support') && h.primaryPos === 'roam')
   );
 
+  const activeWeights = calibrationService.getActiveWeights();
+
   allHeroes.forEach((hero) => {
     // Exclude if already picked or banned
     if (bannedHeroNames.has(hero.name) || pickedHeroNames.has(hero.name)) {
@@ -459,10 +531,14 @@ export function analyzeCoachDraft(params: {
     const heroCompRoles = getHeroCompRoles(hero);
     const heroPrimaryComp = mapToCompRole(hero.primaryPos) || heroCompRoles[0];
 
-    // Factor 1: Team Composition & Missing Role Fit (Weight: ~25-30)
+    // Factor 1: Team Composition & Missing Role Fit (Weight: calibrated from activeWeights)
     const fillsMissing = heroCompRoles.find((r) => myTeamComp.missingRoles.includes(r));
     if (fillsMissing) {
-      const rolePriorityBonus = pickedCount >= 4 ? 30 : pickedCount === 3 ? 28 : 26;
+      const rolePriorityBonus = pickedCount >= 4
+        ? activeWeights.missingRoleWeight
+        : pickedCount === 3
+        ? Math.round(activeWeights.missingRoleWeight * 0.93)
+        : Math.round(activeWeights.missingRoleWeight * 0.86);
       score += rolePriorityBonus;
       reasons.push(`เติมตำแหน่ง ${fillsMissing} ที่ยังขาด`);
     } else if (myTeamComp.missingRoles.length > 0) {
@@ -473,18 +549,24 @@ export function analyzeCoachDraft(params: {
       riskPoints.push(`อาจทำให้ขาดตำแหน่ง ${myTeamComp.missingRoles.join(', ')}`);
     }
 
-    // Factor 2: Player Hero Pool (Signature > Comfortable > Out of Pool) (Weight: ~12-22)
+    // Factor 2: Player Hero Pool (Signature > Comfortable > Out of Pool) (Calibrated weight)
     const playerBadges = heroToPlayersMap[hero.name] || [];
     const sigBadge = playerBadges.find((b) => b.tier === 'signature');
     const comfBadge = playerBadges.find((b) => b.tier === 'comfortable');
 
     if (sigBadge) {
       const isRoleMatched = mapToCompRole(sigBadge.position) === fillsMissing;
-      score += isRoleMatched ? 22 : 14;
+      const sigBonus = isRoleMatched
+        ? activeWeights.playerSignatureWeight
+        : Math.round(activeWeights.playerSignatureWeight * 0.64);
+      score += sigBonus;
       reasons.push(`⭐ Signature ของ ${sigBadge.playerNickname} (${sigBadge.position})`);
     } else if (comfBadge) {
       const isRoleMatched = mapToCompRole(comfBadge.position) === fillsMissing;
-      score += isRoleMatched ? 12 : 7;
+      const comfBonus = isRoleMatched
+        ? activeWeights.playerComfortableWeight
+        : Math.round(activeWeights.playerComfortableWeight * 0.58);
+      score += comfBonus;
       reasons.push(`★ Comfortable ของ ${comfBadge.playerNickname} (${comfBadge.position})`);
     } else {
       score -= 6;
@@ -508,14 +590,20 @@ export function analyzeCoachDraft(params: {
 
         if (h2h.diff >= 4) {
           matchupAdvantageCount++;
-          const bonus = Math.min(14, Math.round(h2h.diff * 1.1 * sampleDamping * roleRelevance));
+          const bonus = Math.min(
+            activeWeights.matchupAdvantageWeight,
+            Math.round(h2h.diff * 1.1 * sampleDamping * roleRelevance)
+          );
           score += bonus;
           strongCounters.push(oppName);
           const sampleNote = h2h.games < 4 ? ` (สถิติตัวอย่างน้อย: ${h2h.games} เกม)` : ` (${h2h.games} เกม)`;
           reasons.push(`⚔️ ชนะทาง ${oppName} (+${h2h.diff.toFixed(1)}% ใน${sampleNote})`);
         } else if (h2h.diff <= -4) {
           matchupDisadvantageCount++;
-          const penalty = Math.min(18, Math.round(Math.abs(h2h.diff) * 1.3 * sampleDamping));
+          const penalty = Math.min(
+            activeWeights.matchupDisadvantagePenalty,
+            Math.round(Math.abs(h2h.diff) * 1.3 * sampleDamping)
+          );
           score -= penalty;
           weakCounters.push(oppName);
           const sampleNote = h2h.games < 4 ? ` (ตัวอย่างน้อย: ${h2h.games} เกม)` : ` (${h2h.games} เกม)`;
@@ -535,7 +623,10 @@ export function analyzeCoachDraft(params: {
       if (synergy && synergy.games >= 2) {
         const sampleDamping = synergy.games >= 8 ? 1.0 : synergy.games >= 4 ? 0.8 : 0.6;
         if (synergy.winRate >= 55 || (synergy.diff !== undefined && synergy.diff >= 3)) {
-          score += Math.min(10, Math.round((synergy.winRate - 50) * 0.6 * sampleDamping));
+          score += Math.min(
+            activeWeights.synergyWeight,
+            Math.round((synergy.winRate - 50) * 0.6 * sampleDamping)
+          );
           const sampleNote = synergy.games < 4 ? ` (ตัวอย่างน้อย ${synergy.games} เกม)` : '';
           reasons.push(`🤝 คอมโบเข้าขา ${allyName} (WR ${synergy.winRate.toFixed(1)}%${sampleNote})`);
         } else if (synergy.winRate <= 42 || (synergy.diff !== undefined && synergy.diff <= -5)) {
@@ -561,7 +652,7 @@ export function analyzeCoachDraft(params: {
         if (heroStats.winRate >= 56) {
           // Gated bonus: only fully rewarded if player fits or role fits
           const synergyMultiplier = (fillsMissing || sigBadge || comfBadge) ? 1.0 : 0.4;
-          const statBonus = Math.round(10 * synergyMultiplier);
+          const statBonus = Math.round(activeWeights.tournamentMetaWeight * synergyMultiplier);
           score += statBonus;
           reasons.push(`🔥 เมต้าเด่น RPL (WR ${heroStats.winRate.toFixed(1)}%, ${heroStats.games} เกม)`);
         } else if (heroStats.winRate <= 44) {
@@ -571,7 +662,7 @@ export function analyzeCoachDraft(params: {
         }
       } else if (heroStats.games >= 5) {
         if (heroStats.winRate >= 58 && (fillsMissing || sigBadge)) {
-          score += 5;
+          score += Math.max(3, Math.round(activeWeights.tournamentMetaWeight * 0.5));
           reasons.push(`สถิติดีในโปรลีก (${heroStats.winRate.toFixed(1)}% จาก ${heroStats.games} เกม)`);
         }
       } else {
@@ -589,7 +680,10 @@ export function analyzeCoachDraft(params: {
       if (activeTeam === 'blue' && bTotal >= 5) {
         const bWr = (bWins / bTotal) * 100;
         if (bWr >= 58) {
-          const sideBonus = Math.min(6, Math.round((bWr - 50) * 0.35));
+          const sideBonus = Math.min(
+            activeWeights.sideBiasWeight,
+            Math.round((bWr - 50) * 0.35)
+          );
           score += sideBonus;
           reasons.push(`🔵 สถิติเด่นฝั่ง Blue (WR ${bWr.toFixed(1)}% ใน ${bTotal} เกม)`);
         } else if (bWr <= 40 && bTotal >= 8) {
@@ -599,7 +693,10 @@ export function analyzeCoachDraft(params: {
       } else if (activeTeam === 'red' && rTotal >= 5) {
         const rWr = (rWins / rTotal) * 100;
         if (rWr >= 58) {
-          const sideBonus = Math.min(6, Math.round((rWr - 50) * 0.35));
+          const sideBonus = Math.min(
+            activeWeights.sideBiasWeight,
+            Math.round((rWr - 50) * 0.35)
+          );
           score += sideBonus;
           reasons.push(`🔴 สถิติเด่นฝั่ง Red (WR ${rWr.toFixed(1)}% ใน ${rTotal} เกม)`);
         } else if (rWr <= 40 && rTotal >= 8) {
@@ -698,17 +795,452 @@ export function analyzeCoachDraft(params: {
     return bGames - aGames;
   });
 
-  // Take top 8 suggested picks
-  const suggestedPicks = candidateScores.slice(0, 8);
+  // Take top 5 suggested picks (3-5 items as per spec)
+  const suggestedPicks = candidateScores.slice(0, 5);
+
+  // 6. Live Draft Overview
+  const myPickCount = myPicks.filter((p) => p.hero !== null).length;
+  const oppPickCount = oppPicks.filter((p) => p.hero !== null).length;
+  const myBanCount = (params.myBans || []).filter(Boolean).length;
+  const oppBanCount = (params.oppBans || []).filter(Boolean).length;
+  const totalBans = myBanCount + oppBanCount;
+  const totalPicks = myPickCount + oppPickCount;
+
+  let currentPhaseLabel = 'Phase 1 Ban';
+  if (totalPicks >= 10) {
+    currentPhaseLabel = 'Completed';
+  } else if (totalPicks >= 6 || totalBans >= 4) {
+    currentPhaseLabel = totalPicks >= 6 && totalBans < 8 ? 'Phase 2 Ban' : 'Phase 2 Pick';
+  } else if (totalBans >= 4) {
+    currentPhaseLabel = 'Phase 1 Pick';
+  }
+
+  const liveOverview: LiveDraftOverviewInfo = {
+    activeTeam,
+    myPickCount,
+    oppPickCount,
+    myBanCount,
+    oppBanCount,
+    currentPhaseLabel,
+  };
+
+  // 7. 7-Dimension Balanced Strategy Engine
+  const balancedStrategy = calculateBalancedStrategy(myPicks, oppPicks);
+
+  // 8. Smart Ban Advisor
+  const smartBans = generateSmartBans({
+    activeTeam,
+    myPicks,
+    oppPicks,
+    bannedHeroNames,
+    pickedHeroNames,
+    allHeroes,
+  });
+
+  // 9. Coach Insights
+  const coachInsights = generateCoachInsights(myTeamComp, balancedStrategy);
+
+  // 10. Data Source & Confidence Status
+  const dataSourceStatus = getDataSourceStatus(balancedStrategy.dataCoverage);
 
   return {
+    liveOverview,
     inspectedHero,
     playerFit,
     inspectedMatchups,
     inspectedSynergies,
     myTeamComp,
     oppTeamComp,
+    balancedStrategy,
+    smartBans,
     warnings,
     suggestedPicks,
+    coachInsights,
+    dataSourceStatus,
+  };
+}
+
+/**
+ * 7-Dimension Balanced Strategy Engine
+ * Weights: Team Synergy 20%, Damage Balance 15%, Engage & CC 15%,
+ * Peel & Survival 15%, Lane & Wave Control 10%, Objective Control 10%, Draft Flexibility 15%
+ * Note: Weights are defined system parameters, not empirical statistics.
+ */
+export function calculateBalancedStrategy(
+  myPicks: PickSlotState[],
+  oppPicks: PickSlotState[]
+): BalancedStrategyAssessment {
+  const pickedHeroes = myPicks.map((p) => p.hero).filter((h): h is Hero => h !== null);
+  const pickedCount = pickedHeroes.length;
+  const dataCoverage = Math.round((pickedCount / 5) * 100);
+
+  if (pickedCount === 0) {
+    const defaultDimensions: StrategyDimension[] = [
+      { key: 'synergy', label: 'Team Synergy', weight: 20, score: null, grade: 'N/A', details: 'ยังไม่มีการเลือกฮีโร่ในทีม', hasData: false },
+      { key: 'damage', label: 'Damage Balance', weight: 15, score: null, grade: 'N/A', details: 'ยังไม่มีการเลือกฮีโร่ในทีม', hasData: false },
+      { key: 'engage', label: 'Engage & CC', weight: 15, score: null, grade: 'N/A', details: 'ยังไม่มีการเลือกฮีโร่ในทีม', hasData: false },
+      { key: 'peel', label: 'Peel & Survival', weight: 15, score: null, grade: 'N/A', details: 'ยังไม่มีการเลือกฮีโร่ในทีม', hasData: false },
+      { key: 'wave', label: 'Lane & Wave Control', weight: 10, score: null, grade: 'N/A', details: 'ยังไม่มีการเลือกฮีโร่ในทีม', hasData: false },
+      { key: 'objective', label: 'Objective Control', weight: 10, score: null, grade: 'N/A', details: 'ยังไม่มีการเลือกฮีโร่ในทีม', hasData: false },
+      { key: 'flexibility', label: 'Draft Flexibility', weight: 15, score: null, grade: 'N/A', details: 'ยังไม่มีการเลือกฮีโร่ในทีม', hasData: false },
+    ];
+    return {
+      dimensions: defaultDimensions,
+      overallScore: null,
+      overallGrade: 'N/A',
+      dataCoverage: 0,
+      hasSufficientData: false,
+      disclaimer: 'น้ำหนักและคะแนนเหล่านี้เป็นค่ากำหนดเพื่อออกแบบระบบประเมินเชิงแท็กติก ไม่ใช่โอกาสชนะ (Win Probability)',
+    };
+  }
+
+  // 1. Team Synergy (20%)
+  let synergyScore: number | null = null;
+  let synergyDetails = '';
+  let synergyHasData = false;
+  if (pickedCount < 2) {
+    synergyScore = null;
+    synergyDetails = 'ต้องมีฮีโร่อย่างน้อย 2 ตัวในการประเมิน Synergy';
+  } else {
+    synergyHasData = true;
+    let synergyPairsFound = 0;
+    let synergyScoreSum = 0;
+    for (let i = 0; i < pickedHeroes.length; i++) {
+      for (let j = i + 1; j < pickedHeroes.length; j++) {
+        const pair = statsDataProvider.getHeroSynergyPair(pickedHeroes[i].name, pickedHeroes[j].name);
+        if (pair && pair.games >= 2) {
+          synergyPairsFound++;
+          synergyScoreSum += Math.min(100, Math.max(30, Math.round(pair.winRate)));
+        }
+      }
+    }
+    const hasFrontline = pickedHeroes.some((h) => h.roles.includes('tank') || h.primaryPos === 'roam');
+    const hasCarry = pickedHeroes.some((h) => h.roles.includes('marksman') || h.primaryPos === 'adl');
+    const roleSynergyBonus = hasFrontline && hasCarry ? 15 : 5;
+
+    if (synergyPairsFound > 0) {
+      const avg = synergyScoreSum / synergyPairsFound;
+      synergyScore = Math.min(95, Math.max(40, Math.round(avg * 0.8 + roleSynergyBonus)));
+      synergyDetails = `พบคอมโบที่มีสถิติแข่งจริง ${synergyPairsFound} คู่ (เฉลี่ย ${Math.round(avg)}% WR)`;
+    } else {
+      synergyScore = Math.min(85, Math.max(50, 60 + roleSynergyBonus));
+      synergyDetails = 'ประเมินจากความสอดคล้องของตำแหน่งและบทบาทพื้นฐาน';
+    }
+  }
+
+  // 2. Damage Balance (15%)
+  const magicHeroes = pickedHeroes.filter(
+    (h) =>
+      h.roles.includes('mage') ||
+      h.r === 'mage' ||
+      h.primaryPos === 'mid' ||
+      ['marja', 'mganga', 'lorion', 'keera', 'zata', 'liliana', 'krixi', 'yue', 'iggy', 'diaochan', 'tulen', 'raz', 'aleister', 'flowborn'].includes(
+        h.name.toLowerCase()
+      )
+  );
+  const physicalHeroes = pickedHeroes.filter(
+    (h) =>
+      h.roles.includes('marksman') ||
+      h.roles.includes('fighter') ||
+      h.roles.includes('assassin') ||
+      h.r === 'marksman' ||
+      h.primaryPos === 'adl' ||
+      h.primaryPos === 'dsl'
+  );
+  let damageScore = 70;
+  let damageDetails = '';
+  if (magicHeroes.length > 0 && physicalHeroes.length > 0) {
+    damageScore = 90;
+    damageDetails = `สมดุลดี: กายภาพ (${physicalHeroes.length}) / เวทมนตร์ (${magicHeroes.length}) ป้องกันการออกเกราะแก้ทาง`;
+  } else if (physicalHeroes.length > 0 && magicHeroes.length === 0 && pickedCount >= 3) {
+    damageScore = 40;
+    damageDetails = '⚠️ ขาดดาเมจเวทมนตร์ (AP) เสี่ยงโดนศัตรูออกเกราะกายภาพล้วนแก้ทาง';
+  } else if (magicHeroes.length > 0 && physicalHeroes.length === 0 && pickedCount >= 3) {
+    damageScore = 45;
+    damageDetails = '⚠️ ขาดดาเมจกายภาพหลัก อาจตีป้อมและออบเจกต์ช้า';
+  } else {
+    damageScore = 65;
+    damageDetails = 'กำลังสร้างสมดุลความเสียหาย';
+  }
+
+  // 3. Engage & CC (15%)
+  const ccHeroes = pickedHeroes.filter(
+    (h) =>
+      h.roles.includes('tank') ||
+      ['toro', 'thane', 'baldum', 'mina', 'krizzix', 'maloch', 'gildur', 'ormarr', 'lumburr', 'arun', 'wiro', 'cresht', 'skud', 'ybneth', 'ata', 'teemee', 'lorion', 'aleister', 'diaochan'].includes(
+        h.name.toLowerCase()
+      )
+  );
+  let engageScore = 60;
+  let engageDetails = '';
+  if (ccHeroes.length >= 2) {
+    engageScore = 92;
+    engageDetails = `มีตัวเปิดไฟต์และ Hard CC แข็งแกร่ง (${ccHeroes.map((h) => h.name).join(', ')})`;
+  } else if (ccHeroes.length === 1) {
+    engageScore = 75;
+    engageDetails = `มีตัวเปิดไฟต์หลัก 1 ตัว (${ccHeroes[0].name}) ควรระวังคูลดาวน์`;
+  } else if (pickedCount >= 3) {
+    engageScore = 38;
+    engageDetails = '⚠️ ไม่มีตัว Hard CC/Engage ที่เชื่อถือได้ เสี่ยงโดนคุมจังหวะไฟต์';
+  } else {
+    engageScore = 60;
+    engageDetails = 'รอตัวเปิดไฟต์/CC ในลำดับถัดไป';
+  }
+
+  // 4. Peel & Survival (15%)
+  const peelHeroes = pickedHeroes.filter(
+    (h) =>
+      h.roles.includes('support') ||
+      h.roles.includes('tank') ||
+      ['helen', 'teemee', 'rouie', 'xeniel', 'toro', 'thane', 'chaugnar', 'annette', 'sephera', 'alice', 'marja', 'mganga', 'taara'].includes(
+        h.name.toLowerCase()
+      )
+  );
+  let peelScore = 60;
+  let peelDetails = '';
+  if (peelHeroes.length >= 2) {
+    peelScore = 90;
+    peelDetails = 'มีแนวหน้ารับดาเมจและระบบปกป้องแครี่แน่นหนา';
+  } else if (peelHeroes.length === 1) {
+    peelScore = 78;
+    peelDetails = `มีแนวหน้า/ซัพพอร์ตคุ้มกัน (${peelHeroes[0].name})`;
+  } else if (pickedCount >= 3) {
+    peelScore = 35;
+    peelDetails = '⚠️ คอมพ์บางมาก ขาดตัวรับดาเมจ เสี่ยงโดนไดฟ์ล้วงแนวหลัง';
+  } else {
+    peelScore = 60;
+    peelDetails = 'รอการเติมแนวหน้า/ซัพพอร์ต';
+  }
+
+  // 5. Lane & Wave Control (10%)
+  const waveHeroes = pickedHeroes.filter(
+    (h) =>
+      h.roles.includes('mage') ||
+      h.primaryPos === 'mid' ||
+      h.roles.includes('marksman') ||
+      ['iggy', 'yue', 'natalya', 'dirak', 'capheny', 'hayate', 'violet', 'omen', 'florentino', 'marja', 'mganga'].includes(
+        h.name.toLowerCase()
+      )
+  );
+  let waveScore = 65;
+  let waveDetails = '';
+  if (waveHeroes.length >= 2) {
+    waveScore = 88;
+    waveDetails = 'เคลียร์เวฟรวดเร็ว คุมเลนและดักพุ่มได้เปรียบ';
+  } else if (waveHeroes.length === 1) {
+    waveScore = 72;
+    waveDetails = `มีตัวเคลียร์เวฟหลัก (${waveHeroes[0].name})`;
+  } else if (pickedCount >= 3) {
+    waveScore = 48;
+    waveDetails = '⚠️ เคลียร์เวฟช้า อาจเสียเปรียบเรื่องการดันเลนและการเดินเกม';
+  } else {
+    waveScore = 65;
+    waveDetails = 'กำลังสร้างความสามารถในการคุมเลน';
+  }
+
+  // 6. Objective Control (10%)
+  let objScore = 65;
+  let objDetails = '';
+  const hasJg = pickedHeroes.some((h) => h.primaryPos === 'jg' || h.pos?.includes('jg'));
+  const hasAdl = pickedHeroes.some(
+    (h) => h.primaryPos === 'adl' || h.pos?.includes('adl') || h.roles.includes('marksman')
+  );
+  if (hasJg && hasAdl) {
+    objScore = 92;
+    objDetails = 'พร้อมชิง Dark Slayer และ Abyssal Dragon ครบทั้ง DPS และ Smite';
+  } else if (hasJg || hasAdl) {
+    objScore = 76;
+    objDetails = hasJg ? 'มี Jungler สไมต์ออบเจกต์' : 'มีแครี่ทำดาเมจใส่ออบเจกต์';
+  } else if (pickedCount >= 3) {
+    objScore = 42;
+    objDetails = '⚠️ ยังขาดแกนหลักในการเก็บมังกรและดาร์กสเลเยอร์';
+  } else {
+    objScore = 65;
+    objDetails = 'รอการเลือก Jungler / Carry';
+  }
+
+  // 7. Draft Flexibility (15%)
+  const flexHeroes = pickedHeroes.filter(
+    (h) =>
+      (h.pos && h.pos.length >= 2) ||
+      ['marja', 'keera', 'yan', 'wonder woman', 'skud', 'airi', 'florentino', 'lorion', 'veres', 'riktor', 'maloch', 'tachi', 'toro', 'xeniel', 'bolt baron', 'flowborn'].includes(
+        h.name.toLowerCase()
+      )
+  );
+  let flexScore = 65;
+  let flexDetails = '';
+  if (flexHeroes.length >= 2) {
+    flexScore = 90;
+    flexDetails = `ยืดหยุ่นสูง (${flexHeroes.map((h) => h.name).join(', ')}) สามารถสลับตำแหน่งหลอกดราฟต์ได้`;
+  } else if (flexHeroes.length === 1) {
+    flexScore = 75;
+    flexDetails = `มีความยืดหยุ่นปานกลางจาก ${flexHeroes[0].name}`;
+  } else {
+    flexScore = 60;
+    flexDetails = 'ไลน์อัปตำแหน่งชัดเจน คู่แข่งอ่านทางง่าย';
+  }
+
+  const toGrade = (s: number | null): string => {
+    if (s === null) return 'N/A';
+    if (s >= 88) return 'A+';
+    if (s >= 78) return 'A';
+    if (s >= 68) return 'B+';
+    if (s >= 55) return 'B';
+    return 'C';
+  };
+
+  const dimensions: StrategyDimension[] = [
+    { key: 'synergy', label: 'Team Synergy', weight: 20, score: synergyScore, grade: toGrade(synergyScore), details: synergyDetails, hasData: synergyHasData },
+    { key: 'damage', label: 'Damage Balance', weight: 15, score: damageScore, grade: toGrade(damageScore), details: damageDetails, hasData: true },
+    { key: 'engage', label: 'Engage & CC', weight: 15, score: engageScore, grade: toGrade(engageScore), details: engageDetails, hasData: true },
+    { key: 'peel', label: 'Peel & Survival', weight: 15, score: peelScore, grade: toGrade(peelScore), details: peelDetails, hasData: true },
+    { key: 'wave', label: 'Lane & Wave Control', weight: 10, score: waveScore, grade: toGrade(waveScore), details: waveDetails, hasData: true },
+    { key: 'objective', label: 'Objective Control', weight: 10, score: objScore, grade: toGrade(objScore), details: objDetails, hasData: true },
+    { key: 'flexibility', label: 'Draft Flexibility', weight: 15, score: flexScore, grade: toGrade(flexScore), details: flexDetails, hasData: true },
+  ];
+
+  let weightedSum = 0;
+  let weightTotal = 0;
+  dimensions.forEach((d) => {
+    if (d.score !== null) {
+      weightedSum += d.score * (d.weight / 100);
+      weightTotal += d.weight / 100;
+    }
+  });
+
+  const overallScore = weightTotal > 0 ? Math.round(weightedSum / weightTotal) : null;
+  const overallGrade = toGrade(overallScore);
+
+  return {
+    dimensions,
+    overallScore,
+    overallGrade,
+    dataCoverage,
+    hasSufficientData: pickedCount >= 1,
+    disclaimer: 'น้ำหนักและคะแนนเหล่านี้เป็นค่ากำหนดเพื่อออกแบบระบบประเมินเชิงแท็กติก ไม่ใช่โอกาสชนะ (Win Probability)',
+  };
+}
+
+export function generateSmartBans(params: {
+  activeTeam: 'blue' | 'red';
+  myPicks: PickSlotState[];
+  oppPicks: PickSlotState[];
+  bannedHeroNames: Set<string>;
+  pickedHeroNames: Set<string>;
+  allHeroes: Hero[];
+}): SmartBanItem[] {
+  const { oppPicks, bannedHeroNames, pickedHeroNames, allHeroes } = params;
+  const oppPicksCount = oppPicks.filter((p) => p.hero !== null).length;
+  const isPhase2 = oppPicksCount >= 3;
+  const phaseLabel = isPhase2 ? 'Phase 2 Ban' : 'Phase 1 Ban';
+
+  const takenRoles = new Set<string>();
+  oppPicks.forEach((p) => {
+    if (p.hero) {
+      takenRoles.add(p.hero.primaryPos);
+      p.hero.pos?.forEach((pos) => takenRoles.add(pos));
+    }
+  });
+
+  const missingOppRoles = ['dsl', 'jg', 'mid', 'roam', 'adl'].filter((r) => !takenRoles.has(r));
+
+  const priorityBanList = [
+    { name: 'Marja', reason: 'ตัว Flex โซนไฟต์และดูดเลือดยอดนิยมใน RPL 2026', role: 'mid', priority: 'must_ban' as const },
+    { name: 'Keera', reason: 'แอสซาสซินดาเมจเวทล้วงแนวหลังและแก้ทางแทงค์ได้เด็ดขาด', role: 'jg', priority: 'must_ban' as const },
+    { name: 'Rouie', reason: 'ตัวคุมแมพ วาร์ปเติมไฟต์ และสร้างความได้เปรียบทั้งแผนที่', role: 'roam', priority: 'must_ban' as const },
+    { name: 'TeeMee', reason: 'ชุบชีวิตเพื่อนร่วมทีมและเร่งการเงินแครี่ไวขึ้น 25%', role: 'roam', priority: 'high_priority' as const },
+    { name: 'Billow', reason: 'ป่าเมต้าดาเมจเบิร์สต์สูงมาก เคลียร์ออบเจกต์ไว', role: 'jg', priority: 'high_priority' as const },
+    { name: 'Aya', reason: 'ตัวเกาะสร้างโล่และ Slow ขัดจังหวะคอมโบศัตรู', role: 'roam', priority: 'high_priority' as const },
+    { name: 'Hayate', reason: 'แครี่ดาเมจจริง (True Damage) เจาะแนวหน้าและละลายไฟต์', role: 'adl', priority: 'high_priority' as const },
+    { name: 'Yan', reason: 'ไฟต์เตอร์เลทเกมอมตะ รำไฟต์เด็ดขาด', role: 'dsl', priority: 'situational' as const },
+    { name: 'Aoi', reason: 'ป่าโหนสลิงล้วงตัวบางข้ามสิ่งกีดขวางได้อย่างรวดเร็ว', role: 'jg', priority: 'situational' as const },
+    { name: 'Iggy', reason: 'เมจคุมเลน ยิงอัลติเมทตัดเลือดข้ามครึ่งแมพ', role: 'mid', priority: 'situational' as const },
+  ];
+
+  const results: SmartBanItem[] = [];
+
+  for (const item of priorityBanList) {
+    if (bannedHeroNames.has(item.name) || pickedHeroNames.has(item.name)) {
+      continue;
+    }
+    const heroObj = allHeroes.find((h) => h.name.toLowerCase() === item.name.toLowerCase());
+    if (!heroObj) continue;
+
+    let categoryLabel = 'ตัวเมต้าแบนสูงสุดประจำทัวร์นาเมนต์';
+    if (isPhase2 && missingOppRoles.includes(item.role)) {
+      categoryLabel = `ตัดตัวเก่งในตำแหน่งที่คู่แข่งยังขาด (${item.role.toUpperCase()})`;
+    }
+
+    results.push({
+      hero: heroObj,
+      reason: item.reason,
+      priority: item.priority,
+      categoryLabel,
+      phase: phaseLabel,
+      targetRole: item.role.toUpperCase(),
+      isAvailable: true,
+    });
+
+    if (results.length >= 4) break;
+  }
+
+  return results;
+}
+
+export function generateCoachInsights(
+  myTeamComp: TeamCompAnalysis,
+  balancedStrategy: BalancedStrategyAssessment
+): CoachInsightItem[] {
+  const insights: CoachInsightItem[] = [];
+
+  insights.push({
+    stage: 'Early Game',
+    title: 'การคุมเลนและช่วงต้นเกม (0-4 นาที)',
+    advice: myTeamComp.roles.Mid.filled
+      ? 'ให้ Mid เดินประกบ Jungle / Roam เพื่อชิงครีปเลนกลางและดักซุ่มเลนมังกรก่อนนาทีที่ 2'
+      : 'ยังขาด Mid เลนกลาง ควรระวังการถูกศัตรูกดดันและเสียพื้นที่ป่าต้นเกม',
+  });
+
+  const engageScore = balancedStrategy.dimensions.find((d) => d.key === 'engage')?.score ?? 0;
+  insights.push({
+    stage: 'Mid Game',
+    title: 'การไฟต์แย่งพื้นที่ Abyssal Dragon (4-10 นาที)',
+    advice:
+      engageScore >= 75
+        ? 'ทีมมีตัวเปิดไฟต์ที่ดี ให้ส่ง Roam โซนวิสัยทัศน์ในพุ่มรอบมังกรเพื่อเริ่มไฟต์ก่อน'
+        : 'ทีมมีตัวเปิดไฟต์จำกัด ไม่ควรเริ่มไฟต์ในที่แคบ ให้ดึงเชิงและรอศัตรูเปิดก่อน',
+  });
+
+  const damageScore = balancedStrategy.dimensions.find((d) => d.key === 'damage')?.score ?? 0;
+  insights.push({
+    stage: 'Late Game',
+    title: 'การชิง Dark Slayer และการดันปิดเกม (10+ นาที)',
+    advice:
+      damageScore >= 80
+        ? 'สมดุลดาเมจดี ดันเลนคู่ขนาน (1-4 หรือ 1-3-1) บีบให้คู่แข่งต้องแยกรับมือ'
+        : 'ดาเมจเอียงไปทางสายใดสายหนึ่ง ระวังศัตรูออกเกราะต้านทาน ควรไฟต์รวม 5 คน',
+  });
+
+  insights.push({
+    stage: 'Key Win Condition',
+    title: 'เงื่อนไขสำคัญสู่ชัยชนะของไลน์อัปนี้',
+    advice:
+      myTeamComp.missingRoles.length === 0
+        ? 'โครงสร้างตำแหน่งครบถ้วน โฟกัสการคุ้มกันแครี่หลักและรักษาจังหวะเข้าทำตามคูลดาวน์สกิลสำคัญ'
+        : `ยังขาดตำแหน่งสำคัญ (${myTeamComp.missingRoles.join(', ')}) ต้องเลือกฮีโร่มาเติมเต็มให้เร็วที่สุด`,
+  });
+
+  return insights;
+}
+
+export function getDataSourceStatus(dataCoverage: number): DataSourceStatus {
+  return {
+    sourceName: 'Official RoV Pro League 2026 Summer Tournament Dataset (Liquipedia)',
+    totalGames: 291,
+    totalMatches: 66,
+    patch: '1.56',
+    coveragePercentage: dataCoverage,
+    hasVerifiedStats: true,
+    note: 'สถิติการเล่น แบน ชนะ และคอมโบมาจากการแข่งขันทางการของ RPL 2026 Summer ตัวอย่างข้อมูลที่ไม่มีจะแสดง N/A โดยไม่มีการสร้างสถิติขึ้นเอง',
   };
 }

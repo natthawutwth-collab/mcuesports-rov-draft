@@ -92,19 +92,19 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
 }) => {
   const currentTurn = DRAFT_TURNS[draftTurnIdx];
 
-  // Tablet screen detection (680px - 1180px, including iPad portrait & landscape, Galaxy tabs)
+  // Tablet screen detection (680px - 1280px, including iPad portrait & landscape, Galaxy tabs)
   const [internalIsTablet, setInternalIsTablet] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
     const w = window.innerWidth;
     const isTouch = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1;
-    return (w >= 680 && w <= 1180) || (isTouch && w >= 680 && w <= 1200);
+    return (w >= 680 && w <= 1280) || (isTouch && w >= 680 && w <= 1366);
   });
 
   useEffect(() => {
     const checkTablet = () => {
       const w = window.innerWidth;
       const isTouch = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 1;
-      setInternalIsTablet((w >= 680 && w <= 1180) || (isTouch && w >= 680 && w <= 1200));
+      setInternalIsTablet((w >= 680 && w <= 1280) || (isTouch && w >= 680 && w <= 1366));
     };
     window.addEventListener('resize', checkTablet);
     return () => window.removeEventListener('resize', checkTablet);
@@ -178,13 +178,35 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
   // Filtered Heroes
   const filteredHeroes = useMemo(() => {
     return HEROES.filter((hero) => {
-      // 1. Role filter (DSL, JG, MID, ADL, ROAM/SP)
+      // 1. Role filter (DSL, JG/Jungle, MID, ADL, ROAM/Support/SP)
       if (roleFilter !== 'all') {
-        const matchesPrimary = hero.primaryPos === roleFilter;
-        const matchesPos = hero.pos && hero.pos.includes(roleFilter);
+        const rf = (roleFilter as string).toLowerCase();
+        const isJg = rf === 'jg' || rf === 'jungle';
+        const isRoam = rf === 'roam' || rf === 'support' || rf === 'sp';
+        const isDsl = rf === 'dsl';
+        const isMid = rf === 'mid';
+        const isAdl = rf === 'adl' || rf === 'carry';
+
+        const matchesPrimary =
+          (isJg && hero.primaryPos === 'jg') ||
+          (isRoam && hero.primaryPos === 'roam') ||
+          (isDsl && hero.primaryPos === 'dsl') ||
+          (isMid && hero.primaryPos === 'mid') ||
+          (isAdl && hero.primaryPos === 'adl') ||
+          hero.primaryPos === roleFilter;
+
+        const matchesPos =
+          (isJg && hero.pos?.includes('jg')) ||
+          (isRoam && hero.pos?.includes('roam')) ||
+          (isDsl && hero.pos?.includes('dsl')) ||
+          (isMid && hero.pos?.includes('mid')) ||
+          (isAdl && hero.pos?.includes('adl')) ||
+          hero.pos?.includes(roleFilter);
+
         const matchesRole =
-          (roleFilter === 'roam' && hero.roles?.includes('support')) ||
-          (roleFilter === 'jg' && hero.roles?.includes('assassin'));
+          (isRoam && (hero.roles?.includes('support') || hero.pos?.includes('roam'))) ||
+          (isJg && (hero.roles?.includes('assassin') || hero.pos?.includes('jg')));
+
         if (!matchesPrimary && !matchesPos && !matchesRole) return false;
       }
 
@@ -715,7 +737,7 @@ export const DraftCenter: React.FC<DraftCenterProps> = ({
                         )}
                       </div>
                     ) : isTabletMode ? (
-                      <div className="w-full h-1 mt-auto" />
+                      <div className="w-full h-[18px] sm:h-[20px] mt-auto flex items-center justify-center opacity-0 pointer-events-none" />
                     ) : null}
                   </div>
 

@@ -1100,29 +1100,19 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
               {filteredComps.map((comp) => (
                 <div
                   key={comp.id}
-                  className="p-2.5 bg-white rounded-xl border border-amber-200 hover:border-amber-400 shadow-2xs flex flex-col gap-2 transition-all"
+                  className="p-2 bg-white rounded-xl border border-amber-200 hover:border-amber-400 shadow-2xs flex flex-col gap-1.5 transition-all"
                 >
                   <div className="flex items-center justify-between gap-1">
-                    <div className="min-w-0">
-                      <span className="font-['Orbitron'] font-black text-xs text-amber-950 truncate block">
-                        {comp.name}
-                      </span>
-                      <span className="text-[10px] text-slate-500 font-semibold truncate block">
-                        {comp.nameTh}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <span className="font-['Orbitron'] font-black text-[9.5px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300">
-                        {comp.tier}
-                      </span>
-                      <span className="text-[9.5px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
-                        {comp.popularTeams[0] || 'RPL PRO'}
-                      </span>
-                    </div>
+                    <span className="font-['Orbitron'] font-black text-xs text-amber-950 truncate block">
+                      {comp.name}
+                    </span>
+                    <span className="font-['Orbitron'] font-black text-[9.5px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 flex-shrink-0">
+                      {comp.tier}
+                    </span>
                   </div>
 
-                  {/* Row: Core Heroes + Priority Bans (No text labels, clean avatars only) */}
-                  <div className="flex items-center gap-2 p-1.5 bg-slate-50/80 rounded-xl border border-slate-200/80 flex-nowrap overflow-x-auto no-scrollbar">
+                  {/* Row: Core Heroes + Priority Bans (Clean avatars only, no text overlays or descriptions) */}
+                  <div className="flex items-center gap-1.5 p-1.5 bg-slate-50/80 rounded-xl border border-slate-200/80 flex-nowrap overflow-x-auto no-scrollbar">
                     {/* Left: Core Heroes */}
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {comp.coreHeroes.map((heroName) => {
@@ -1154,14 +1144,9 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
                               className="w-full h-full object-cover"
                             />
                             {isBanned && (
-                              <span className="absolute inset-0 bg-rose-950/60 flex items-center justify-center text-white font-black text-[8px]">
-                                BAN
-                              </span>
-                            )}
-                            {isPicked && (
-                              <span className="absolute inset-0 bg-sky-950/60 flex items-center justify-center text-white font-black text-[8px]">
-                                PICK
-                              </span>
+                              <div className="absolute top-0 right-0 bg-rose-600 text-white rounded-bl p-0.5">
+                                <Ban size={7} strokeWidth={3} />
+                              </div>
                             )}
                           </button>
                         );
@@ -1171,7 +1156,7 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
                     {/* Divider */}
                     <div className="h-6 w-px bg-slate-300 flex-shrink-0 mx-0.5" />
 
-                    {/* Right: ตัวที่ต้องแบน (Priority Bans) - No text labels */}
+                    {/* Right: ตัวที่ต้องแบน (Priority Bans) - Clean avatars only */}
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {comp.priorityBans.map((banItem) => {
                         const isBanned = bannedHeroNames.has(banItem.hero);
@@ -1199,7 +1184,7 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
                                 ? 'border-rose-400 ring-1 ring-rose-300'
                                 : 'border-amber-300'
                             }`}
-                            title={`${banItem.hero} (${isMustBan ? '🔥 ต้องแบน' : '⚠️ แนะนำแบน'} - ${banItem.phase})${isBanned ? ' • แบนแล้ว' : isPickedByOpp ? ' • ศัตรูหยิบแล้ว' : ''}\nเหตุผล: ${banItem.reason}`}
+                            title={`${banItem.hero} (${isMustBan ? '🔥 ต้องแบน' : '⚠️ แนะนำแบน'} - ${banItem.phase})${isBanned ? ' • แบนแล้ว' : isPickedByOpp ? ' • ศัตรูหยิบแล้ว' : ''}`}
                           >
                             <img
                               src={getHeroImageUrl(banItem.hero)}
@@ -1213,25 +1198,11 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
                             <div className="absolute top-0 right-0 bg-rose-600 text-white rounded-bl p-0.5">
                               <Ban size={7} strokeWidth={3} />
                             </div>
-                            {isBanned && (
-                              <span className="absolute inset-0 bg-slate-900/65 flex items-center justify-center text-emerald-300 font-bold text-[8px]">
-                                ✓
-                              </span>
-                            )}
-                            {isPickedByOpp && (
-                              <span className="absolute inset-0 bg-rose-950/70 flex items-center justify-center text-rose-200 font-bold text-[7px] leading-tight text-center">
-                                ศัตรู
-                              </span>
-                            )}
                           </button>
                         );
                       })}
                     </div>
                   </div>
-
-                  <p className="text-[10px] text-slate-600 line-clamp-2 leading-relaxed">
-                    {comp.tacticalDescription}
-                  </p>
                 </div>
               ))}
             </div>

@@ -18,10 +18,14 @@ import {
   Gamepad2,
   ExternalLink,
   Plus,
+  Scale,
+  FileText,
 } from 'lucide-react';
 
+import { AppView } from './BrandBar';
+
 interface DashboardViewProps {
-  onSelectView: (view: 'dashboard' | 'draft' | 'players' | 'history') => void;
+  onSelectView: (view: AppView) => void;
   onOpenNewDraftSetup: () => void;
   players: Player[];
   historyRecords: DraftHistoryRecord[];
@@ -111,6 +115,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             >
               <Plus size={15} />
               <span>เริ่มดราฟต์ใหม่</span>
+            </button>
+
+            <button
+              onClick={() => onSelectView('calibration')}
+              className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#FFF0F5] text-purple-700 border border-purple-200 hover:border-purple-300 text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <Scale size={15} />
+              <span>รีวิวและปรับสูตร</span>
+            </button>
+
+            <button
+              onClick={() => onSelectView('match_prep')}
+              className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-[#FFF0F5] text-emerald-700 border border-emerald-200 hover:border-emerald-300 text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+            >
+              <FileText size={15} />
+              <span>รายงานเตรียมแข่ง (Match Prep)</span>
             </button>
           </div>
         </div>
