@@ -233,21 +233,21 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
             </button>
           )}
 
-          {/* Coach Mode Toggle */}
+          {/* Draft Assistant Toggle */}
           {onToggleCoachPanel && (
             <button
               type="button"
               onClick={onToggleCoachPanel}
-              title={isSidePanelOpen && sidePanelTab === 'coach' ? 'ปิด Coach Mode' : 'เปิด Coach Mode (วิเคราะห์ดราฟต์สำหรับโค้ช)'}
+              title={isSidePanelOpen ? 'ปิด Draft Assistant' : 'เปิด Draft Assistant (หน้าต่างช่วยวิเคราะห์ระหว่างดราฟต์)'}
               className={`font-['Prompt'] text-[9.5px] sm:text-[10.5px] font-bold tracking-wide border px-2 sm:px-2.5 py-0.5 rounded-lg cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs ${
-                isSidePanelOpen && sidePanelTab === 'coach'
+                isSidePanelOpen
                   ? 'bg-[#E91E63] border-[#C2185B] text-white shadow-xs'
                   : 'bg-white hover:bg-[#FFF0F5] border-[#F3D5E2] text-[#E91E63] hover:border-[#E91E63]'
               }`}
             >
               <span>🎯</span>
-              <span>COACH MODE</span>
-              {isSidePanelOpen && sidePanelTab === 'coach' && (
+              <span>DRAFT ASSISTANT</span>
+              {isSidePanelOpen && (
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               )}
             </button>

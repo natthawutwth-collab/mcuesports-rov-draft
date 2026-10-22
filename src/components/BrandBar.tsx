@@ -49,119 +49,25 @@ export const BrandBar: React.FC<BrandBarProps> = ({
         </button>
       </div>
 
-      {/* Main Navigation Tabs */}
-      <nav className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-        {/* 1. Dashboard Tab */}
-        <button
-          onClick={() => onSelectView('dashboard')}
-          className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
-            currentView === 'dashboard'
-              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
-              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
-          }`}
-        >
-          <LayoutDashboard size={14} className={currentView === 'dashboard' ? 'text-[#E91E63]' : 'text-slate-400'} />
-          <span>แดชบอร์ด</span>
-          <span className="hidden md:inline text-[10px] opacity-75 font-normal">(Overview)</span>
-        </button>
-
-        {/* 2. Draft Arena Tab */}
+      {/* Streamlined Navigation Tabs: Draft, Players, History, plus Tools Dropdown */}
+      <nav className="flex items-center gap-1 sm:gap-1.5 py-0.5">
+        {/* 1. Draft Arena Tab (Primary Match Day View) */}
         <button
           onClick={() => onSelectView('draft')}
-          className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
+          className={`px-3 sm:px-4 py-1.5 sm:py-2 text-[11.5px] sm:text-xs font-['Prompt'] font-bold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border shadow-2xs ${
             currentView === 'draft'
-              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
-              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
+              ? 'bg-[#E91E63] text-white border-[#C2185B] shadow-xs'
+              : 'bg-white text-slate-700 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-[#F3D5E2]'
           }`}
         >
-          <Swords size={14} className={currentView === 'draft' ? 'text-[#E91E63]' : 'text-slate-400'} />
+          <Swords size={14} className={currentView === 'draft' ? 'text-white' : 'text-[#E91E63]'} />
           <span>ห้องดราฟต์</span>
           {status === 'drafting' && (
-            <span className="w-2 h-2 rounded-full bg-[#E91E63] animate-ping" title="กำลังดราฟต์อยู่" />
+            <span className="w-2 h-2 rounded-full bg-white animate-ping" title="กำลังดราฟต์อยู่" />
           )}
         </button>
 
-        {/* 3. Opponent Scouting Tab */}
-        <button
-          onClick={() => onSelectView('scouting')}
-          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
-            currentView === 'scouting'
-              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
-              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
-          }`}
-        >
-          <Search size={14} className={currentView === 'scouting' ? 'text-[#E91E63]' : 'text-slate-400'} />
-          <span>สเกาต์คู่แข่ง</span>
-        </button>
-
-        {/* 4. Series Prep (BO3/5/7) Tab */}
-        <button
-          onClick={() => onSelectView('series_prep')}
-          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
-            currentView === 'series_prep'
-              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
-              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
-          }`}
-        >
-          <Trophy size={14} className={currentView === 'series_prep' ? 'text-[#E91E63]' : 'text-slate-400'} />
-          <span>แผนซีรีส์</span>
-        </button>
-
-        {/* 5. Draft Simulator Tab */}
-        <button
-          onClick={() => onSelectView('simulator')}
-          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
-            currentView === 'simulator'
-              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
-              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
-          }`}
-        >
-          <Cpu size={14} className={currentView === 'simulator' ? 'text-[#E91E63]' : 'text-slate-400'} />
-          <span>ซิมูเลเตอร์</span>
-        </button>
-
-        {/* 6. MCU Team Performance & Scrim Tab */}
-        <button
-          onClick={() => onSelectView('scrim')}
-          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
-            currentView === 'scrim'
-              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
-              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
-          }`}
-        >
-          <BarChart3 size={14} className={currentView === 'scrim' ? 'text-[#E91E63]' : 'text-slate-400'} />
-          <span>ผลงานทีม (Scrim)</span>
-        </button>
-
-        {/* 7. Draft Review & Calibration Tab */}
-        <button
-          onClick={() => onSelectView('calibration')}
-          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
-            currentView === 'calibration'
-              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
-              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
-          }`}
-        >
-          <Scale size={14} className={currentView === 'calibration' ? 'text-[#E91E63]' : 'text-slate-400'} />
-          <span>รีวิวและปรับสูตร</span>
-          <span className="hidden lg:inline text-[9.5px] opacity-75 font-normal">(Calibration)</span>
-        </button>
-
-        {/* 8. Match Preparation & Coach Report Tab */}
-        <button
-          onClick={() => onSelectView('match_prep')}
-          className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
-            currentView === 'match_prep'
-              ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] shadow-2xs font-bold'
-              : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5] border-transparent'
-          }`}
-        >
-          <FileText size={14} className={currentView === 'match_prep' ? 'text-[#E91E63]' : 'text-slate-400'} />
-          <span>รายงานเตรียมแข่ง</span>
-          <span className="hidden lg:inline text-[9.5px] opacity-75 font-normal">(Match Prep)</span>
-        </button>
-
-        {/* 3. Players Roster Tab */}
+        {/* 2. Players Roster Tab */}
         <button
           onClick={() => onSelectView('players')}
           className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
@@ -171,7 +77,7 @@ export const BrandBar: React.FC<BrandBarProps> = ({
           }`}
         >
           <Users size={14} className={currentView === 'players' ? 'text-[#E91E63]' : 'text-slate-400'} />
-          <span>นักกีฬา</span>
+          <span>จัดการทีม</span>
           <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full border ${
             currentView === 'players'
               ? 'bg-white text-[#E91E63] border-[#F48FB1]'
@@ -181,7 +87,7 @@ export const BrandBar: React.FC<BrandBarProps> = ({
           </span>
         </button>
 
-        {/* 4. Draft History Tab */}
+        {/* 3. Draft History Tab */}
         <button
           onClick={() => onSelectView('history')}
           className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap border ${
@@ -202,13 +108,100 @@ export const BrandBar: React.FC<BrandBarProps> = ({
             </span>
           )}
         </button>
+
+        {/* 4. Compact Tools Dropdown Menu (Preserving all background preparation modules without cluttering) */}
+        <div className="relative group/tools">
+          <button
+            type="button"
+            className={`px-2.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-['Prompt'] font-semibold rounded-xl transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap border ${
+              ['dashboard', 'scouting', 'series_prep', 'simulator', 'scrim', 'calibration', 'match_prep'].includes(currentView)
+                ? 'bg-[#FCE4EC] text-[#E91E63] border-[#F48FB1] font-bold shadow-2xs'
+                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50 border-slate-200'
+            }`}
+          >
+            <span>⚙️ เครื่องมือเตรียมทีม</span>
+            <span className="text-[9px] opacity-60">▼</span>
+          </button>
+
+          {/* Dropdown Panel */}
+          <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-[#F3D5E2] rounded-xl shadow-xl py-1.5 z-50 hidden group-hover/tools:block animate-in fade-in duration-150">
+            <div className="px-3 py-1 text-[9.5px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+              โมดูลวิเคราะห์และเตรียมทีม
+            </div>
+
+            <button
+              onClick={() => onSelectView('dashboard')}
+              className={`w-full px-3 py-1.5 text-left text-[11px] font-['Prompt'] flex items-center gap-2 hover:bg-[#FFF0F5] transition-colors cursor-pointer ${
+                currentView === 'dashboard' ? 'text-[#E91E63] font-bold bg-[#FFF0F5]' : 'text-slate-700'
+              }`}
+            >
+              <LayoutDashboard size={13} className="text-[#E91E63]" />
+              <span>แดชบอร์ดภาพรวม (Overview)</span>
+            </button>
+
+            <button
+              onClick={() => onSelectView('match_prep')}
+              className={`w-full px-3 py-1.5 text-left text-[11px] font-['Prompt'] flex items-center gap-2 hover:bg-[#FFF0F5] transition-colors cursor-pointer ${
+                currentView === 'match_prep' ? 'text-[#E91E63] font-bold bg-[#FFF0F5]' : 'text-slate-700'
+              }`}
+            >
+              <FileText size={13} className="text-[#E91E63]" />
+              <span>รายงานเตรียมแข่ง (Match Prep)</span>
+            </button>
+
+            <button
+              onClick={() => onSelectView('series_prep')}
+              className={`w-full px-3 py-1.5 text-left text-[11px] font-['Prompt'] flex items-center gap-2 hover:bg-[#FFF0F5] transition-colors cursor-pointer ${
+                currentView === 'series_prep' ? 'text-[#E91E63] font-bold bg-[#FFF0F5]' : 'text-slate-700'
+              }`}
+            >
+              <Trophy size={13} className="text-[#E91E63]" />
+              <span>แผนซีรีส์ (BO3 / BO5 / BO7)</span>
+            </button>
+
+            <button
+              onClick={() => onSelectView('scouting')}
+              className={`w-full px-3 py-1.5 text-left text-[11px] font-['Prompt'] flex items-center gap-2 hover:bg-[#FFF0F5] transition-colors cursor-pointer ${
+                currentView === 'scouting' ? 'text-[#E91E63] font-bold bg-[#FFF0F5]' : 'text-slate-700'
+              }`}
+            >
+              <Search size={13} className="text-[#E91E63]" />
+              <span>สเกาต์คู่แข่ง (Scouting)</span>
+            </button>
+
+            <button
+              onClick={() => onSelectView('simulator')}
+              className={`w-full px-3 py-1.5 text-left text-[11px] font-['Prompt'] flex items-center gap-2 hover:bg-[#FFF0F5] transition-colors cursor-pointer ${
+                currentView === 'simulator' ? 'text-[#E91E63] font-bold bg-[#FFF0F5]' : 'text-slate-700'
+              }`}
+            >
+              <Cpu size={13} className="text-[#E91E63]" />
+              <span>ดราฟต์ซิมูเลเตอร์ (Simulator)</span>
+            </button>
+
+            <button
+              onClick={() => onSelectView('scrim')}
+              className={`w-full px-3 py-1.5 text-left text-[11px] font-['Prompt'] flex items-center gap-2 hover:bg-[#FFF0F5] transition-colors cursor-pointer ${
+                currentView === 'scrim' ? 'text-[#E91E63] font-bold bg-[#FFF0F5]' : 'text-slate-700'
+              }`}
+            >
+              <BarChart3 size={13} className="text-[#E91E63]" />
+              <span>ผลงานทีม Scrim (Analytics)</span>
+            </button>
+
+            <button
+              onClick={() => onSelectView('calibration')}
+              className={`w-full px-3 py-1.5 text-left text-[11px] font-['Prompt'] flex items-center gap-2 hover:bg-[#FFF0F5] transition-colors cursor-pointer ${
+                currentView === 'calibration' ? 'text-[#E91E63] font-bold bg-[#FFF0F5]' : 'text-slate-700'
+              }`}
+            >
+              <Scale size={13} className="text-[#E91E63]" />
+              <span>รีวิวและปรับสูตร (Calibration)</span>
+            </button>
+          </div>
+        </div>
       </nav>
 
-      {/* Cloud Status indicator (right corner) */}
-      <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 border border-slate-200 text-[10.5px] font-['Prompt'] text-slate-500">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-        <span className="font-semibold text-slate-700">Supabase Cloud</span>
-      </div>
     </header>
   );
 };

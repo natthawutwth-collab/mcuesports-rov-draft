@@ -9,6 +9,7 @@ import { TeamColumn } from './components/TeamColumn';
 import { DraftCenter } from './components/DraftCenter';
 import { HeroStatsSidePanel } from './components/HeroStatsSidePanel';
 import { CoachAnalysisPanel } from './components/CoachAnalysisPanel';
+import { UnifiedDraftAssistant } from './components/UnifiedDraftAssistant';
 import { StatsImportExportModal } from './components/StatsImportExportModal';
 import { PlayersPage } from './components/PlayersPage';
 import { DraftHistoryPage } from './components/DraftHistoryPage';
@@ -451,72 +452,29 @@ export default function App() {
     return fitScale;
   }, [arenaContainerWidth, mobileZoomMode]);
 
-  // Render Coaching Dock Content (shared between desktop sidebar and mobile/laptop overlay drawer)
+  // Render Coaching Dock Content: Single Unified Draft Assistant Window
   const renderCoachDockBody = () => (
-    <div className="flex flex-col h-full min-h-0 w-full overflow-hidden">
-      {/* Dock Mode Switcher - High Contrast Segmented Buttons */}
-      <div className="flex items-center gap-1.5 mb-2 p-1.5 bg-white rounded-xl border-2 border-[#F3D5E2] shadow-xs flex-shrink-0">
-        <button
-          type="button"
-          onClick={() => handleSetSidePanelTab('coach')}
-          className={`flex-1 py-1.5 px-2 rounded-lg font-['Prompt'] text-[11px] font-bold tracking-wide flex items-center justify-center gap-1 transition-all cursor-pointer border ${
-            sidePanelTab === 'coach'
-              ? 'bg-[#E91E63] border-[#E91E63] text-white shadow-xs'
-              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <span>🎯</span>
-          <span className="truncate">COACH ANALYSIS</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse flex-shrink-0"></span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleSetSidePanelTab('stats')}
-          className={`flex-1 py-1.5 px-2 rounded-lg font-['Prompt'] text-[11px] font-bold tracking-wide flex items-center justify-center gap-1 transition-all cursor-pointer border ${
-            sidePanelTab === 'stats'
-              ? 'bg-[#0284C7] border-[#0284C7] text-white shadow-xs'
-              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <span>📊</span>
-          <span className="truncate">RPL STATS</span>
-        </button>
-      </div>
-
-      {/* Tab 1: Coach Analysis Panel */}
-      {sidePanelTab === 'coach' ? (
-        <CoachAnalysisPanel
-          isOpen={true}
-          onClose={() => handleSetSidePanelOpen(false)}
-          activeTurnTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
-          bluePicks={bluePicks}
-          redPicks={redPicks}
-          blueBans={blueBans}
-          redBans={redBans}
-          bannedHeroNames={bannedHeroNames}
-          pickedHeroNames={pickedHeroNames}
-          allHeroes={HEROES}
-          players={players}
-          heroToPlayersMap={heroToPlayersMap}
-          inspectedHeroName={inspectedHeroName}
-          onSelectHeroToInspect={handleInspectHero}
-          onPickHeroDirectly={handleSelectHero}
-          isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
-          isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
-        />
-      ) : (
-        /* Tab 2: Tournament Stats & Matchups Panel */
-        <HeroStatsSidePanel
-          heroName={inspectedHeroName}
-          isOpen={true}
-          onClose={() => handleSetSidePanelOpen(false)}
-          oppPicks={currentOppPicks}
-          onSelectHeroToInspect={handleInspectHero}
-          onOpenDataModal={() => setIsDataModalOpen(true)}
-        />
-      )}
-    </div>
+    <UnifiedDraftAssistant
+      heroName={inspectedHeroName}
+      onClose={() => handleSetSidePanelOpen(false)}
+      activeTurnTeam={currentTurn?.team || currentTurnSlot?.team || 'blue'}
+      bluePicks={bluePicks}
+      redPicks={redPicks}
+      blueBans={blueBans}
+      redBans={redBans}
+      bannedHeroNames={bannedHeroNames}
+      pickedHeroNames={pickedHeroNames}
+      allHeroes={HEROES}
+      blueTeamName={blueTeamName}
+      redTeamName={redTeamName}
+      blueIsUs={blueIsUs}
+      players={players}
+      heroToPlayersMap={heroToPlayersMap}
+      onSelectHeroToInspect={handleInspectHero}
+      onPickHeroDirectly={handleSelectHero}
+      isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
+      isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
+    />
   );
 
   // Status for BrandBar
@@ -554,21 +512,11 @@ export default function App() {
 
   // Side Panel Toggle handlers (saved in localStorage)
   const handleToggleCoachPanel = () => {
-    if (isSidePanelOpen && sidePanelTab === 'coach') {
-      handleSetSidePanelOpen(false);
-    } else {
-      handleSetSidePanelOpen(true);
-      handleSetSidePanelTab('coach');
-    }
+    handleSetSidePanelOpen(!isSidePanelOpen);
   };
 
   const handleToggleStatsPanel = () => {
-    if (isSidePanelOpen && sidePanelTab === 'stats') {
-      handleSetSidePanelOpen(false);
-    } else {
-      handleSetSidePanelOpen(true);
-      handleSetSidePanelTab('stats');
-    }
+    handleSetSidePanelOpen(!isSidePanelOpen);
   };
 
   // Hero Selection & Inspection
