@@ -5,9 +5,23 @@ import { PickSlotState } from '../hooks/useDraconmindDraft';
 import {
   analyzeCoachDraft,
   CoachAnalysisResult,
-  getHeroCompRoles,
   SmartBanItem,
 } from '../services/coachAnalysisService';
+import {
+  evaluateDraftSafety,
+  analyzeEnemyThreats,
+  analyzeTeamIdentity,
+  evaluatePlayerFitWithRoles,
+  getComboFallbackAudits,
+  generatePostDraftSummary,
+  META_SUBSTITUTE_GUIDE,
+  DraftSafetyReport,
+  EnemyThreatReport,
+  TeamIdentityReport,
+  PlayerFitReport,
+  PostDraftSummaryReport,
+  ComboFallbackReportItem,
+} from '../services/decisionSupportService';
 import { getHeroImageUrl, HEROES } from '../data/heroes';
 import { RPL_2026_PRO_COMPS, ProMetaComp } from '../data/proMetaComps';
 import { statsDataProvider } from '../services/statsDataProvider';
@@ -36,9 +50,12 @@ import {
   HelpCircle,
   Eye,
   Crosshair,
+  FileText,
+  Clock,
+  Compass,
 } from 'lucide-react';
 
-export type AssistantSituationalMode = 'inspect' | 'counter_opp' | 'banned_combos' | 'smart_ban';
+export type AssistantSituationalMode = 'inspect' | 'counter_opp' | 'banned_combos' | 'smart_ban' | 'summary';
 
 interface UnifiedDraftAssistantProps {
   heroName: string | null;
@@ -64,66 +81,8 @@ interface UnifiedDraftAssistantProps {
   onPickHeroDirectly?: (hero: Hero) => void;
   isPickTurn?: boolean;
   isBanTurn?: boolean;
+  isDraftComplete?: boolean;
 }
-
-// Tactical substitutes mapping for key meta heroes if banned/taken
-const META_SUBSTITUTE_GUIDE: Record<
-  string,
-  Array<{ substitute: string; role: string; tradeOff: string; effectiveness: string }>
-> = {
-  'Capheny': [
-    { substitute: 'Hayate', role: 'ADL Carry', effectiveness: 'ทดแทนได้ 88%', tradeOff: 'มีดาเมจจริงและเคลื่อนที่คล่องตัวสูงกว่า แต่เคลียร์เวฟและเบิร์สช่วงต้นเกมช้ากว่า' },
-    { substitute: 'Violet', role: 'ADL Carry', effectiveness: 'ทดแทนได้ 82%', tradeOff: 'เน้นยิงโป๊กเบิร์สระยะไกลได้ดีมาก แต่การทำดาเมจ DPS ต่อเนื่องในไฟต์ยาวจะต่ำกว่า' },
-    { substitute: 'Laville', role: 'ADL Carry', effectiveness: 'ทดแทนได้ 78%', tradeOff: 'มีสตันเปิดแมพและยิงรัวกวาดไฟต์ได้ แต่ขาดความคล่องตัว ต้องอาศัยซัพพอร์ตคอยคุ้มกัน' },
-  ],
-  'TeeMee': [
-    { substitute: 'Helen', role: 'Support / Roam', effectiveness: 'ทดแทนได้ 85%', tradeOff: 'ฟื้นฟูเลือดและบัฟเกราะให้ทีมได้อย่างต่อเนื่อง แต่ไม่มี Passive เร่งเงินและไม่มีอัลติชุบชีวิต' },
-    { substitute: 'Zip', role: 'Support / Roam', effectiveness: 'ทดแทนได้ 82%', tradeOff: 'อมเพื่อนเซฟจังหวะโดนจับได้ดีมากและดูดมินเนียนได้ แต่ไม่สามารถเร่งอัตราการเงินให้แครี่ได้' },
-    { substitute: 'Xeniel', role: 'Support / Roam', effectiveness: 'ทดแทนได้ 75%', tradeOff: 'เปิดวาปร์ลงมาเติมไฟต์ได้ทุกที่และมีดาเมจเวท แต่การคุ้มกันแครี่ในเลนช่วงต้นเกมจำกัดกว่า' },
-  ],
-  'Rouie': [
-    { substitute: 'Zip', role: 'Support / Roam', effectiveness: 'ทดแทนได้ 86%', tradeOff: 'เซฟเพื่อนและย้ายตำแหน่งไฟต์ได้ดี แต่ไม่สามารถวาร์ปส่งทั้งทีมกลับบ่อเพื่อเติมเลือดเต็มได้' },
-    { substitute: 'Xeniel', role: 'Support / Roam', effectiveness: 'ทดแทนได้ 80%', tradeOff: 'มีจังหวะเติมไฟต์ระดับ Global แต่ไม่สามารถเปิดประตูเรียกเพื่อนมารุมเลนได้เหมือน Rouie' },
-    { substitute: 'Teeri', role: 'Flex Roam', effectiveness: 'ทดแทนได้ 65%', tradeOff: 'มีวิสัยทัศน์เปิดแมพ แต่ขาดมิติการเคลื่อนย้ายทีมไฟต์' },
-  ],
-  'Eland\'orr': [
-    { substitute: 'Nakroth', role: 'Jungle Assassin', effectiveness: 'ทดแทนได้ 84%', tradeOff: 'ฟาร์มไว สปลิทพุชแยกดันยอดเยี่ยม แต่เป็นโจมตีระยะประชิด เสี่ยงโดน CC มากกว่าตัวยิงไกล' },
-    { substitute: 'Aoi', role: 'Jungle Assassin', effectiveness: 'ทดแทนได้ 82%', tradeOff: 'โหนสลิงล้วงตัวบางแนวหลังได้เด็ดขาด แต่การยืนยิงดึงจังหวะจากระยะปลอดภัยทำได้ยากกว่า' },
-    { substitute: 'Keera', role: 'Jungle Assassin', effectiveness: 'ทดแทนได้ 78%', tradeOff: 'เบิร์สเวทแรงและมุดกำแพงได้ แต่ไม่สามารถสลับร่างหลอกทิศทางแบบ Eland\'orr' },
-  ],
-  'Aya': [
-    { substitute: 'Helen', role: 'Support / Roam', effectiveness: 'ทดแทนได้ 82%', tradeOff: 'ฮีลเพื่อนรอบตัวได้ดี แต่ไม่สามารถสิงร่างเพื่อเป็นอมตะได้ ตกเป็นเป้าหมายถูกจับตายได้' },
-    { substitute: 'Alice', role: 'Support / Roam', effectiveness: 'ทดแทนได้ 76%', tradeOff: 'กางวงสโลว์ใบ้ศัตรูและบัฟสปีดได้ดี แต่ไม่มีการสิงร่างเกาะติดไฟต์เลนหน้าแบบ Aya' },
-  ],
-  'Taara': [
-    { substitute: 'Skud', role: 'Dark Slayer Lane', effectiveness: 'ทดแทนได้ 88%', tradeOff: 'มีเลือดมหาศาลและหมัดเบิร์สหนักมาก แต่ไม่มีรีเจนเลือดต่อเนื่องแบบไร้มานาของ Taara' },
-    { substitute: 'Maloch', role: 'Dark Slayer Lane', effectiveness: 'ทดแทนได้ 85%', tradeOff: 'มีดาเมจจริงวงกว้างและเปิดอัลติลงกลางวงได้ดี แต่การสปลิทดันเลนและหนีเอาตัวรอดช้ากว่า' },
-    { substitute: 'Arthur', role: 'Dark Slayer Lane', effectiveness: 'ทดแทนได้ 75%', tradeOff: 'ไล่กวดศัตรูได้ดีและทนทาน แต่การฟื้นฟูเลือดในจังหวะวิกฤตสู้ Taara ไม่ได้' },
-  ],
-  'Liliana': [
-    { substitute: 'Krixi', role: 'Mid Lane Mage', effectiveness: 'ทดแทนได้ 85%', tradeOff: 'สตันยกและเบิร์สชุดเดียวแรงมาก แต่ไม่มีสกิลแดชพุ่งหนี 2 จังหวะแบบร่างจิ้งจอกของ Liliana' },
-    { substitute: 'Yue', role: 'Mid Lane Mage', effectiveness: 'ทดแทนได้ 82%', tradeOff: 'ระยะสกิลไกลและดาเมจรุนแรงมาก แต่ขาดความคล่องตัวอย่างสิ้นเชิงเมื่อโดนแอสซาสซินประชิดตัว' },
-    { substitute: 'Iggy', role: 'Mid Lane Mage', effectiveness: 'ทดแทนได้ 80%', tradeOff: 'ระเบิดอัลติกว้างเปิดแมพและกดดันได้ดี แต่จังหวะล้วงโซโล่เดี่ยวทำได้ยากกว่า' },
-  ],
-  'Keera': [
-    { substitute: 'Paine', role: 'Jungle Assassin', effectiveness: 'ทดแทนได้ 85%', tradeOff: 'เบิร์สเวทได้รวดเร็วและใบ้ศัตรูได้ดี แต่ไม่มีอัลติมุดกำแพงหนีเอาตัวรอดแบบ Keera' },
-    { substitute: 'Kaine', role: 'Jungle Assassin', effectiveness: 'ทดแทนได้ 82%', tradeOff: 'ล่องหนเปิดวิสัยทัศน์และสเต็ปล้วงเดี่ยวได้เร็ว แต่เป็นดาเมจกายภาพ แก้ทางแทงค์หนาได้ยากกว่า' },
-    { substitute: 'Zill', role: 'Jungle Assassin', effectiveness: 'ทดแทนได้ 75%', tradeOff: 'ดาเมจเวทชุดเดียวตายและไม่ตกเป็นเป้าหมาย แต่อ่อนแอกว่าในช่วงรอคูลดาวน์อัลติเมท' },
-  ],
-  'Florentino': [
-    { substitute: 'Yena', role: 'Dark Slayer Lane', effectiveness: 'ทดแทนได้ 86%', tradeOff: 'คอมโบใบ้และมีต้านทานสถานะช่วงฟันดาบใหญ่ได้ดี แต่จังหวะดวล 1v1 ในไฟต์ยืดเยื้อไม่รัวเท่ารำดอกไม้' },
-    { substitute: 'Richter', role: 'Dark Slayer Lane', effectiveness: 'ทดแทนได้ 82%', tradeOff: 'จังหวะดักพุ่มใบ้และเดินซ้อนไฟต์เลนอื่นไวกว่ามาก แต่การปะทะตรงๆ กับตัวชนหนาจะสู้โฟลเรนไม่ได้' },
-    { substitute: 'Airi', role: 'Dark Slayer Lane', effectiveness: 'ทดแทนได้ 78%', tradeOff: 'ดาเมจจริงและพุ่ง 3 จังหวะยอดเยี่ยมในเลทเกม แต่ช่วงต้นเกมเลนจะเสียเปรียบและยืนยาก' },
-  ],
-  'Elsu': [
-    { substitute: 'Violet', role: 'ADL Carry', effectiveness: 'ทดแทนได้ 82%', tradeOff: 'กลิ้งยิงโป๊กเบิร์สได้เร็วและเล่นง่ายกว่า แต่ไม่มีการวางกับดักเปิดวิสัยทัศน์คุมแมพแบบ Elsu' },
-    { substitute: 'Stuart', role: 'ADL Carry', effectiveness: 'ทดแทนได้ 80%', tradeOff: 'มีสกิลกันดาเมจกายภาพและสโลว์เปิดจังหวะได้ดี แต่ระยะการสไนป์ไกลไม่เท่า Elsu' },
-  ],
-  'Zip': [
-    { substitute: 'TeeMee', role: 'Support / Roam', effectiveness: 'ทดแทนได้ 88%', tradeOff: 'ชุบชีวิตเพื่อนได้และมีสตันหม้อระเบิดต่อเนื่อง แต่ไม่สามารถดูดมินเนียนหรืออมย้ายเพื่อนข้ามกำแพงได้' },
-    { substitute: 'Helen', role: 'Support / Roam', effectiveness: 'ทดแทนได้ 80%', tradeOff: 'เติมเลือดและบัฟป้องกันให้ทีมได้สม่ำเสมอ แต่ไม่มีจังหวะเซฟเพื่อนฉุกเฉินตอนติดสตันหมู่' },
-  ],
-};
 
 export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
   heroName,
@@ -145,6 +104,7 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
   onPickHeroDirectly,
   isPickTurn = false,
   isBanTurn = false,
+  isDraftComplete = false,
 }) => {
   // Target hero object being inspected/previewed
   const currentHero = useMemo(() => {
@@ -153,8 +113,8 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
   }, [heroName, allHeroes]);
 
   // Situational Tab Mode State:
-  // inspect (กรณี A), counter_opp (กรณี B), banned_combos (กรณี C), smart_ban (กรณี D)
   const [situationalMode, setSituationalMode] = useState<AssistantSituationalMode>(() => {
+    if (isDraftComplete) return 'summary';
     if (isBanTurn) return 'smart_ban';
     if (currentHero) return 'inspect';
     return 'counter_opp';
@@ -162,41 +122,103 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
 
   // Auto-switch mode based on situational events
   useEffect(() => {
-    if (isBanTurn) {
+    if (isDraftComplete) {
+      setSituationalMode('summary');
+    } else if (isBanTurn) {
       setSituationalMode('smart_ban');
     }
-  }, [isBanTurn]);
+  }, [isDraftComplete, isBanTurn]);
 
   // When a hero is clicked to inspect, automatically activate 'inspect' mode
   useEffect(() => {
-    if (heroName) {
+    if (heroName && !isDraftComplete) {
       setSituationalMode('inspect');
     }
-  }, [heroName]);
+  }, [heroName, isDraftComplete]);
 
   // Collapsible accordion states
   const [openSections, setOpenSections] = useState<{
+    safetyBanner: boolean;
+    identity: boolean;
+    playerFit: boolean;
+    fallbackSubs: boolean;
     combos: boolean;
     opponent: boolean;
     counters: boolean;
-    players: boolean;
   }>({
+    safetyBanner: false,
+    identity: true,
+    playerFit: true,
+    fallbackSubs: true,
     combos: true,
     opponent: true,
     counters: true,
-    players: true,
   });
 
   const toggleSection = (key: keyof typeof openSections) => {
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Run Coach Analysis Engine
+  // 1. My Picks vs Opponent Picks
+  const myPicks = activeTurnTeam === 'blue' ? bluePicks : redPicks;
+  const oppPicks = activeTurnTeam === 'blue' ? redPicks : bluePicks;
+  const myTeamName = activeTurnTeam === 'blue' ? blueTeamName : redTeamName;
+  const oppTeamName = activeTurnTeam === 'blue' ? redTeamName : blueTeamName;
+
+  // 2. DECISION SUPPORT 1: Draft Safety Check
+  const draftSafetyReport: DraftSafetyReport = useMemo(() => {
+    return evaluateDraftSafety(myPicks, oppPicks, heroToPlayersMap);
+  }, [myPicks, oppPicks, heroToPlayersMap]);
+
+  // 3. DECISION SUPPORT 2: Enemy Threat Analysis
+  const enemyThreatReport: EnemyThreatReport = useMemo(() => {
+    return analyzeEnemyThreats(
+      oppPicks,
+      myPicks,
+      allHeroes,
+      bannedHeroNames,
+      pickedHeroNames,
+      oppTeamName,
+      heroToPlayersMap
+    );
+  }, [oppPicks, myPicks, allHeroes, bannedHeroNames, pickedHeroNames, oppTeamName, heroToPlayersMap]);
+
+  // 4. DECISION SUPPORT 3: Team Identity Analysis
+  const teamIdentityReport: TeamIdentityReport = useMemo(() => {
+    return analyzeTeamIdentity(myPicks, currentHero);
+  }, [myPicks, currentHero]);
+
+  // 5. DECISION SUPPORT 4: Player Fit with Role Suitability (Phase P1)
+  const playerFitReport: PlayerFitReport = useMemo(() => {
+    if (!currentHero) {
+      return {
+        heroName: '',
+        hasComfortData: false,
+        bestFitPlayer: null,
+        otherPlayers: [],
+        allPlayersWithHero: [],
+        provenance: 'ฐานข้อมูลไลน์อัปนักแข่ง MCU',
+      };
+    }
+    return evaluatePlayerFitWithRoles(currentHero.name, players, heroToPlayersMap);
+  }, [currentHero, players, heroToPlayersMap]);
+
+  // 6. DECISION SUPPORT 5: Post-Draft Summary
+  const postDraftSummary: PostDraftSummaryReport = useMemo(() => {
+    return generatePostDraftSummary(myPicks, oppPicks, myTeamName, oppTeamName);
+  }, [myPicks, oppPicks, myTeamName, oppTeamName]);
+
+  // 7. DECISION SUPPORT 6: Combo Fallback Audits (Phase P1)
+  const comboFallbackAudits: ComboFallbackReportItem[] = useMemo(() => {
+    return getComboFallbackAudits(bannedHeroNames, pickedHeroNames, heroToPlayersMap);
+  }, [bannedHeroNames, pickedHeroNames, heroToPlayersMap]);
+
+  // Run Coach Analysis Engine (Preserved for baseline recommendations)
   const analysis: CoachAnalysisResult = useMemo(() => {
     return analyzeCoachDraft({
       activeTeam: activeTurnTeam,
-      myPicks: activeTurnTeam === 'blue' ? bluePicks : redPicks,
-      oppPicks: activeTurnTeam === 'blue' ? redPicks : bluePicks,
+      myPicks,
+      oppPicks,
       myBans: activeTurnTeam === 'blue' ? blueBans : redBans,
       oppBans: activeTurnTeam === 'blue' ? redBans : blueBans,
       inspectedHero: currentHero,
@@ -208,8 +230,8 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
     });
   }, [
     activeTurnTeam,
-    bluePicks,
-    redPicks,
+    myPicks,
+    oppPicks,
     blueBans,
     redBans,
     currentHero,
@@ -220,18 +242,34 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
     pickedHeroNames,
   ]);
 
+  // Top recommendation pick for current pick turn (Section 7.1)
+  const topRecommendedPick = useMemo(() => {
+    return analysis.suggestedPicks.find(
+      (p) => !bannedHeroNames.has(p.hero.name) && !pickedHeroNames.has(p.hero.name)
+    ) || analysis.suggestedPicks[0] || null;
+  }, [analysis.suggestedPicks, bannedHeroNames, pickedHeroNames]);
+
+  // Player fit for the top recommended pick when no hero is clicked
+  const topPickPlayerFit = useMemo(() => {
+    if (!topRecommendedPick) return null;
+    return evaluatePlayerFitWithRoles(topRecommendedPick.hero.name, players, heroToPlayersMap);
+  }, [topRecommendedPick, players, heroToPlayersMap]);
+
   // Opponent locked picks list
   const oppLockedHeroes = useMemo(() => {
-    const oppPicks = activeTurnTeam === 'blue' ? redPicks : bluePicks;
     return oppPicks.map((p) => p.hero).filter((h): h is Hero => h !== null);
-  }, [activeTurnTeam, bluePicks, redPicks]);
+  }, [oppPicks]);
 
-  // Selected opponent hero to analyze counter responses (defaults to latest opponent pick)
+  // Selected opponent hero to analyze counter responses
   const [selectedOppHeroName, setSelectedOppHeroName] = useState<string | null>(null);
 
   const activeOppHero = useMemo(() => {
     if (selectedOppHeroName) {
-      return oppLockedHeroes.find((h) => h.name.toLowerCase() === selectedOppHeroName.toLowerCase()) || oppLockedHeroes[oppLockedHeroes.length - 1] || null;
+      return (
+        oppLockedHeroes.find((h) => h.name.toLowerCase() === selectedOppHeroName.toLowerCase()) ||
+        oppLockedHeroes[oppLockedHeroes.length - 1] ||
+        null
+      );
     }
     return oppLockedHeroes[oppLockedHeroes.length - 1] || null;
   }, [selectedOppHeroName, oppLockedHeroes]);
@@ -244,13 +282,36 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
     const isBluePick = bluePicks.some((p) => p.hero?.name.toLowerCase() === name.toLowerCase());
     const isRedPick = redPicks.some((p) => p.hero?.name.toLowerCase() === name.toLowerCase());
 
-    if (isBanned) return { label: 'ถูกแบนในเกมนี้', color: 'bg-rose-100 text-rose-800 border-rose-300', isAvailable: false, type: 'banned' };
-    if (isBluePick) return { label: `Blue Pick (${blueTeamName || 'Blue'})`, color: 'bg-sky-100 text-sky-800 border-sky-300', isAvailable: false, type: 'blue' };
-    if (isRedPick) return { label: `Red Pick (${redTeamName || 'Red'})`, color: 'bg-rose-100 text-rose-800 border-rose-300', isAvailable: false, type: 'red' };
-    return { label: 'พร้อมเลือกในดราฟต์', color: 'bg-emerald-100 text-emerald-800 border-emerald-300', isAvailable: true, type: 'available' };
+    if (isBanned)
+      return {
+        label: 'ถูกแบนในเกมนี้',
+        color: 'bg-rose-100 text-rose-800 border-rose-300',
+        isAvailable: false,
+        type: 'banned',
+      };
+    if (isBluePick)
+      return {
+        label: `Blue Pick (${blueTeamName || 'Blue'})`,
+        color: 'bg-sky-100 text-sky-800 border-sky-300',
+        isAvailable: false,
+        type: 'blue',
+      };
+    if (isRedPick)
+      return {
+        label: `Red Pick (${redTeamName || 'Red'})`,
+        color: 'bg-rose-100 text-rose-800 border-rose-300',
+        isAvailable: false,
+        type: 'red',
+      };
+    return {
+      label: 'พร้อมเลือกในดราฟต์',
+      color: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      isAvailable: true,
+      type: 'available',
+    };
   }, [currentHero, bannedHeroNames, bluePicks, redPicks, blueTeamName, redTeamName]);
 
-  // 1. Synergies & Meta Comps for Inspected Hero
+  // Synergies & Meta Comps for Inspected Hero
   const heroMetaComps = useMemo(() => {
     if (!currentHero) return [];
     return RPL_2026_PRO_COMPS.filter((c) =>
@@ -269,27 +330,77 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
     return sorted;
   }, [currentHero]);
 
+  // Direct substitutes for Inspected Hero (if inspected hero or key partners are banned/taken)
+  const inspectedHeroSubstitutes = useMemo(() => {
+    if (!currentHero) return [];
+    const guides = META_SUBSTITUTE_GUIDE[currentHero.name] || [];
+    return guides
+      .filter((g) => !bannedHeroNames.has(g.substitute) && !pickedHeroNames.has(g.substitute))
+      .map((g) => {
+        const badges = heroToPlayersMap[g.substitute] || [];
+        const playersWhoPlay = badges.map((b) => ({
+          nickname: b.playerNickname,
+          tier: b.tier,
+          tierLabel: b.tier === 'signature' ? 'ถนัด' : 'พอเล่นได้',
+          starColor: b.tier === 'signature' ? ('gold' as const) : ('silver' as const),
+          playerRole: b.position,
+        }));
+        return {
+          ...g,
+          playersWhoPlay,
+        };
+      });
+  }, [currentHero, bannedHeroNames, pickedHeroNames, heroToPlayersMap]);
+
   // Check banned key partners and get substitutes
   const partnerSubstitutes = useMemo(() => {
     if (!currentHero) return [];
     const subs: Array<{
       bannedPartner: string;
       compName: string;
-      substitutes: Array<{ substitute: string; role: string; tradeOff: string; effectiveness: string }>;
+      substitutes: Array<{
+        substitute: string;
+        role: string;
+        tradeOff: string;
+        effectiveness: string;
+        isVerifiedSubstitute: boolean;
+        planCompatibility: string;
+        playersWhoPlay: Array<{
+          nickname: string;
+          tier: 'signature' | 'comfortable';
+          starColor: 'gold' | 'silver';
+          playerRole: string;
+        }>;
+      }>;
     }> = [];
 
     heroMetaComps.forEach((comp) => {
       comp.coreHeroes.forEach((partner) => {
         if (partner.toLowerCase() !== currentHero.name.toLowerCase()) {
           const isBanned = bannedHeroNames.has(partner);
-          const isEnemyPicked = (activeTurnTeam === 'blue' ? redPicks : bluePicks).some(
+          const isEnemyPicked = oppPicks.some(
             (p) => p.hero?.name.toLowerCase() === partner.toLowerCase()
           );
 
           if ((isBanned || isEnemyPicked) && META_SUBSTITUTE_GUIDE[partner]) {
-            const availableSubs = META_SUBSTITUTE_GUIDE[partner].filter(
-              (s) => !bannedHeroNames.has(s.substitute) && !pickedHeroNames.has(s.substitute)
-            );
+            const availableSubs = META_SUBSTITUTE_GUIDE[partner]
+              .filter(
+                (s) => !bannedHeroNames.has(s.substitute) && !pickedHeroNames.has(s.substitute)
+              )
+              .map((s) => {
+                const badges = heroToPlayersMap[s.substitute] || [];
+                const playersWhoPlay = badges.map((b) => ({
+                  nickname: b.playerNickname,
+                  tier: b.tier,
+                  starColor: b.tier === 'signature' ? ('gold' as const) : ('silver' as const),
+                  playerRole: b.position,
+                }));
+                return {
+                  ...s,
+                  playersWhoPlay,
+                };
+              });
+
             if (availableSubs.length > 0) {
               subs.push({
                 bannedPartner: partner,
@@ -303,9 +414,9 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
     });
 
     return subs;
-  }, [currentHero, heroMetaComps, bannedHeroNames, activeTurnTeam, redPicks, bluePicks, pickedHeroNames]);
+  }, [currentHero, heroMetaComps, bannedHeroNames, oppPicks, pickedHeroNames, heroToPlayersMap]);
 
-  // Anticipated Enemy Responses (what enemy might pick against this hero)
+  // Anticipated Enemy Responses against Inspected Hero
   const anticipatedEnemyResponses = useMemo(() => {
     if (!currentHero) return [];
     const matchups = statsDataProvider.getHeroMatchups(currentHero.name);
@@ -321,9 +432,8 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
     if (!currentHero || oppLockedHeroes.length === 0) return [];
     const matchups = statsDataProvider.getHeroMatchups(currentHero.name);
     return oppLockedHeroes.map((opp) => {
-      const match = matchups?.all.find(
-        (m) => m.opponentHero.toLowerCase() === opp.name.toLowerCase()
-      ) || null;
+      const match =
+        matchups?.all.find((m) => m.opponentHero.toLowerCase() === opp.name.toLowerCase()) || null;
       return {
         oppHero: opp,
         matchup: match,
@@ -333,35 +443,28 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
     });
   }, [currentHero, oppLockedHeroes]);
 
-  // Player comfort for inspected hero
-  const mcuPlayersForHero = useMemo(() => {
-    if (!currentHero) return [];
-    return heroToPlayersMap[currentHero.name] || [];
-  }, [currentHero, heroToPlayersMap]);
-
-  // -------------------------------------------------------------
-  // CASE B: COUNTER OPPONENT PICKS (เมื่อคู่แข่งหยิบฮีโร่)
-  // -------------------------------------------------------------
+  // Counter Picks for Selected Opponent Hero
   const counterPicksForOpponent = useMemo(() => {
     if (!activeOppHero) return [];
     const matchups = statsDataProvider.getHeroMatchups(activeOppHero.name);
     if (!matchups) return [];
 
-    // Heroes that activeOppHero is weak against (so they counter activeOppHero)
     const rawCounters = matchups.weakAgainst.filter(
       (m) => !bannedHeroNames.has(m.opponentHero) && !pickedHeroNames.has(m.opponentHero)
     );
 
-    // Score and rank them by: diff advantage + player comfort + role fit
     const missingRoles = analysis.myTeamComp.missingRoles.map((r) => r.toLowerCase());
 
     const enriched = rawCounters.map((c) => {
-      const heroObj = allHeroes.find((h) => h.name.toLowerCase() === c.opponentHero.toLowerCase()) || null;
+      const heroObj =
+        allHeroes.find((h) => h.name.toLowerCase() === c.opponentHero.toLowerCase()) || null;
       const badges = heroToPlayersMap[c.opponentHero] || [];
       const hasSig = badges.some((b) => b.tier === 'signature');
       const hasComf = badges.some((b) => b.tier === 'comfortable');
 
-      const heroRoles = heroObj ? [heroObj.primaryPos, ...(heroObj.pos || [])].map((r) => r.toLowerCase()) : [];
+      const heroRoles = heroObj
+        ? [heroObj.primaryPos, ...(heroObj.pos || [])].map((r) => r.toLowerCase())
+        : [];
       const fitsMissingRole = heroRoles.some((hr) => missingRoles.includes(hr));
 
       return {
@@ -377,72 +480,26 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
       };
     });
 
-    return enriched.sort((a, b) => {
-      if (a.hasSig && !b.hasSig) return -1;
-      if (!a.hasSig && b.hasSig) return 1;
-      if (a.fitsMissingRole && !b.fitsMissingRole) return -1;
-      if (!a.fitsMissingRole && b.fitsMissingRole) return 1;
-      return b.diff - a.diff;
-    }).slice(0, 3);
-  }, [activeOppHero, bannedHeroNames, pickedHeroNames, analysis.myTeamComp.missingRoles, allHeroes, heroToPlayersMap]);
+    return enriched
+      .sort((a, b) => {
+        if (a.hasSig && !b.hasSig) return -1;
+        if (!a.hasSig && b.hasSig) return 1;
+        if (a.fitsMissingRole && !b.fitsMissingRole) return -1;
+        if (!a.fitsMissingRole && b.fitsMissingRole) return 1;
+        return b.diff - a.diff;
+      })
+      .slice(0, 3);
+  }, [
+    activeOppHero,
+    bannedHeroNames,
+    pickedHeroNames,
+    analysis.myTeamComp.missingRoles,
+    allHeroes,
+    heroToPlayersMap,
+  ]);
 
-  // -------------------------------------------------------------
-  // CASE C: BANNED COMBO AUDIT (ฮีโร่คอมโบหลักถูก BAN)
-  // -------------------------------------------------------------
-  const allBannedCombos = useMemo(() => {
-    const list: Array<{
-      comp: ProMetaComp;
-      bannedHeroes: string[];
-      intactHeroes: string[];
-      impactDescription: string;
-      substitutes: Array<{
-        targetHero: string;
-        options: Array<{ substitute: string; role: string; tradeOff: string; effectiveness: string }>;
-      }>;
-    }> = [];
-
-    RPL_2026_PRO_COMPS.forEach((comp) => {
-      const bannedInThisComp = comp.coreHeroes.filter((h) => bannedHeroNames.has(h));
-      const intact = comp.coreHeroes.filter((h) => !bannedHeroNames.has(h) && !pickedHeroNames.has(h));
-
-      if (bannedInThisComp.length > 0) {
-        const subs: Array<{
-          targetHero: string;
-          options: Array<{ substitute: string; role: string; tradeOff: string; effectiveness: string }>;
-        }> = [];
-
-        bannedInThisComp.forEach((bHero) => {
-          if (META_SUBSTITUTE_GUIDE[bHero]) {
-            const validOptions = META_SUBSTITUTE_GUIDE[bHero].filter(
-              (s) => !bannedHeroNames.has(s.substitute) && !pickedHeroNames.has(s.substitute)
-            );
-            if (validOptions.length > 0) {
-              subs.push({
-                targetHero: bHero,
-                options: validOptions.slice(0, 3),
-              });
-            }
-          }
-        });
-
-        list.push({
-          comp,
-          bannedHeroes: bannedInThisComp,
-          intactHeroes: intact,
-          impactDescription: `เสีย ${bannedInThisComp.join(', ')} ส่งผลให้จังหวะ ${comp.nameTh} ขาดแกนหลักสำคัญ`,
-          substitutes: subs,
-        });
-      }
-    });
-
-    return list;
-  }, [bannedHeroNames, pickedHeroNames]);
-
-  // -------------------------------------------------------------
-  // CASE D: SMART BAN ADVISOR (อยู่ในช่วง BAN)
-  // -------------------------------------------------------------
+  // Smart Ban Advisor List (Strictly unbanned & unpicked)
   const availableSmartBans = useMemo(() => {
-    // Strictly filter out any heroes already picked or banned
     return analysis.smartBans
       .filter((b) => !bannedHeroNames.has(b.hero.name) && !pickedHeroNames.has(b.hero.name))
       .slice(0, 5);
@@ -463,14 +520,29 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
             <div className="flex flex-col min-w-0">
               <span className="font-bold text-xs text-[#1F2937] flex items-center gap-1.5 uppercase leading-tight">
                 <span>DRAFT ASSISTANT</span>
-                <span className={`text-[8.5px] font-black px-1.5 py-0.2 rounded-full text-white shadow-2xs ${
-                  isBanTurn ? 'bg-rose-600 animate-pulse' : 'bg-[#E91E63]'
-                }`}>
-                  {isBanTurn ? 'BAN ADVISOR' : 'LIVE COACH'}
+                <span
+                  className={`text-[8.5px] font-black px-1.5 py-0.2 rounded-full text-white shadow-2xs ${
+                    isDraftComplete
+                      ? 'bg-emerald-600'
+                      : isBanTurn
+                      ? 'bg-rose-600 animate-pulse'
+                      : 'bg-[#E91E63]'
+                  }`}
+                >
+                  {isDraftComplete
+                    ? 'POST-DRAFT'
+                    : isBanTurn
+                    ? 'BAN ADVISOR'
+                    : 'P1: FALLBACK + PLAYER FIT'}
                 </span>
               </span>
               <span className="text-[10px] text-slate-500 font-medium leading-tight truncate">
-                {activeTurnTeam === 'blue' ? (blueTeamName || 'Blue Team') : (redTeamName || 'Red Team')} • {isBanTurn ? 'รอบแบนฮีโร่' : 'รอบเลือกฮีโร่'}
+                {myTeamName || 'MCU Team'} •{' '}
+                {isDraftComplete
+                  ? 'ดราฟต์เสร็จสมบูรณ์'
+                  : isBanTurn
+                  ? 'รอบแบนฮีโร่'
+                  : 'รอบเลือกฮีโร่'}
               </span>
             </div>
           </div>
@@ -485,8 +557,12 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
           </button>
         </div>
 
-        {/* 4 Situational Mode Switcher Tabs */}
-        <div className="grid grid-cols-4 gap-1 p-1.5 bg-[#FFF8FB] border-t border-[#F3D5E2]">
+        {/* 5 Situational Mode Switcher Tabs */}
+        <div
+          className={`grid ${
+            isDraftComplete ? 'grid-cols-5' : 'grid-cols-4'
+          } gap-1 p-1.5 bg-[#FFF8FB] border-t border-[#F3D5E2]`}
+        >
           <button
             type="button"
             onClick={() => setSituationalMode('inspect')}
@@ -495,7 +571,7 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                 ? 'bg-[#E91E63] text-white border-[#C2185B] shadow-2xs'
                 : 'bg-white text-slate-600 hover:text-[#E91E63] border-slate-200'
             }`}
-            title="กรณี A: วิเคราะห์ฮีโร่ที่คลิกพิจารณา"
+            title="คำแนะนำหลัก & Player Fit & วิเคราะห์ฮีโร่"
           >
             <Eye size={12} />
             <span className="truncate max-w-full">พิจารณา</span>
@@ -509,7 +585,7 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                 ? 'bg-[#0284C7] text-white border-[#0369A1] shadow-2xs'
                 : 'bg-white text-slate-600 hover:text-[#0284C7] border-slate-200'
             }`}
-            title="กรณี B: ตอบโต้ฮีโร่ที่คู่แข่งหยิบ"
+            title="ตอบโต้ & วิเคราะห์ภัยคุกคามคู่แข่ง"
           >
             <Crosshair size={12} />
             <span className="truncate max-w-full">ตอบโต้</span>
@@ -526,11 +602,11 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                 ? 'bg-amber-600 text-white border-amber-700 shadow-2xs'
                 : 'bg-white text-slate-600 hover:text-amber-700 border-slate-200'
             }`}
-            title="กรณี C: คอมโบหลักถูกแบน & ตัวแทน"
+            title="Combo Fallback แผนสำรองคอมโบเมื่อโดนแบน"
           >
             <Layers size={12} />
             <span className="truncate max-w-full">คอมโบแบน</span>
-            {allBannedCombos.length > 0 && (
+            {comboFallbackAudits.length > 0 && (
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400 absolute top-1 right-1 animate-pulse" />
             )}
           </button>
@@ -543,7 +619,7 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                 ? 'bg-rose-600 text-white border-rose-700 shadow-2xs'
                 : 'bg-white text-slate-600 hover:text-rose-700 border-slate-200'
             }`}
-            title="กรณี D: คำแนะนำในการแบน (Smart Ban Advisor)"
+            title="คำแนะนำในการแบน (Smart Ban Advisor)"
           >
             <Ban size={12} />
             <span className="truncate max-w-full">แนะนำแบน</span>
@@ -551,36 +627,389 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 absolute top-1 right-1 animate-ping" />
             )}
           </button>
+
+          {isDraftComplete && (
+            <button
+              type="button"
+              onClick={() => setSituationalMode('summary')}
+              className={`py-1 px-1 rounded-lg text-[10px] font-bold transition-all flex flex-col items-center gap-0.5 cursor-pointer border relative ${
+                situationalMode === 'summary'
+                  ? 'bg-emerald-600 text-white border-emerald-700 shadow-2xs'
+                  : 'bg-white text-slate-600 hover:text-emerald-700 border-slate-200'
+              }`}
+              title="สรุปผลหลังดราฟต์และแผนการเล่น 3 ช่วง"
+            >
+              <FileText size={12} />
+              <span className="truncate max-w-full">สรุปดราฟต์</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 absolute top-1 right-1 animate-pulse" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* 2. Scrollable Body */}
       <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2.5 sm:p-3 flex flex-col gap-2.5 bg-[#FFF8FB]/30">
         {/* ========================================================= */}
-        {/* SITUATION A: โค้ชคลิกฮีโร่เพื่อพิจารณา (Hero Preview)     */}
+        {/* DRAFT SAFETY CHECK (Pinned Top Banner - Phase P2)         */}
         {/* ========================================================= */}
-        {situationalMode === 'inspect' && (
-          <>
-            {!currentHero ? (
-              <div className="flex flex-col gap-3 py-3 text-center">
-                <div className="p-4 bg-white border border-[#F3D5E2] rounded-xl shadow-2xs flex flex-col items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-[#FFF0F5] text-[#E91E63] flex items-center justify-center text-lg shadow-2xs">
-                    🎯
+        {!isDraftComplete && (
+          <div className="flex flex-col bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
+            <div
+              onClick={() => toggleSection('safetyBanner')}
+              className={`px-2.5 py-1.5 flex items-center justify-between cursor-pointer transition-colors ${
+                draftSafetyReport.status === 'critical'
+                  ? 'bg-rose-50/90 text-rose-900 border-b border-rose-200'
+                  : draftSafetyReport.status === 'caution'
+                  ? 'bg-amber-50/90 text-amber-900 border-b border-amber-200'
+                  : 'bg-emerald-50/80 text-emerald-900 border-b border-emerald-200'
+              }`}
+            >
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Shield
+                  size={13}
+                  className={
+                    draftSafetyReport.status === 'critical'
+                      ? 'text-rose-600'
+                      : draftSafetyReport.status === 'caution'
+                      ? 'text-amber-600'
+                      : 'text-emerald-600'
+                  }
+                />
+                <span className="font-bold text-[11px] truncate">
+                  Draft Safety: {draftSafetyReport.summaryBadge}
+                </span>
+                {draftSafetyReport.topWarnings.length > 0 && (
+                  <span
+                    className={`text-[9px] font-black px-1.5 py-0.2 rounded-full ${
+                      draftSafetyReport.status === 'critical'
+                        ? 'bg-rose-600 text-white'
+                        : 'bg-amber-500 text-white'
+                    }`}
+                  >
+                    {draftSafetyReport.topWarnings.length} เตือน
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1 text-[10px] text-slate-500">
+                <span>{openSections.safetyBanner ? 'ย่อ' : 'วิเคราะห์ 4 มิติ'}</span>
+                {openSections.safetyBanner ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+              </div>
+            </div>
+
+            {/* Expanded 4-Dimension Safety Analysis */}
+            {openSections.safetyBanner && (
+              <div className="p-2.5 flex flex-col gap-2.5 bg-slate-50/50">
+                {/* 1. Top Prioritized Warnings (Max 3) */}
+                {draftSafetyReport.topWarnings.length > 0 ? (
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-bold text-slate-700 uppercase flex items-center gap-1">
+                      <AlertTriangle size={11} className="text-amber-600" />
+                      <span>คำเตือนความเสี่ยงสำคัญ (สูงสุด 3 รายการ):</span>
+                    </span>
+                    {draftSafetyReport.topWarnings.map((w) => (
+                      <div
+                        key={w.id}
+                        className={`p-2 rounded-lg border flex flex-col gap-1 text-left shadow-2xs ${
+                          w.severity === 'critical'
+                            ? 'bg-rose-50 border-rose-200 text-rose-950'
+                            : w.severity === 'warning'
+                            ? 'bg-amber-50 border-amber-200 text-amber-950'
+                            : 'bg-blue-50 border-blue-200 text-blue-950'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 font-bold text-xs">
+                            {w.severity === 'critical' ? (
+                              <AlertTriangle size={13} className="text-rose-600 flex-shrink-0" />
+                            ) : (
+                              <Info size={13} className="text-amber-600 flex-shrink-0" />
+                            )}
+                            <span>{w.title}</span>
+                          </div>
+                          <span
+                            className={`text-[8.5px] font-black px-1.5 py-0.2 rounded uppercase ${
+                              w.severity === 'critical'
+                                ? 'bg-rose-600 text-white'
+                                : 'bg-amber-500 text-white'
+                            }`}
+                          >
+                            {w.severity === 'critical' ? 'CRITICAL' : 'WARNING'}
+                          </span>
+                        </div>
+                        <p className="text-[10.5px] leading-relaxed opacity-90">{w.detail}</p>
+                        <div className="text-[10px] font-bold text-slate-700 bg-white/90 p-1.5 rounded border border-slate-200/80 mt-0.5">
+                          💡 ทางเลือกแก้ไข: {w.suggestion}
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <h4 className="font-bold text-xs text-slate-800">คลิกฮีโร่ในกระดานเพื่อพิจารณาหยิบ</h4>
-                  <p className="text-[11px] text-slate-500 leading-relaxed max-w-xs">
-                    คลิกฮีโร่ตัวใดก็ได้ในตารางกลางเพื่อดูคอมโบ, ตัวแทนเมื่อโดนแบน, ตัวที่เคาน์เตอร์ และความถนัดของนักแข่ง
-                  </p>
+                ) : (
+                  <div className="p-2 text-center text-slate-700 text-[11px] bg-white rounded-lg border border-emerald-200">
+                    <span>
+                      ✅ องค์ประกอบทีมสมดุลดี: มีแนวหน้าหรือเครื่องมือทดแทน, มี CC คุมไฟต์ และดาเมจกระจายตัวเหมาะสม
+                    </span>
+                  </div>
+                )}
+
+                {/* 2. Four Safety Dimensions Breakdown */}
+                <div className="flex flex-col gap-2 pt-1 border-t border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-600 uppercase">
+                    การประเมิน 4 มิติเชิงลึก (4 Safety Dimensions):
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {/* Dimension 1: Role Coverage */}
+                    <div className="p-2 bg-white rounded-lg border border-slate-200 flex flex-col gap-1 text-left shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[10.5px] text-slate-800 flex items-center gap-1">
+                          <Users size={11} className="text-[#E91E63]" />
+                          <span>1. Role Coverage</span>
+                        </span>
+                        <span
+                          className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded ${
+                            draftSafetyReport.roleCoverage.missingRoles.length === 0
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {draftSafetyReport.roleCoverage.missingRoles.length === 0
+                            ? 'ครบตำแหน่ง'
+                            : `ขาด ${draftSafetyReport.roleCoverage.missingRoles.length} ตำแหน่ง`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                        {draftSafetyReport.roleCoverage.rolesCovered.map((role) => (
+                          <span
+                            key={role}
+                            className="text-[8.5px] font-bold px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200"
+                          >
+                            ✓ {role}
+                          </span>
+                        ))}
+                        {draftSafetyReport.roleCoverage.missingRoles.map((role) => (
+                          <span
+                            key={role}
+                            className="text-[8.5px] font-bold px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200"
+                          >
+                            ✕ {role}
+                          </span>
+                        ))}
+                      </div>
+                      {draftSafetyReport.roleCoverage.roleClashes.length > 0 && (
+                        <div className="text-[9px] text-rose-600 font-medium mt-0.5">
+                          ⚠️ ทับตำแหน่ง {draftSafetyReport.roleCoverage.roleClashes[0].role}:{' '}
+                          {draftSafetyReport.roleCoverage.roleClashes[0].heroes.join(' และ ')}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dimension 2: Team Composition & Tools */}
+                    <div className="p-2 bg-white rounded-lg border border-slate-200 flex flex-col gap-1 text-left shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[10.5px] text-slate-800 flex items-center gap-1">
+                          <Shield size={11} className="text-sky-600" />
+                          <span>2. Team Composition</span>
+                        </span>
+                        <span className="text-[8.5px] font-bold px-1.5 py-0.2 rounded bg-sky-100 text-sky-800">
+                          {draftSafetyReport.teamComposition.hasFrontline ? 'มีแนวหน้า' : 'แผนทางเลือก'}
+                        </span>
+                      </div>
+                      <div className="text-[9.5px] text-slate-600 leading-tight">
+                        แนวหน้า: {draftSafetyReport.teamComposition.frontlineDetails} • CC:{' '}
+                        {draftSafetyReport.teamComposition.hardCcDetails} • เปิดไฟต์:{' '}
+                        {draftSafetyReport.teamComposition.hasEngage ? 'มี' : 'ไม่มี'}
+                      </div>
+                      <div className="text-[9px] text-slate-500 font-medium flex items-center gap-1">
+                        <span>ดาเมจ:</span>
+                        <span className="text-amber-700 font-bold">
+                          กายภาพ {draftSafetyReport.teamComposition.damageBalance.physical}%
+                        </span>
+                        <span>•</span>
+                        <span className="text-purple-700 font-bold">
+                          เวท {draftSafetyReport.teamComposition.damageBalance.magic}%
+                        </span>
+                      </div>
+                      {draftSafetyReport.teamComposition.alternativeToolsNote && (
+                        <div className="text-[9px] text-indigo-700 font-medium">
+                          💡 สไตล์: {draftSafetyReport.teamComposition.alternativeToolsNote}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dimension 3: Game Timing */}
+                    <div className="p-2 bg-white rounded-lg border border-slate-200 flex flex-col gap-1 text-left shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[10.5px] text-slate-800 flex items-center gap-1">
+                          <Clock size={11} className="text-amber-600" />
+                          <span>3. Game Timing</span>
+                        </span>
+                        <span className="text-[8.5px] font-black px-1.5 py-0.2 rounded uppercase bg-amber-100 text-amber-900">
+                          Spike: {draftSafetyReport.gameTiming.powerSpike}
+                        </span>
+                      </div>
+                      <div className="text-[9.5px] text-slate-600 leading-tight">
+                        {draftSafetyReport.gameTiming.lateGameViability}
+                      </div>
+                      {draftSafetyReport.gameTiming.timingVulnerability && (
+                        <div className="text-[9px] text-rose-600 font-medium">
+                          ⚠️ {draftSafetyReport.gameTiming.timingVulnerability}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Dimension 4: Win Condition */}
+                    <div className="p-2 bg-white rounded-lg border border-slate-200 flex flex-col gap-1 text-left shadow-2xs">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-[10.5px] text-slate-800 flex items-center gap-1">
+                          <Target size={11} className="text-emerald-600" />
+                          <span>4. Win Condition</span>
+                        </span>
+                        <span className="text-[8.5px] font-black px-1.5 py-0.2 rounded uppercase bg-emerald-100 text-emerald-900">
+                          {draftSafetyReport.winCondition.primaryType}
+                        </span>
+                      </div>
+                      <div className="text-[9.5px] text-slate-700 font-medium leading-tight">
+                        {draftSafetyReport.winCondition.headline}
+                      </div>
+                      {draftSafetyReport.winCondition.keySuccessConditions.length > 0 && (
+                        <div className="text-[9px] text-slate-500 leading-tight">
+                          🎯 กุญแจสำคัญ: {draftSafetyReport.winCondition.keySuccessConditions[0]}
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
 
-                {/* Quick Recommendations */}
+                {/* Non-Coercive Disclaimer */}
+                <div className="text-[9.5px] text-slate-400 text-center italic mt-0.5">
+                  {draftSafetyReport.disclaimer}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* SITUATION A: SECTION 7 HIERARCHY — INSPECT / DECISION MODE                */}
+        {/* ========================================================================= */}
+        {situationalMode === 'inspect' && (
+          <>
+            {/* If NO hero is inspected, show Item 1 & 2 for Top Recommended Pick */}
+            {!currentHero ? (
+              <div className="flex flex-col gap-3 py-1">
+                {/* 1. คำแนะนำหลัก: ควรเลือกตัวไหนในเทิร์นนี้ */}
+                {topRecommendedPick ? (
+                  <div className="p-3 bg-white border-2 border-[#E91E63]/40 rounded-xl shadow-xs flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-[#E91E63] flex items-center gap-1.5 uppercase">
+                        <Flame size={13} className="text-[#E91E63]" />
+                        <span>1. คำแนะนำหลัก: ควรเลือกตัวไหนในเทิร์นนี้</span>
+                      </span>
+                      <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-[#FFF0F5] text-[#E91E63] border border-[#F3D5E2]">
+                        SCORE {topRecommendedPick.score}
+                      </span>
+                    </div>
+
+                    <div className="flex items-start justify-between gap-2 pt-1 border-t border-slate-100">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-[#E91E63] shadow-xs flex-shrink-0 bg-slate-100">
+                          <img
+                            src={getHeroImageUrl(topRecommendedPick.hero.name)}
+                            alt={topRecommendedPick.hero.name}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute bottom-0 inset-x-0 bg-black/80 text-[7.5px] font-bold text-center text-white py-0.2 uppercase">
+                            {topRecommendedPick.targetRole}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-sm text-slate-900 leading-tight">
+                              {topRecommendedPick.hero.name}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-medium">
+                              ({topRecommendedPick.hero.nameTh})
+                            </span>
+                          </div>
+                          <span className="text-[10.5px] text-slate-600 mt-0.5 leading-snug">
+                            {topRecommendedPick.reasons[0] ||
+                              `เหมาะสำหรับเติมเต็มตำแหน่ง ${topRecommendedPick.targetRole}`}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1 items-end flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => onSelectHeroToInspect(topRecommendedPick.hero.name)}
+                          className="px-2.5 py-1 rounded-lg bg-[#FFF0F5] hover:bg-[#FCE4EC] border border-[#F3D5E2] text-[#E91E63] text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1"
+                        >
+                          <span>พิจารณา</span>
+                          <ArrowRight size={11} />
+                        </button>
+                        {onPickHeroDirectly && (
+                          <button
+                            type="button"
+                            onClick={() => onPickHeroDirectly(topRecommendedPick.hero)}
+                            className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all cursor-pointer shadow-2xs flex items-center gap-1 active:scale-95"
+                          >
+                            <Check size={11} />
+                            <span>หยิบตัวนี้</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 2. ผู้เล่นที่เหมาะสมที่สุดสำหรับคำแนะนำหลัก */}
+                    {topPickPlayerFit && topPickPlayerFit.bestFitPlayer && (
+                      <div className="mt-1 p-2 bg-amber-50/70 border border-amber-200 rounded-lg flex flex-col gap-1 text-left">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-amber-900 flex items-center gap-1">
+                            <Users size={12} className="text-amber-600" />
+                            <span>2. ผู้เล่นที่เหมาะสมที่สุด:</span>
+                          </span>
+                          <span
+                            className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                              topPickPlayerFit.bestFitPlayer.player.starColor === 'gold'
+                                ? 'bg-amber-200 text-amber-950 font-black'
+                                : 'bg-slate-200 text-slate-800'
+                            }`}
+                          >
+                            {topPickPlayerFit.bestFitPlayer.player.starColor === 'gold'
+                              ? '⭐ ดาวสีทอง (ถนัด)'
+                              : '★ ดาวสีเงิน (พอเล่นได้)'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-slate-900">
+                            {topPickPlayerFit.bestFitPlayer.player.nickname}
+                          </span>
+                          <span className="text-[10px] text-slate-600">
+                            ({topPickPlayerFit.bestFitPlayer.player.playerName}) • ตำแหน่ง:{' '}
+                            <span className="font-bold">
+                              {topPickPlayerFit.bestFitPlayer.player.playerRole}
+                            </span>
+                          </span>
+                        </div>
+
+                        <p className="text-[10px] text-amber-900 leading-tight">
+                          💡 {topPickPlayerFit.bestFitPlayer.recommendationReason}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+                {/* Alternative Picks list */}
                 <div className="flex flex-col gap-1.5 text-left">
-                  <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                    <Flame size={12} className="text-amber-500" />
-                    <span>ตัวเลือกน่าสนใจสำหรับเทิร์นนี้ (คลิกเพื่อพรีวิว):</span>
+                  <span className="text-[10.5px] font-bold text-slate-600 flex items-center gap-1">
+                    <span>ตัวเลือกสำรองอื่นที่น่าสนใจในเทิร์นนี้:</span>
                   </span>
                   <div className="flex flex-col gap-1.5">
-                    {analysis.suggestedPicks.slice(0, 3).map((item) => (
+                    {analysis.suggestedPicks.slice(1, 4).map((item) => (
                       <div
                         key={item.hero.name}
                         onClick={() => onSelectHeroToInspect(item.hero.name)}
@@ -594,7 +1023,10 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                           />
                           <div className="flex flex-col min-w-0">
                             <span className="font-bold text-xs text-slate-900 truncate group-hover:text-[#E91E63]">
-                              {item.hero.name} <span className="text-[9.5px] text-slate-500 font-normal">({item.targetRole})</span>
+                              {item.hero.name}{' '}
+                              <span className="text-[9.5px] text-slate-500 font-normal">
+                                ({item.targetRole})
+                              </span>
                             </span>
                             <span className="text-[10px] text-slate-500 truncate">
                               {item.reasons[0] || item.hero.nameTh}
@@ -602,7 +1034,7 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                           </div>
                         </div>
                         <span className="text-[10px] font-bold text-[#E91E63] flex items-center gap-0.5 flex-shrink-0">
-                          <span>ดูข้อมูล</span>
+                          <span>คลิกพิจารณา</span>
                           <ArrowRight size={11} />
                         </span>
                       </div>
@@ -612,9 +1044,21 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
               </div>
             ) : (
               <>
-                {/* 1. Hero Overview Header Card */}
+                {/* ================================================================= */}
+                {/* 1. คำแนะนำหลัก / ฮีโร่ที่กำลังพิจารณา (Hero Under Consideration) */}
+                {/* ================================================================= */}
                 <div className="p-2.5 bg-white border border-[#F3D5E2] rounded-xl shadow-xs flex flex-col gap-2">
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-[#E91E63] uppercase tracking-wider flex items-center gap-1">
+                      <Target size={12} />
+                      <span>1. ฮีโร่ที่กำลังพิจารณา (Hero Consideration)</span>
+                    </span>
+                    <span className="text-[9px] text-slate-400 italic">
+                      *คลิกดูข้อมูลไม่ทำให้เกิดการ PICK จริง
+                    </span>
+                  </div>
+
+                  <div className="flex items-start justify-between gap-2 pt-1 border-t border-slate-100">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-[#E91E63] shadow-xs flex-shrink-0 bg-slate-100">
                         <img
@@ -639,13 +1083,17 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                         <div className="text-[10px] text-slate-500 font-medium flex items-center gap-1 mt-0.5 truncate">
                           <span>ตำแหน่ง:</span>
                           <span className="font-bold text-slate-700 uppercase">
-                            {[currentHero.primaryPos, ...(currentHero.pos || [])].filter((v, i, a) => a.indexOf(v) === i).join(', ')}
+                            {[currentHero.primaryPos, ...(currentHero.pos || [])]
+                              .filter((v, i, a) => a.indexOf(v) === i)
+                              .join(', ')}
                           </span>
                         </div>
 
                         {heroStatus && (
                           <div className="mt-1">
-                            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shadow-2xs ${heroStatus.color}`}>
+                            <span
+                              className={`text-[9px] font-bold px-2 py-0.5 rounded-full border shadow-2xs ${heroStatus.color}`}
+                            >
                               {heroStatus.label}
                             </span>
                           </div>
@@ -663,7 +1111,11 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                             ? 'bg-rose-600 hover:bg-rose-700 border border-rose-500'
                             : 'bg-emerald-600 hover:bg-emerald-700 border border-emerald-500'
                         }`}
-                        title={isBanTurn ? `ยืนยันการแบน ${currentHero.name}` : `ยืนยันการเลือก ${currentHero.name} ลงดราฟต์`}
+                        title={
+                          isBanTurn
+                            ? `ยืนยันการแบน ${currentHero.name}`
+                            : `ยืนยันการเลือก ${currentHero.name} ลงดราฟต์`
+                        }
                       >
                         {isBanTurn ? <Ban size={12} /> : <Check size={12} />}
                         <span>{isBanTurn ? 'แบนตัวนี้' : 'หยิบตัวนี้'}</span>
@@ -672,173 +1124,301 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                   </div>
                 </div>
 
-                {/* 2. Player Comfort (⭐/★) */}
+                {/* ================================================================= */}
+                {/* 2. ผู้เล่นที่เหมาะสมที่สุด (Best-fit Player & Player Fit)         */}
+                {/* ================================================================= */}
                 <div className="bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
                   <button
                     type="button"
-                    onClick={() => toggleSection('players')}
+                    onClick={() => toggleSection('playerFit')}
                     className="w-full px-2.5 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex items-center justify-between text-left cursor-pointer"
                   >
                     <div className="flex items-center gap-1.5 font-bold text-xs text-[#E91E63]">
                       <Users size={13} />
-                      <span>ความถนัดของนักแข่ง MCU</span>
+                      <span>2. ผู้เล่นที่เหมาะสมที่สุด (Player Fit)</span>
                     </div>
-                    {openSections.players ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                    {openSections.playerFit ? (
+                      <ChevronUp size={14} className="text-slate-400" />
+                    ) : (
+                      <ChevronDown size={14} className="text-slate-400" />
+                    )}
                   </button>
 
-                  {openSections.players && (
-                    <div className="p-2.5 flex flex-col gap-1.5">
-                      {mcuPlayersForHero.length > 0 ? (
-                        <div className="flex flex-col gap-1.5">
-                          {mcuPlayersForHero.map((badge) => {
-                            const isSig = badge.tier === 'signature';
-                            return (
-                              <div
-                                key={badge.playerId}
-                                className={`p-2 rounded-lg border flex items-center justify-between gap-2 shadow-2xs ${
-                                  isSig
-                                    ? 'bg-amber-50/70 border-amber-300 text-amber-900'
-                                    : 'bg-slate-50 border-slate-200 text-slate-800'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2">
-                                  <span className={isSig ? 'text-amber-500 text-sm' : 'text-slate-400 text-sm'}>
-                                    {isSig ? '⭐' : '★'}
-                                  </span>
-                                  <div className="flex flex-col">
-                                    <span className="font-bold text-xs">
-                                      {badge.playerNickname}
-                                    </span>
-                                    <span className="text-[10px] text-slate-500 font-medium">
-                                      ตำแหน่งหลัก: {badge.position}
-                                    </span>
-                                  </div>
-                                </div>
-
+                  {openSections.playerFit && (
+                    <div className="p-2.5 flex flex-col gap-2">
+                      {playerFitReport.hasComfortData && playerFitReport.bestFitPlayer ? (
+                        <>
+                          {/* Best Fit Player Card */}
+                          <div className="p-2 bg-gradient-to-r from-amber-50 to-white border border-amber-300 rounded-lg flex flex-col gap-1.5 shadow-2xs">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
                                 <span
-                                  className={`text-[9.5px] font-bold px-2 py-0.5 rounded-full border ${
-                                    isSig
-                                      ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                      : 'bg-white text-slate-600 border-slate-300'
+                                  className={`text-sm ${
+                                    playerFitReport.bestFitPlayer.player.starColor === 'gold'
+                                      ? 'text-amber-500'
+                                      : 'text-slate-400'
                                   }`}
                                 >
-                                  {isSig ? '⭐ ถนัดพิเศษ (Signature)' : '★ พอเล่นได้ (Comfortable)'}
+                                  {playerFitReport.bestFitPlayer.player.starColor === 'gold'
+                                    ? '⭐'
+                                    : '★'}
+                                </span>
+                                <span className="font-bold text-xs text-slate-900">
+                                  {playerFitReport.bestFitPlayer.player.nickname}
+                                </span>
+                                <span className="text-[10px] text-slate-500">
+                                  ({playerFitReport.bestFitPlayer.player.playerName})
                                 </span>
                               </div>
-                            );
-                          })}
-                        </div>
+
+                              <span
+                                className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                                  playerFitReport.bestFitPlayer.player.starColor === 'gold'
+                                    ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                    : 'bg-slate-100 text-slate-700 border-slate-300'
+                                }`}
+                              >
+                                {playerFitReport.bestFitPlayer.player.starColor === 'gold'
+                                  ? '⭐ ดาวสีทอง (ถนัด)'
+                                  : '★ ดาวสีเงิน (พอเล่นได้)'}
+                              </span>
+                            </div>
+
+                            {/* Position & Role suitability */}
+                            <div className="flex items-center justify-between text-[10px] bg-white/90 p-1.5 rounded border border-amber-200">
+                              <span className="text-slate-600 font-medium">
+                                ตำแหน่งผู้เล่น:{' '}
+                                <span className="font-bold text-slate-800">
+                                  {playerFitReport.bestFitPlayer.player.playerRole}
+                                </span>
+                              </span>
+                              <span
+                                className={`font-bold ${
+                                  playerFitReport.bestFitPlayer.player.roleFit === 'on_role'
+                                    ? 'text-emerald-700'
+                                    : 'text-amber-700'
+                                }`}
+                              >
+                                {playerFitReport.bestFitPlayer.player.roleFitDescription}
+                              </span>
+                            </div>
+
+                            {/* Brief concrete reason */}
+                            <p className="text-[10.5px] text-amber-950 leading-snug">
+                              💡 {playerFitReport.bestFitPlayer.recommendationReason}
+                            </p>
+                          </div>
+
+                          {/* Other players who can play this hero */}
+                          {playerFitReport.otherPlayers.length > 0 && (
+                            <div className="flex flex-col gap-1 pt-1 border-t border-slate-100">
+                              <span className="text-[10px] font-bold text-slate-600">
+                                ผู้เล่นคนอื่นในทีมที่เล่นฮีโร่นี้ได้:
+                              </span>
+                              <div className="flex flex-col gap-1">
+                                {playerFitReport.otherPlayers.map((other) => (
+                                  <div
+                                    key={other.playerId}
+                                    className="p-1.5 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-between text-[10px]"
+                                  >
+                                    <div className="flex items-center gap-1.5">
+                                      <span
+                                        className={
+                                          other.starColor === 'gold'
+                                            ? 'text-amber-500'
+                                            : 'text-slate-400'
+                                        }
+                                      >
+                                        {other.starColor === 'gold' ? '⭐' : '★'}
+                                      </span>
+                                      <span className="font-bold text-slate-800">
+                                        {other.nickname}
+                                      </span>
+                                      <span className="text-slate-500">({other.playerRole})</span>
+                                    </div>
+                                    <span
+                                      className={`px-1.5 py-0.2 rounded font-bold text-[9px] border ${
+                                        other.starColor === 'gold'
+                                          ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                          : 'bg-white text-slate-600 border-slate-300'
+                                      }`}
+                                    >
+                                      {other.tierLabel}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
                       ) : (
-                        <div className="p-2 text-center text-slate-500 text-[11px] bg-slate-50 rounded-lg border border-slate-200">
-                          <span>⚠️ ไม่มีนักแข่งในทีมตั้ง {currentHero.name} เป็นตัวถนัดหลัก ควรเช็กความมั่นใจก่อนหยิบ</span>
+                        <div className="p-2.5 text-center text-slate-600 text-[11px] bg-slate-50 rounded-lg border border-slate-200 leading-relaxed">
+                          <span>
+                            {playerFitReport.warningNotice ||
+                              'ไม่พบข้อมูลเพียงพอในพูลนักแข่งของทีม MCU สำหรับฮีโร่ตัวนี้ — โค้ชควรสอบถามความมั่นใจก่อนหยิบ (ห้ามสมมติว่าเล่นได้)'}
+                          </span>
                         </div>
                       )}
+
+                      <div className="text-[9px] text-slate-400 italic mt-0.5">
+                        ที่มา: {playerFitReport.provenance}
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {/* 3. Synergies & Substitutes */}
+                {/* ================================================================= */}
+                {/* 3. ตัวเลือกสำรอง / COMBO FALLBACK                                 */}
+                {/* ================================================================= */}
                 <div className="bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
                   <button
                     type="button"
-                    onClick={() => toggleSection('combos')}
+                    onClick={() => toggleSection('fallbackSubs')}
                     className="w-full px-2.5 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex items-center justify-between text-left cursor-pointer"
                   >
                     <div className="flex items-center gap-1.5 font-bold text-xs text-[#E91E63]">
-                      <Layers size={13} />
-                      <span>คอมโบที่เหมาะสม TOP 3 & ตัวแทน</span>
+                      <RefreshCw size={13} />
+                      <span>3. ตัวเลือกสำรอง / Combo Fallback</span>
                     </div>
-                    {openSections.combos ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                    {openSections.fallbackSubs ? (
+                      <ChevronUp size={14} className="text-slate-400" />
+                    ) : (
+                      <ChevronDown size={14} className="text-slate-400" />
+                    )}
                   </button>
 
-                  {openSections.combos && (
-                    <div className="p-2.5 flex flex-col gap-2.5">
-                      {topPartners.length > 0 ? (
+                  {openSections.fallbackSubs && (
+                    <div className="p-2.5 flex flex-col gap-2">
+                      {/* Substitutes for current hero if banned or taken */}
+                      {inspectedHeroSubstitutes.length > 0 ? (
                         <div className="flex flex-col gap-1.5">
-                          {topPartners.map((item) => {
-                            const isBanned = bannedHeroNames.has(item.allyHero);
-                            const isPicked = pickedHeroNames.has(item.allyHero);
-                            return (
+                          <span className="text-[10px] font-bold text-slate-600">
+                            ตัวเลือกทดแทนหาก {currentHero.name} โดนแบน / ถูกแย่ง (เรียงตามความเหมาะสม):
+                          </span>
+                          <div className="flex flex-col gap-1.5">
+                            {inspectedHeroSubstitutes.map((sub) => (
                               <div
-                                key={item.allyHero}
-                                onClick={() => onSelectHeroToInspect(item.allyHero)}
-                                className="p-1.5 bg-slate-50 hover:bg-[#FFF0F5] border border-slate-200 hover:border-[#E91E63] rounded-lg transition-all cursor-pointer flex items-center justify-between gap-2"
+                                key={sub.substitute}
+                                onClick={() => onSelectHeroToInspect(sub.substitute)}
+                                className="p-2 bg-amber-50/50 hover:bg-amber-50 border border-amber-200 hover:border-[#E91E63] rounded-lg flex flex-col gap-1 cursor-pointer transition-all shadow-2xs group"
                               >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <img
-                                    src={getHeroImageUrl(item.allyHero)}
-                                    alt={item.allyHero}
-                                    className="w-8 h-8 rounded-lg object-cover border border-slate-200 flex-shrink-0"
-                                  />
-                                  <div className="flex flex-col min-w-0">
-                                    <div className="flex items-center gap-1">
-                                      <span className="font-bold text-xs text-slate-900 truncate">
-                                        {item.allyHero}
-                                      </span>
-                                      {isBanned && (
-                                        <span className="text-[8px] font-bold px-1 rounded bg-rose-100 text-rose-700">แบนแล้ว</span>
-                                      )}
-                                      {isPicked && (
-                                        <span className="text-[8px] font-bold px-1 rounded bg-slate-200 text-slate-700">เลือกแล้ว</span>
-                                      )}
-                                    </div>
-                                    <span className="text-[10px] text-slate-500 truncate">
-                                      {item.hero || 'เข้าขากันในจังหวะไฟต์'}
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-1.5">
+                                    <img
+                                      src={getHeroImageUrl(sub.substitute)}
+                                      alt={sub.substitute}
+                                      className="w-6 h-6 rounded object-cover border border-slate-200"
+                                    />
+                                    <span className="font-bold text-xs text-slate-900 group-hover:text-[#E91E63]">
+                                      {sub.substitute}
+                                    </span>
+                                    <span className="text-[9.5px] text-slate-500">
+                                      ({sub.role})
                                     </span>
                                   </div>
+                                  <span
+                                    className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
+                                      sub.isVerifiedSubstitute
+                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                        : 'bg-slate-100 text-slate-700 border-slate-300'
+                                    }`}
+                                  >
+                                    {sub.isVerifiedSubstitute
+                                      ? sub.effectiveness
+                                      : 'ทางเลือกที่ต้องพิจารณา'}
+                                  </span>
                                 </div>
 
-                                <div className="text-right flex-shrink-0">
-                                  <span className="text-[10px] font-bold text-emerald-600 block">
-                                    {(item.diff ?? 0) > 0 ? '+' : ''}{(item.diff ?? 0).toFixed(1)}% Synergy
-                                  </span>
-                                  <span className="text-[8.5px] text-slate-400">
-                                    {item.games} เกม
-                                  </span>
-                                </div>
+                                <p className="text-[9.5px] text-slate-700 leading-tight">
+                                  📋 แผนเดิม: {sub.planCompatibility}
+                                </p>
+                                <p className="text-[9.5px] text-slate-600 leading-tight">
+                                  ⚖️ ข้อแลกเปลี่ยน: {sub.tradeOff}
+                                </p>
+
+                                {/* Players who play this substitute */}
+                                {sub.playersWhoPlay.length > 0 && (
+                                  <div className="flex items-center gap-1 flex-wrap pt-1 border-t border-amber-100">
+                                    <span className="text-[9px] text-slate-500 font-medium">
+                                      นักแข่งที่เล่นได้:
+                                    </span>
+                                    {sub.playersWhoPlay.map((p) => (
+                                      <span
+                                        key={p.nickname}
+                                        className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded border ${
+                                          p.starColor === 'gold'
+                                            ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                            : 'bg-white text-slate-700 border-slate-300'
+                                        }`}
+                                      >
+                                        {p.starColor === 'gold' ? '⭐' : '★'} {p.nickname} (
+                                        {p.playerRole})
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                            );
-                          })}
+                            ))}
+                          </div>
                         </div>
                       ) : (
-                        <div className="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg border text-center">
-                          ยังไม่มีข้อมูลตัวอย่างคอมโบคู่ในฐานข้อมูลการแข่งขัน
+                        <div className="p-2 text-center text-slate-500 text-[11px] bg-slate-50 rounded-lg border border-slate-200">
+                          <span>
+                            {heroStatus?.isAvailable
+                              ? `${currentHero.name} พร้อมเลือกในดราฟต์ ยังไม่มีความจำเป็นต้องใช้ตัวสำรอง`
+                              : 'ยังไม่มีบันทึกตัวแทนเฉพาะสำหรับฮีโร่ตัวนี้ในระบบ'}
+                          </span>
                         </div>
                       )}
 
-                      {/* Substitutes if Partner is Banned */}
+                      {/* Fallback if Key Partner is Banned */}
                       {partnerSubstitutes.length > 0 && (
-                        <div className="p-2.5 bg-rose-50/70 border border-rose-200 rounded-lg flex flex-col gap-1.5">
-                          <div className="flex items-center gap-1.5 text-rose-900 font-bold text-[11px]">
-                            <AlertTriangle size={13} className="text-rose-600 flex-shrink-0" />
-                            <span>ตัวเล่นคู่หลักโดนแบน ➔ ตัวเลือกทดแทนที่ยังว่าง</span>
-                          </div>
+                        <div className="flex flex-col gap-1.5 pt-2 border-t border-[#F3D5E2]">
+                          <span className="text-[10.5px] font-bold text-amber-700 flex items-center gap-1">
+                            <AlertTriangle size={12} className="text-amber-600" />
+                            <span>ฮีโร่คู่หูของแผนติดแบน/ถูกแย่ง — แผนสำรอง:</span>
+                          </span>
 
-                          {partnerSubstitutes.map((subItem) => (
-                            <div key={subItem.bannedPartner} className="flex flex-col gap-1 mt-1">
-                              <span className="text-[10px] font-bold text-rose-800">
-                                เมื่อ {subItem.bannedPartner} ไม่ว่าง ({subItem.compName}):
+                          {partnerSubstitutes.map((ps) => (
+                            <div
+                              key={ps.bannedPartner}
+                              className="p-2 bg-amber-50/60 border border-amber-200 rounded-lg flex flex-col gap-1"
+                            >
+                              <span className="text-[11px] font-bold text-amber-900">
+                                ขาด{' '}
+                                <span className="underline decoration-rose-500 font-black">
+                                  {ps.bannedPartner}
+                                </span>{' '}
+                                ในแผน {ps.compName}:
                               </span>
                               <div className="flex flex-col gap-1">
-                                {subItem.substitutes.map((s) => (
+                                {ps.substitutes.map((sub) => (
                                   <div
-                                    key={s.substitute}
-                                    onClick={() => onSelectHeroToInspect(s.substitute)}
-                                    className="p-1.5 bg-white border border-rose-200 hover:border-[#E91E63] rounded-md cursor-pointer transition-all flex flex-col gap-0.5"
+                                    key={sub.substitute}
+                                    onClick={() => onSelectHeroToInspect(sub.substitute)}
+                                    className="p-1.5 bg-white border border-amber-200 hover:border-[#E91E63] rounded-md flex flex-col gap-0.5 cursor-pointer shadow-2xs group"
                                   >
                                     <div className="flex items-center justify-between">
-                                      <span className="font-bold text-xs text-slate-900 flex items-center gap-1">
-                                        <span>➔ ใช้</span>
-                                        <span className="text-[#E91E63] underline">{s.substitute}</span>
-                                        <span className="text-[9.5px] font-normal text-slate-500">({s.role})</span>
-                                      </span>
-                                      <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 rounded border border-emerald-200">
-                                        {s.effectiveness}
+                                      <div className="flex items-center gap-1.5">
+                                        <img
+                                          src={getHeroImageUrl(sub.substitute)}
+                                          alt={sub.substitute}
+                                          className="w-5 h-5 rounded object-cover border border-slate-200"
+                                        />
+                                        <span className="font-bold text-xs text-slate-900 group-hover:text-[#E91E63]">
+                                          {sub.substitute}
+                                        </span>
+                                        <span className="text-[9.5px] text-slate-500">
+                                          ({sub.role})
+                                        </span>
+                                      </div>
+                                      <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                        {sub.effectiveness}
                                       </span>
                                     </div>
-                                    <p className="text-[9.5px] text-slate-600 leading-snug">
-                                      <span className="font-semibold text-slate-800">ข้อแลกเปลี่ยน:</span> {s.tradeOff}
-                                    </p>
+                                    <span className="text-[9.5px] text-slate-600 leading-tight">
+                                      ⚖️ ข้อแลกเปลี่ยน: {sub.tradeOff}
+                                    </span>
                                   </div>
                                 ))}
                               </div>
@@ -850,122 +1430,245 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                   )}
                 </div>
 
-                {/* 4. Matchups & Counter Risks */}
+                {/* ================================================================= */}
+                {/* 4. คอมโบที่เกี่ยวข้อง & TEAM IDENTITY                             */}
+                {/* ================================================================= */}
                 <div className="bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
                   <button
                     type="button"
-                    onClick={() => toggleSection('counters')}
+                    onClick={() => toggleSection('combos')}
+                    className="w-full px-2.5 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex items-center justify-between text-left cursor-pointer"
+                  >
+                    <div className="flex items-center gap-1.5 font-bold text-xs text-[#E91E63]">
+                      <Layers size={13} />
+                      <span>4. คอมโบที่เกี่ยวข้อง & แผนทีม (Team Identity)</span>
+                    </div>
+                    {openSections.combos ? (
+                      <ChevronUp size={14} className="text-slate-400" />
+                    ) : (
+                      <ChevronDown size={14} className="text-slate-400" />
+                    )}
+                  </button>
+
+                  {openSections.combos && (
+                    <div className="p-2.5 flex flex-col gap-2">
+                      {/* Team Identity Alignment */}
+                      {teamIdentityReport.inspectedHeroAlignment && (
+                        <div
+                          className={`p-2 rounded-lg border flex flex-col gap-1 ${
+                            teamIdentityReport.inspectedHeroAlignment.alignment === 'reinforces'
+                              ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                              : teamIdentityReport.inspectedHeroAlignment.alignment === 'clashes'
+                              ? 'bg-rose-50 border-rose-200 text-rose-950'
+                              : 'bg-slate-50 border-slate-200 text-slate-900'
+                          }`}
+                        >
+                          <span className="font-bold text-xs">
+                            {teamIdentityReport.inspectedHeroAlignment.headline}
+                          </span>
+                          <p className="text-[10px] leading-relaxed opacity-90">
+                            {teamIdentityReport.inspectedHeroAlignment.reason}
+                          </p>
+                          <div className="text-[9.5px] font-bold text-slate-700 bg-white/70 p-1.5 rounded border border-slate-200/50">
+                            🎯 แท็กติก: {teamIdentityReport.inspectedHeroAlignment.tacticalNote}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Top 3 Synergy Partners (from empirical Pro League RPL dataset) */}
+                      {topPartners.length > 0 && (
+                        <div className="flex flex-col gap-1.5 pt-1">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase">
+                            คู่หูคอมโบใน Pro League (RPL n=142):
+                          </span>
+                          {topPartners.map((item) => {
+                            const isBanned = bannedHeroNames.has(item.allyHero);
+                            const isPicked = pickedHeroNames.has(item.allyHero);
+
+                            return (
+                              <div
+                                key={item.allyHero}
+                                className={`p-1.5 rounded-lg border flex items-center justify-between gap-2 shadow-2xs ${
+                                  isBanned
+                                    ? 'bg-rose-50/70 border-rose-200 opacity-60'
+                                    : isPicked
+                                    ? 'bg-slate-100 border-slate-200'
+                                    : 'bg-white border-slate-200 hover:border-[#E91E63]'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <img
+                                    src={getHeroImageUrl(item.allyHero)}
+                                    alt={item.allyHero}
+                                    className="w-7 h-7 rounded-lg object-cover border border-slate-200 flex-shrink-0"
+                                  />
+                                  <div className="flex flex-col min-w-0">
+                                    <div className="flex items-center gap-1">
+                                      <span className="font-bold text-xs text-slate-900 truncate">
+                                        {item.allyHero}
+                                      </span>
+                                      {isBanned && (
+                                        <span className="text-[7.5px] font-bold px-1 rounded bg-rose-600 text-white">
+                                          BANNED
+                                        </span>
+                                      )}
+                                      {isPicked && (
+                                        <span className="text-[7.5px] font-bold px-1 rounded bg-slate-600 text-white">
+                                          PICKED
+                                        </span>
+                                      )}
+                                    </div>
+                                    <span className="text-[9.5px] text-slate-500">
+                                      สถิติแข่ง: {item.games} แมตช์ • Win Rate{' '}
+                                      {(item.winRate || 50).toFixed(1)}%
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-col items-end flex-shrink-0">
+                                  <span
+                                    className={`text-[9.5px] font-black ${
+                                      (item.diff ?? 0) >= 0
+                                        ? 'text-emerald-600'
+                                        : 'text-rose-600'
+                                    }`}
+                                  >
+                                    {(item.diff ?? 0) >= 0
+                                      ? `+${(item.diff ?? 0).toFixed(1)}%`
+                                      : `${(item.diff ?? 0).toFixed(1)}%`}
+                                  </span>
+                                  <span className="text-[7.5px] text-slate-400">Synergy Diff</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* ================================================================= */}
+                {/* 5. จุดเสี่ยงและตัวแก้ทางจากคู่แข่ง (Threats & Counters)            */}
+                {/* ================================================================= */}
+                <div className="bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
+                  <button
+                    type="button"
+                    onClick={() => toggleSection('opponent')}
                     className="w-full px-2.5 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex items-center justify-between text-left cursor-pointer"
                   >
                     <div className="flex items-center gap-1.5 font-bold text-xs text-[#E91E63]">
                       <Swords size={13} />
-                      <span>ชนะทาง / เสียเปรียบ & คู่แข่งอาจตอบโต้</span>
+                      <span>5. จุดเสี่ยงและตัวแก้ทางจากคู่แข่ง</span>
                     </div>
-                    {openSections.counters ? <ChevronUp size={14} className="text-slate-400" /> : <ChevronDown size={14} className="text-slate-400" />}
+                    {openSections.opponent ? (
+                      <ChevronUp size={14} className="text-slate-400" />
+                    ) : (
+                      <ChevronDown size={14} className="text-slate-400" />
+                    )}
                   </button>
 
-                  {openSections.counters && (
-                    <div className="p-2.5 flex flex-col gap-2.5">
-                      {/* Strong Against */}
+                  {openSections.opponent && (
+                    <div className="p-2.5 flex flex-col gap-2">
+                      {/* Matchup against locked opponent picks */}
                       <div className="flex flex-col gap-1">
-                        <span className="text-[10.5px] font-bold text-emerald-700 flex items-center gap-1">
-                          <TrendingUp size={11} />
-                          <span>สถิติชนะทาง (Strong Against):</span>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">
+                          ความได้เปรียบเทียบกับตัวที่คู่แข่งล็อคแล้ว:
                         </span>
-                        {analysis.inspectedMatchups.strongAgainst.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {analysis.inspectedMatchups.strongAgainst.slice(0, 3).map((m) => (
+                        {matchupAgainstOpponentPicks.length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                            {matchupAgainstOpponentPicks.map((item) => (
                               <div
-                                key={m.opponentHero}
-                                onClick={() => onSelectHeroToInspect(m.opponentHero)}
-                                className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 hover:border-emerald-400 text-emerald-900 cursor-pointer flex items-center gap-1.5 text-[10px]"
+                                key={item.oppHero.name}
+                                className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs"
                               >
-                                <span className="font-bold">{m.opponentHero}</span>
-                                <span className="text-[9px] font-semibold text-emerald-600">
-                                  +{m.diff.toFixed(1)}% ({m.games} นัด)
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-[10px] text-slate-500 bg-slate-50 p-1.5 rounded border text-center">
-                            ยังไม่มีข้อมูลสถิติยืนยันในฐานข้อมูลการแข่งขัน
-                          </span>
-                        )}
-                      </div>
+                                <div className="flex items-center gap-2">
+                                  <img
+                                    src={getHeroImageUrl(item.oppHero.name)}
+                                    alt={item.oppHero.name}
+                                    className="w-6 h-6 rounded object-cover border border-slate-200"
+                                  />
+                                  <span className="font-bold text-slate-800">
+                                    vs {item.oppHero.name}
+                                  </span>
+                                </div>
 
-                      {/* Weak Against */}
-                      <div className="flex flex-col gap-1 pt-1 border-t border-slate-100">
-                        <span className="text-[10.5px] font-bold text-rose-700 flex items-center gap-1">
-                          <TrendingDown size={11} />
-                          <span>สถิติเสียเปรียบ (Weak Against):</span>
-                        </span>
-                        {analysis.inspectedMatchups.weakAgainst.length > 0 ? (
-                          <div className="flex flex-wrap gap-1">
-                            {analysis.inspectedMatchups.weakAgainst.slice(0, 3).map((m) => (
-                              <div
-                                key={m.opponentHero}
-                                onClick={() => onSelectHeroToInspect(m.opponentHero)}
-                                className="px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 hover:border-rose-400 text-rose-900 cursor-pointer flex items-center gap-1.5 text-[10px]"
-                              >
-                                <span className="font-bold">{m.opponentHero}</span>
-                                <span className="text-[9px] font-semibold text-rose-600">
-                                  {m.diff.toFixed(1)}% ({m.games} นัด)
-                                </span>
+                                {item.matchup ? (
+                                  <span
+                                    className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded ${
+                                      item.matchup.diff > 1
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : item.matchup.diff < -1
+                                        ? 'bg-rose-100 text-rose-800'
+                                        : 'bg-slate-200 text-slate-700'
+                                    }`}
+                                  >
+                                    {item.matchup.diff > 1
+                                      ? 'ได้เปรียบ'
+                                      : item.matchup.diff < -1
+                                      ? 'เสียเปรียบ'
+                                      : 'สูสี'}{' '}
+                                    (
+                                    {item.matchup.diff > 0
+                                      ? `+${item.matchup.diff.toFixed(1)}%`
+                                      : `${item.matchup.diff.toFixed(1)}%`}
+                                    )
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] text-slate-400">ยังไม่มีสถิติตรง</span>
+                                )}
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <span className="text-[10px] text-slate-500 bg-slate-50 p-1.5 rounded border text-center">
-                            ยังไม่มีข้อมูลสถิติยืนยันในฐานข้อมูลการแข่งขัน
+                          <span className="text-[10px] text-slate-400 italic">
+                            คู่แข่งยังไม่ได้ล็อคฮีโร่
                           </span>
                         )}
                       </div>
 
                       {/* Anticipated Enemy Responses */}
-                      <div className="flex flex-col gap-1 pt-1 border-t border-slate-100">
-                        <span className="text-[10.5px] font-bold text-slate-700 flex items-center gap-1">
-                          <Target size={11} className="text-rose-500" />
-                          <span>คู่แข่งอาจหยิบมาตอบโต้เรา (Anticipated Response):</span>
-                        </span>
-                        {anticipatedEnemyResponses.length > 0 ? (
+                      {anticipatedEnemyResponses.length > 0 && (
+                        <div className="flex flex-col gap-1 pt-1.5 border-t border-[#F3D5E2]">
+                          <span className="text-[10px] font-bold text-rose-700 flex items-center gap-1">
+                            <AlertTriangle size={11} />
+                            <span>
+                              ตัวที่คู่แข่งมีโอกาสหยิบมาแก้ทาง {currentHero.name} (Weak Against):
+                            </span>
+                          </span>
                           <div className="flex flex-col gap-1">
                             {anticipatedEnemyResponses.map((item) => (
                               <div
                                 key={item.opponentHero}
                                 onClick={() => onSelectHeroToInspect(item.opponentHero)}
-                                className="p-1.5 bg-slate-50 hover:bg-rose-50/60 border border-slate-200 hover:border-rose-300 rounded-lg cursor-pointer transition-all flex items-center justify-between gap-2"
+                                className="p-1.5 bg-rose-50/50 border border-rose-200 hover:border-rose-400 rounded-lg flex items-center justify-between text-xs cursor-pointer group"
                               >
                                 <div className="flex items-center gap-2">
                                   <img
                                     src={getHeroImageUrl(item.opponentHero)}
                                     alt={item.opponentHero}
-                                    className="w-7 h-7 rounded-md object-cover border border-slate-200 flex-shrink-0"
+                                    className="w-6 h-6 rounded object-cover border border-slate-200"
                                   />
                                   <div className="flex flex-col">
-                                    <span className="font-bold text-xs text-slate-900">
+                                    <span className="font-bold text-slate-900 group-hover:text-rose-700">
                                       {item.opponentHero}
                                     </span>
-                                    <span className="text-[9.5px] text-slate-500">
-                                      {item.hero || 'ตัวแก้ทางที่มีสถิติข่ม'}
+                                    <span className="text-[9px] text-slate-500">
+                                      สถิติ Pro League {item.games} แมตช์
                                     </span>
                                   </div>
                                 </div>
-                                <span className="text-[9px] font-bold text-rose-600 bg-rose-100 px-1.5 py-0.5 rounded">
-                                  ระวังโดนตัดทาง
+                                <span className="text-[9.5px] font-black text-rose-600 bg-white px-1.5 py-0.5 rounded border border-rose-200">
+                                  {item.diff.toFixed(1)}% Diff
                                 </span>
                               </div>
                             ))}
                           </div>
-                        ) : (
-                          <span className="text-[10px] text-slate-500 bg-slate-50 p-1.5 rounded border text-center">
-                            ไม่มีเคาน์เตอร์รุนแรงในข้อมูลการแข่ง
+                          <span className="text-[8.5px] text-slate-400 italic">
+                            * การประเมินเชิงสถิติ RPL: โค้ชควรพิจารณาแบนล่วงหน้าหรือเตรียมตัวแก้ทาง
                           </span>
-                        )}
-                        <span className="text-[8.5px] text-slate-400 italic text-center">
-                          * ประเมินเชิงยุทธวิธีจากสถิติ RPL 2026 (ไม่ใช่การฟันธงล่วงหน้า)
-                        </span>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -974,32 +1677,346 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
           </>
         )}
 
-        {/* ========================================================= */}
-        {/* SITUATION B: คู่แข่ง PICK ฮีโร่ (Counter Opponent)         */}
-        {/* ========================================================= */}
+        {/* ========================================================================= */}
+        {/* SITUATION B: COUNTER OPPONENT PICKS & THREAT PROFILE                      */}
+        {/* ========================================================================= */}
         {situationalMode === 'counter_opp' && (
           <div className="flex flex-col gap-2.5">
-            {/* Header & Opponent Hero Selection Pill */}
-            <div className="p-2.5 bg-sky-50/60 border border-sky-200 rounded-xl flex flex-col gap-2">
+            {/* Opponent Threat Profile Card (Phase P2) */}
+            <div className="p-2.5 bg-white border border-[#F3D5E2] rounded-xl shadow-2xs flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-sky-950 flex items-center gap-1.5">
-                  <Crosshair size={14} className="text-[#0284C7]" />
-                  <span>แก้ทางฮีโร่คู่แข่ง</span>
-                </span>
-                <span className="text-[10px] text-sky-700 font-semibold">
-                  คู่แข่งเลือกแล้ว {oppLockedHeroes.length} ตัว
+                <div className="flex items-center gap-1.5 font-bold text-xs text-sky-800">
+                  <Crosshair size={14} className="text-sky-600" />
+                  <span>วิเคราะห์ภัยคุกคามของ {enemyThreatReport.oppTeamName}</span>
+                </div>
+                <span className="text-[10px] font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full border border-sky-300">
+                  ล็อคแล้ว {enemyThreatReport.lockedOppCount}/5 ตัว
                 </span>
               </div>
 
-              {oppLockedHeroes.length === 0 ? (
-                <div className="p-3 text-center text-xs text-slate-500 bg-white rounded-lg border border-sky-100">
-                  คู่แข่งยังไม่ได้ล็อกฮีโร่ในกระดาน
+              {/* 1. Opponent Plan Assessment with Confidence Level */}
+              {enemyThreatReport.opponentPlanAssessment.confidence === 'insufficient_data' ? (
+                <div className="p-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-2 text-left">
+                  <Info size={14} className="text-slate-400 flex-shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="font-bold text-[10.5px] text-slate-700">
+                      การประเมินแผนคู่แข่ง (ข้อมูลยังไม่เพียงพอ)
+                    </span>
+                    <span className="text-[9.5px] text-slate-500 leading-tight">
+                      คู่แข่งเพิ่งเลือก {enemyThreatReport.lockedOppCount} ตัว ยังเร็วเกินไปที่จะสรุปแผนแน่นอน ระบบไม่ด่วนสรุป รอคู่แข่งล็อคตัวเพิ่ม
+                    </span>
+                  </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase flex-shrink-0">
-                    เลือกตัวเพื่อดูตัวแก้:
+                <div className="p-2 bg-gradient-to-r from-sky-50 to-white border border-sky-200 rounded-lg flex flex-col gap-1 text-left">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[10.5px] text-sky-900 flex items-center gap-1">
+                      <Compass size={12} className="text-sky-600" />
+                      <span>แผนการเล่นที่คาดการณ์ (Opponent Plan):</span>
+                    </span>
+                    <span
+                      className={`text-[8px] font-black px-1.5 py-0.2 rounded uppercase ${
+                        enemyThreatReport.opponentPlanAssessment.confidence === 'high'
+                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                          : 'bg-amber-100 text-amber-800 border border-amber-300'
+                      }`}
+                    >
+                      {enemyThreatReport.opponentPlanAssessment.confidence === 'high'
+                        ? 'ความมั่นใจสูง'
+                        : 'ความมั่นใจปานกลาง'}
+                    </span>
+                  </div>
+                  <span className="font-bold text-xs text-sky-950">
+                    {enemyThreatReport.opponentPlanAssessment.planType}
                   </span>
+                  <p className="text-[10px] text-slate-600 leading-relaxed">
+                    {enemyThreatReport.opponentPlanAssessment.description}
+                  </p>
+                  <div className="text-[9.5px] font-bold text-sky-800 bg-sky-100/70 p-1.5 rounded mt-0.5">
+                    🎯 กลยุทธ์รับมือ: {enemyThreatReport.opponentPlanAssessment.note}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. Detected Threat Profile with Endangered Allies */}
+              {enemyThreatReport.threats.length > 0 ? (
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-bold text-slate-700 uppercase flex items-center gap-1 text-left">
+                    <Zap size={11} className="text-amber-500" />
+                    <span>ภัยคุกคามที่ตรวจพบ & ฮีโร่ฝั่งเราที่ตกอยู่ในอันตราย:</span>
+                  </span>
+
+                  {enemyThreatReport.threats.map((threat) => (
+                    <div
+                      key={threat.type}
+                      className="p-2 bg-sky-50/60 border border-sky-200 rounded-lg flex flex-col gap-1 text-left"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-sky-950 flex items-center gap-1">
+                          <AlertTriangle
+                            size={12}
+                            className={
+                              threat.dangerLevel === 'high'
+                                ? 'text-rose-600'
+                                : 'text-amber-500'
+                            }
+                          />
+                          <span>{threat.title}</span>
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <span
+                            className={`text-[8px] font-black px-1.5 py-0.2 rounded uppercase ${
+                              threat.dangerLevel === 'high'
+                                ? 'bg-rose-600 text-white'
+                                : 'bg-amber-500 text-white'
+                            }`}
+                          >
+                            {threat.dangerLevel.toUpperCase()}
+                          </span>
+                          <span className="text-[9px] font-bold text-slate-500">
+                            ({threat.heroes.join(', ')})
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Opponent Strength & Impact */}
+                      <div className="text-[9.5px] text-slate-600 leading-tight">
+                        <span className="font-bold text-slate-700">จุดเด่นคู่แข่ง:</span>{' '}
+                        {threat.opponentStrength}
+                      </div>
+                      <div className="text-[9.5px] text-slate-600 leading-tight">
+                        <span className="font-bold text-slate-700">ผลกระทบต่อเรา:</span>{' '}
+                        {threat.impactOnOurTeam}
+                      </div>
+
+                      {/* Endangered Allies Highlight Box */}
+                      {threat.endangeredAllies.length > 0 && (
+                        <div className="p-1.5 bg-rose-50 border border-rose-200 rounded-md flex flex-col gap-1 mt-0.5">
+                          <span className="text-[9.5px] font-bold text-rose-900 flex items-center gap-1">
+                            <AlertTriangle size={10} className="text-rose-600 flex-shrink-0" />
+                            <span>⚠️ ฮีโร่ฝั่งเราที่ตกอยู่ในอันตราย (Endangered Allies):</span>
+                          </span>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {threat.endangeredAllies.map((allyName) => (
+                              <button
+                                key={allyName}
+                                type="button"
+                                onClick={() => onSelectHeroToInspect(allyName)}
+                                className="px-1.5 py-0.5 rounded-full bg-white hover:bg-rose-100 border border-rose-300 text-rose-800 text-[9px] font-bold flex items-center gap-1 shadow-2xs cursor-pointer transition-colors"
+                                title={`คลิกเพื่อพิจารณา ${allyName}`}
+                              >
+                                <img
+                                  src={getHeroImageUrl(allyName)}
+                                  alt={allyName}
+                                  className="w-3.5 h-3.5 rounded-full object-cover"
+                                />
+                                <span>{allyName}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <p className="text-[10px] text-slate-700 leading-relaxed bg-white/80 p-1.5 rounded border border-slate-200/60 mt-0.5">
+                        💡 {threat.tacticalAdvice}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-2.5 text-center text-slate-500 text-[11px] bg-slate-50 rounded-lg border border-slate-200">
+                  <span>
+                    ยังไม่มีข้อมูลฮีโร่ที่คู่แข่งล็อค หรือคู่แข่งยังไม่แสดงภัยคุกคามเฉพาะทาง
+                  </span>
+                </div>
+              )}
+
+              {/* 3. Actionable Response Recommendation (Connected with P1 Player Fit) */}
+              {enemyThreatReport.actionableResponse &&
+                enemyThreatReport.actionableResponse.topResponseHero && (
+                  <div className="p-2.5 bg-gradient-to-br from-white to-[#FFF0F5] border-2 border-[#0284C7] rounded-xl shadow-xs flex flex-col gap-2 text-left">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-[#0284C7] flex items-center gap-1.5 uppercase">
+                        <Shield size={13} className="text-[#0284C7]" />
+                        <span>Actionable Response: แผนตอบโต้ที่แนะนำ</span>
+                      </span>
+                      <span className="text-[8px] font-black px-1.5 py-0.2 rounded bg-sky-100 text-sky-800 border border-sky-300">
+                        COUNTER STRATEGY
+                      </span>
+                    </div>
+
+                    {/* Step 1: Top Counter Hero */}
+                    <div className="flex items-start justify-between gap-2 pt-1 border-t border-sky-100">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="relative w-10 h-10 rounded-xl overflow-hidden border-2 border-[#0284C7] shadow-xs flex-shrink-0 bg-slate-100">
+                          <img
+                            src={getHeroImageUrl(
+                              enemyThreatReport.actionableResponse.topResponseHero.hero.name
+                            )}
+                            alt={enemyThreatReport.actionableResponse.topResponseHero.hero.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="font-bold text-xs text-slate-900 leading-tight">
+                            {enemyThreatReport.actionableResponse.topResponseHero.hero.name}
+                          </span>
+                          <span className="text-[9.5px] text-slate-600 mt-0.5 leading-snug">
+                            {enemyThreatReport.actionableResponse.topResponseHero.reason}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1 items-end flex-shrink-0">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onSelectHeroToInspect(
+                              enemyThreatReport.actionableResponse.topResponseHero!.hero.name
+                            )
+                          }
+                          className="px-2 py-0.5 rounded-lg bg-sky-50 hover:bg-sky-100 border border-sky-200 text-[#0284C7] text-[10px] font-bold transition-all cursor-pointer shadow-2xs"
+                        >
+                          พิจารณา
+                        </button>
+                        {onPickHeroDirectly && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onPickHeroDirectly(
+                                enemyThreatReport.actionableResponse.topResponseHero!.hero
+                              )
+                            }
+                            className="px-2 py-0.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-bold transition-all cursor-pointer shadow-2xs active:scale-95"
+                          >
+                            หยิบตัวนี้
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Step 2: Alternative Counters */}
+                    {enemyThreatReport.actionableResponse.alternativeHeroes.length > 0 && (
+                      <div className="flex items-center gap-1.5 text-[9.5px] text-slate-600">
+                        <span className="font-bold text-slate-700">ตัวเลือกสำรอง:</span>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {enemyThreatReport.actionableResponse.alternativeHeroes.map(
+                            (alt) => (
+                              <button
+                                key={alt.hero.name}
+                                type="button"
+                                onClick={() => onSelectHeroToInspect(alt.hero.name)}
+                                className="px-1.5 py-0.2 rounded bg-white hover:bg-sky-50 border border-slate-200 text-slate-800 font-bold hover:text-[#0284C7] cursor-pointer"
+                              >
+                                {alt.hero.name}
+                              </button>
+                            )
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 3: Combo Impact */}
+                    <div className="text-[9.5px] text-slate-700 bg-sky-50/70 p-1.5 rounded border border-sky-200/60 leading-tight">
+                      🧩 <b>ผลต่อคอมโบเดิม:</b>{' '}
+                      {enemyThreatReport.actionableResponse.comboAndPlanImpact}
+                    </div>
+
+                    {/* Step 4: MCU Players who can play this counter (P1 Player Fit) */}
+                    {enemyThreatReport.actionableResponse.bestFitPlayers.length > 0 && (
+                      <div className="p-2 bg-amber-50/70 border border-amber-200 rounded-lg flex flex-col gap-1">
+                        <span className="text-[9.5px] font-bold text-amber-900 flex items-center gap-1">
+                          <Users size={11} className="text-amber-600" />
+                          <span>ผู้เล่น MCU ที่เล่นตัวแก้ทางนี้ได้ (Player Fit):</span>
+                        </span>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {enemyThreatReport.actionableResponse.bestFitPlayers.map((p) => (
+                            <span
+                              key={p.nickname}
+                              className={`text-[9px] font-bold px-1.5 py-0.2 rounded border flex items-center gap-1 ${
+                                p.starColor === 'gold'
+                                  ? 'bg-amber-100 text-amber-950 border-amber-300 font-black'
+                                  : 'bg-white text-slate-700 border-slate-300'
+                              }`}
+                            >
+                              <span>{p.starColor === 'gold' ? '⭐' : '★'}</span>
+                              <span>
+                                {p.nickname} ({p.playerRole})
+                              </span>
+                              <span className="text-[8px] opacity-75">[{p.tierLabel}]</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Step 5: Residual Risks */}
+                    {enemyThreatReport.actionableResponse.residualRisks.length > 0 && (
+                      <div className="flex flex-col gap-0.5 pt-1 border-t border-sky-100">
+                        <span className="text-[9px] font-bold text-rose-700 flex items-center gap-1">
+                          <AlertTriangle size={10} />
+                          <span>ความเสี่ยงที่ยังหลงเหลือ (Residual Risks):</span>
+                        </span>
+                        <ul className="flex flex-col gap-0.5 pl-1">
+                          {enemyThreatReport.actionableResponse.residualRisks.map((risk, idx) => (
+                            <li
+                              key={idx}
+                              className="text-[9px] text-slate-600 flex items-start gap-1"
+                            >
+                              <span className="text-rose-500 font-bold">•</span>
+                              <span>{risk}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              {/* Recommended Counter Style */}
+              <div className="p-2 bg-slate-50 rounded-lg border border-slate-200 flex flex-col gap-0.5 text-left">
+                <span className="text-[10px] font-bold text-slate-700">
+                  🛡️ แนวทางการตอบโต้ที่แนะนำ:
+                </span>
+                <span className="text-[10px] font-medium text-slate-800">
+                  {enemyThreatReport.recommendedCounterStyle}
+                </span>
+              </div>
+
+              {/* Anticipated Next Picks */}
+              {enemyThreatReport.anticipatedPicks.length > 0 && (
+                <div className="flex flex-col gap-1.5 pt-1.5 border-t border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-600 uppercase text-left">
+                    การคาดการณ์การเลือกถัดไปของคู่แข่ง (ตามตำแหน่งที่ยังขาด):
+                  </span>
+                  {enemyThreatReport.anticipatedPicks.map((ap) => (
+                    <div
+                      key={ap.role}
+                      className="p-1.5 bg-slate-100 rounded border border-slate-200 flex flex-col gap-0.5 text-left"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-xs text-slate-900">
+                          ตำแหน่ง {ap.role}:{' '}
+                          <span className="text-[#E91E63]">{ap.likelyHeroes.join(', ')}</span>
+                        </span>
+                      </div>
+                      <span className="text-[9.5px] text-slate-500">{ap.tacticalReason}</span>
+                    </div>
+                  ))}
+                  <span className="text-[8.5px] text-slate-400 italic">
+                    * {enemyThreatReport.anticipatedPicks[0]?.sourceNote}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Target Opponent Selector Tabs for Counter-Picks */}
+            {oppLockedHeroes.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[10px] font-bold text-slate-600 uppercase">
+                  เลือกฮีโร่คู่แข่งเพื่อดูตัวเคาน์เตอร์ของ MCU (TOP 3):
+                </span>
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
                   {oppLockedHeroes.map((opp) => {
                     const isSelected = activeOppHero?.name.toLowerCase() === opp.name.toLowerCase();
                     return (
@@ -1007,299 +2024,526 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                         key={opp.name}
                         type="button"
                         onClick={() => setSelectedOppHeroName(opp.name)}
-                        className={`px-2 py-1 rounded-lg border flex items-center gap-1.5 transition-all cursor-pointer flex-shrink-0 ${
+                        className={`px-2 py-1 rounded-lg border text-xs font-bold flex items-center gap-1.5 flex-shrink-0 cursor-pointer transition-all ${
                           isSelected
-                            ? 'bg-[#0284C7] text-white border-[#0369A1] shadow-2xs font-bold'
-                            : 'bg-white text-slate-700 border-slate-200 hover:border-sky-300'
+                            ? 'bg-[#0284C7] text-white border-[#0369A1] shadow-xs'
+                            : 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200'
                         }`}
                       >
                         <img
                           src={getHeroImageUrl(opp.name)}
                           alt={opp.name}
-                          className="w-4 h-4 rounded-full object-cover"
+                          className="w-5 h-5 rounded object-cover"
                         />
-                        <span className="text-xs">{opp.name}</span>
+                        <span>{opp.name}</span>
                       </button>
                     );
                   })}
                 </div>
-              )}
-            </div>
 
-            {/* Target Opponent Analysis */}
-            {activeOppHero && (
-              <div className="flex flex-col gap-2">
-                <div className="p-2 bg-white border border-[#F3D5E2] rounded-xl shadow-2xs flex items-center gap-2">
-                  <img
-                    src={getHeroImageUrl(activeOppHero.name)}
-                    alt={activeOppHero.name}
-                    className="w-10 h-10 rounded-lg object-cover border border-slate-200"
-                  />
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-bold text-xs text-slate-900">
-                      เป้าหมาย: {activeOppHero.name} ({activeOppHero.primaryPos.toUpperCase()})
+                {/* Counter-Picks Card */}
+                {activeOppHero && (
+                  <div className="p-2.5 bg-white border border-[#F3D5E2] rounded-xl shadow-2xs flex flex-col gap-2">
+                    <span className="text-[11px] font-bold text-slate-800">
+                      ฮีโร่แก้ทาง{' '}
+                      <span className="text-[#0284C7] font-black">{activeOppHero.name}</span>{' '}
+                      สำหรับ MCU:
                     </span>
-                    <span className="text-[10px] text-slate-500">
-                      แนะนำตัวเลือกที่ทีมเราอาจหยิบตอบโต้ TOP 3
-                    </span>
-                  </div>
-                </div>
 
-                {/* Counter Recommendations */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-bold text-slate-700 flex items-center gap-1">
-                    <CheckCircle2 size={12} className="text-emerald-600" />
-                    <span>ตัวตอบโต้ที่เข้ากับคอมพ์ทีมเรา (TOP 3):</span>
-                  </span>
-
-                  {counterPicksForOpponent.length > 0 ? (
-                    <div className="flex flex-col gap-1.5">
-                      {counterPicksForOpponent.map((c) => (
-                        <div
-                          key={c.heroName}
-                          onClick={() => onSelectHeroToInspect(c.heroName)}
-                          className="p-2 bg-white hover:bg-sky-50/50 border border-slate-200 hover:border-sky-300 rounded-xl transition-all cursor-pointer flex flex-col gap-1 shadow-2xs"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <img
-                                src={getHeroImageUrl(c.heroName)}
-                                alt={c.heroName}
-                                className="w-8 h-8 rounded-lg object-cover border border-slate-200 flex-shrink-0"
-                              />
-                              <div className="flex flex-col">
-                                <div className="flex items-center gap-1">
-                                  <span className="font-bold text-xs text-slate-900">
-                                    {c.heroName}
-                                  </span>
-                                  {c.fitsMissingRole && (
-                                    <span className="text-[8.5px] font-bold px-1 rounded bg-emerald-100 text-emerald-800">
-                                      ตรงตำแหน่งที่ขาด
+                    {counterPicksForOpponent.length > 0 ? (
+                      <div className="flex flex-col gap-2">
+                        {counterPicksForOpponent.map((cp) => (
+                          <div
+                            key={cp.heroName}
+                            onClick={() => onSelectHeroToInspect(cp.heroName)}
+                            className="p-2 bg-sky-50/50 hover:bg-sky-50 border border-sky-200 hover:border-sky-400 rounded-xl transition-all cursor-pointer flex flex-col gap-1.5 shadow-2xs group"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={getHeroImageUrl(cp.heroName)}
+                                  alt={cp.heroName}
+                                  className="w-9 h-9 rounded-lg object-cover border border-slate-200 group-hover:scale-105 transition-transform"
+                                />
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-bold text-xs text-slate-900 group-hover:text-[#0284C7]">
+                                      {cp.heroName}
                                     </span>
-                                  )}
+                                    {cp.hasSig && (
+                                      <span className="text-[8.5px] font-black px-1.5 py-0.2 rounded bg-amber-500 text-white shadow-2xs">
+                                        ⭐ SIGNATURE
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] text-slate-500">
+                                    {cp.heroObj?.primaryPos.toUpperCase()} • สถิติ Pro League{' '}
+                                    {cp.games} แมตช์
+                                  </span>
                                 </div>
-                                <span className="text-[10px] text-emerald-700 font-semibold">
-                                  อัตราข่ม +{c.diff.toFixed(1)}% (จาก {c.games} นัด)
+                              </div>
+
+                              <div className="flex flex-col items-end">
+                                <span className="text-[11px] font-black text-emerald-600 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                                  +{cp.diff.toFixed(1)}% Adv
                                 </span>
                               </div>
                             </div>
 
-                            <span className="text-[9.5px] font-bold text-[#0284C7] flex items-center gap-0.5">
-                              <span>ดูแผน</span>
-                              <ArrowRight size={10} />
-                            </span>
-                          </div>
-
-                          {/* Player who can play this */}
-                          <div className="pt-1 border-t border-slate-100 flex items-center gap-1 flex-wrap">
-                            <span className="text-[9.5px] text-slate-500">นักแข่ง MCU:</span>
-                            {c.badges.length > 0 ? (
-                              c.badges.map((b) => (
-                                <span
-                                  key={b.playerId}
-                                  className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
-                                    b.tier === 'signature'
-                                      ? 'bg-amber-100 text-amber-800 border-amber-300'
-                                      : 'bg-slate-100 text-slate-700 border-slate-300'
-                                  }`}
-                                >
-                                  {b.tier === 'signature' ? '⭐' : '★'} {b.playerNickname}
+                            {/* Player Comfort Badges with Gold/Silver stars */}
+                            {cp.badges.length > 0 && (
+                              <div className="flex items-center gap-1 flex-wrap pt-1 border-t border-sky-100">
+                                <span className="text-[9.5px] text-slate-500 font-medium">
+                                  คนในทีมที่เล่นได้:
                                 </span>
-                              ))
-                            ) : (
-                              <span className="text-[9px] text-slate-400 italic">ไม่มีในพูลหลัก</span>
+                                {cp.badges.map((b) => (
+                                  <span
+                                    key={b.playerId}
+                                    className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
+                                      b.tier === 'signature'
+                                        ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                        : 'bg-white text-slate-600 border-slate-300'
+                                    }`}
+                                  >
+                                    {b.tier === 'signature' ? '⭐' : '★'} {b.playerNickname}
+                                  </span>
+                                ))}
+                              </div>
                             )}
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="p-3 text-center text-xs text-slate-500 bg-white rounded-lg border">
-                      ไม่มีสถิติเคาน์เตอร์โดยตรงในฐานข้อมูลการแข่งขัน — ให้พิจารณาตามตำแหน่งหน้าที่
-                    </div>
-                  )}
-                </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-2 text-center text-slate-500 text-[11px] bg-slate-50 rounded-lg border border-slate-200">
+                        <span>
+                          ไม่พบตัวแก้ทางตรงในพูลฮีโร่ที่ยังไม่ถูกแบนสำหรับ {activeOppHero.name}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
 
-        {/* ========================================================= */}
-        {/* SITUATION C: ฮีโร่คอมโบหลักถูก BAN (Banned Combos)         */}
-        {/* ========================================================= */}
+        {/* ========================================================================= */}
+        {/* SITUATION C: COMBO FALLBACK AUDITS (Section 4)                            */}
+        {/* ========================================================================= */}
         {situationalMode === 'banned_combos' && (
           <div className="flex flex-col gap-2.5">
-            <div className="p-2.5 bg-amber-50/60 border border-amber-200 rounded-xl flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-950 flex items-center gap-1.5">
-                <AlertTriangle size={14} className="text-amber-600" />
-                <span>คอมโบที่ได้รับผลกระทบจากการแบน</span>
+            <div className="p-2.5 bg-white border border-[#F3D5E2] rounded-xl shadow-2xs flex flex-col gap-1.5">
+              <span className="font-bold text-xs text-amber-800 flex items-center gap-1.5">
+                <Layers size={14} className="text-amber-600" />
+                <span>Combo Fallback — ระบบหาตัวทดแทนคอมโบเมื่อโดนแบน / ถูกแย่ง</span>
               </span>
-              <span className="text-[10px] text-amber-800 font-bold">
-                {allBannedCombos.length} คอมโบ
-              </span>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                ระบบตรวจสอบแผนที่ได้รับผลกระทบ เสนอตัวทดแทนพร้อมแสดงผู้เล่นที่เล่นได้ (ดาวทอง ⭐ /
+                ดาวเงิน ★) และข้อแลกเปลี่ยนแท็กติกจริง
+              </p>
             </div>
 
-            {allBannedCombos.length === 0 ? (
-              <div className="p-6 text-center bg-white border border-[#F3D5E2] rounded-xl flex flex-col items-center gap-2">
-                <span className="text-2xl">🛡️</span>
-                <span className="font-bold text-xs text-slate-800">ยังไม่มีคอมโบหลักถูกแบน</span>
-                <p className="text-[11px] text-slate-500 leading-relaxed max-w-xs">
-                  เมต้าคอมโบยอดนิยมของโปรลีก (RPL 2026) ยังคงมีสมาชิกหลักครบถ้วน สามารถวางแผนดราฟต์ได้ตามปกติ
-                </p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2.5">
-                {allBannedCombos.map((item) => (
+            {comboFallbackAudits.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {comboFallbackAudits.map((item) => (
                   <div
-                    key={item.comp.id}
-                    className="p-2.5 bg-white border border-amber-200 rounded-xl shadow-2xs flex flex-col gap-2"
+                    key={`${item.compId}-${item.bannedOrUnavailableHero}`}
+                    className="p-2.5 bg-white border border-amber-200 rounded-xl flex flex-col gap-2 shadow-2xs"
                   >
-                    <div className="flex items-start justify-between gap-1">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[9.5px] font-bold px-1.5 rounded bg-amber-100 text-amber-800 border border-amber-300">
-                            {item.comp.tier} Tier
-                          </span>
-                          <h4 className="font-bold text-xs text-slate-900">
-                            {item.comp.nameTh}
-                          </h4>
-                        </div>
-                        <p className="text-[10px] text-rose-700 font-semibold mt-1">
-                          ⚠️ {item.impactDescription}
-                        </p>
+                    <div className="flex items-center justify-between border-b border-amber-100 pb-1.5">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-xs text-slate-900">
+                          {item.compNameTh} ({item.compName})
+                        </span>
+                        <span className="text-[10px] text-slate-500">
+                          ระดับเมต้า: Tier {item.compTier} • ผลกระทบ: {item.impactDescription}
+                        </span>
                       </div>
+                      <span className="text-[9px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                        {item.status === 'banned' ? 'BANNED' : 'UNAVAILABLE'}
+                      </span>
                     </div>
 
-                    {/* Substitutes */}
-                    {item.substitutes.length > 0 && (
-                      <div className="flex flex-col gap-1.5 pt-1 border-t border-slate-100">
-                        <span className="text-[10px] font-bold text-slate-700">
-                          ตัวเลือกทดแทนที่ยังว่าง (TOP 3):
+                    {/* Substitutes with Attached MCU Players */}
+                    {item.substitutes.length > 0 ? (
+                      <div className="flex flex-col gap-1.5">
+                        <span className="text-[10px] font-bold text-amber-800 uppercase">
+                          ตัวเลือกทดแทนที่ระบบแนะนำ (เรียงตามความเหมาะสม):
                         </span>
-                        {item.substitutes.map((subGroup) => (
-                          <div key={subGroup.targetHero} className="flex flex-col gap-1">
-                            {subGroup.options.map((opt) => (
-                              <div
-                                key={opt.substitute}
-                                onClick={() => onSelectHeroToInspect(opt.substitute)}
-                                className="p-1.5 bg-slate-50 hover:bg-[#FFF0F5] border border-slate-200 hover:border-[#E91E63] rounded-lg transition-all cursor-pointer flex flex-col gap-0.5"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <span className="font-bold text-xs text-slate-900 flex items-center gap-1">
-                                    <span>➔ แทน {subGroup.targetHero} ด้วย</span>
-                                    <span className="text-[#E91E63] underline">{opt.substitute}</span>
-                                    <span className="text-[9.5px] font-normal text-slate-500">({opt.role})</span>
-                                  </span>
-                                  <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1 rounded border border-emerald-200">
-                                    {opt.effectiveness}
-                                  </span>
-                                </div>
-                                <p className="text-[9.5px] text-slate-600 leading-snug">
-                                  <span className="font-semibold text-slate-800">ข้อแลกเปลี่ยน:</span> {opt.tradeOff}
-                                </p>
+
+                        {item.substitutes.map((sub) => (
+                          <div
+                            key={sub.substituteHero}
+                            onClick={() => onSelectHeroToInspect(sub.substituteHero)}
+                            className="p-2 bg-amber-50/50 hover:bg-amber-50 border border-amber-200 hover:border-[#E91E63] rounded-lg flex flex-col gap-1 cursor-pointer transition-all shadow-2xs group"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5">
+                                <img
+                                  src={getHeroImageUrl(sub.substituteHero)}
+                                  alt={sub.substituteHero}
+                                  className="w-6 h-6 rounded object-cover border border-slate-200"
+                                />
+                                <span className="font-bold text-xs text-slate-900 group-hover:text-[#E91E63]">
+                                  {sub.substituteHero}
+                                </span>
+                                <span className="text-[9.5px] text-slate-500">({sub.role})</span>
                               </div>
-                            ))}
+                              <span
+                                className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
+                                  sub.isVerifiedSubstitute
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                    : 'bg-slate-100 text-slate-700 border-slate-300'
+                                }`}
+                              >
+                                {sub.isVerifiedSubstitute
+                                  ? sub.effectiveness
+                                  : 'ทางเลือกที่ต้องพิจารณา'}
+                              </span>
+                            </div>
+
+                            <p className="text-[9.5px] text-slate-700 leading-tight">
+                              📋 แผนเดิม: {sub.planCompatibility}
+                            </p>
+                            <p className="text-[9.5px] text-slate-600 leading-tight">
+                              ⚖️ ข้อแลกเปลี่ยน: {sub.tradeOff}
+                            </p>
+
+                            {/* Players who play this substitute */}
+                            {sub.playersWhoPlay.length > 0 ? (
+                              <div className="flex items-center gap-1 flex-wrap pt-1 border-t border-amber-200">
+                                <span className="text-[9px] text-slate-500 font-medium">
+                                  ผู้เล่นที่เล่นได้:
+                                </span>
+                                {sub.playersWhoPlay.map((p) => (
+                                  <span
+                                    key={p.nickname}
+                                    className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded border ${
+                                      p.starColor === 'gold'
+                                        ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                        : 'bg-white text-slate-700 border-slate-300'
+                                    }`}
+                                  >
+                                    {p.starColor === 'gold' ? '⭐' : '★'} {p.nickname} (
+                                    {p.playerRole})
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-[9px] text-slate-400 italic pt-0.5">
+                                ไม่มีผู้เล่นที่มีข้อมูลในพูลสำหรับตัวแทนนี้
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 italic">
+                        ไม่พบตัวแทนที่ว่างอยู่ในขณะนี้
+                      </span>
                     )}
                   </div>
                 ))}
               </div>
+            ) : (
+              <div className="p-4 bg-white border border-[#F3D5E2] rounded-xl text-center text-slate-500 text-xs">
+                <span>
+                  ยังไม่มีฮีโร่ในคอมโบหลักถูกแบนหรือถูกแย่งในขณะนี้
+                  แผนการเล่นหลักของทุกคอมโบยังใช้งานได้สมบูรณ์
+                </span>
+              </div>
             )}
           </div>
         )}
 
-        {/* ========================================================= */}
-        {/* SITUATION D: อยู่ในช่วง BAN (Smart Ban Advisor)             */}
-        {/* ========================================================= */}
+        {/* ========================================================================= */}
+        {/* SITUATION D: SMART BAN ADVISOR (Section 5)                                */}
+        {/* ========================================================================= */}
         {situationalMode === 'smart_ban' && (
           <div className="flex flex-col gap-2.5">
-            <div className="p-2.5 bg-rose-50/60 border border-rose-200 rounded-xl flex items-center justify-between">
-              <span className="text-xs font-bold text-rose-950 flex items-center gap-1.5">
-                <Ban size={14} className="text-rose-600" />
-                <span>คำแนะนำในการ BAN (Smart Ban Advisor)</span>
-              </span>
-              <span className="text-[10px] text-rose-800 font-bold">
-                {availableSmartBans.length} ตัวเลือก
-              </span>
+            <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between shadow-2xs">
+              <div className="flex items-center gap-2">
+                <Ban size={16} className="text-rose-600 flex-shrink-0" />
+                <div className="flex flex-col">
+                  <span className="font-bold text-xs text-rose-950">
+                    Smart Ban Advisor (คำแนะนำการแบน)
+                  </span>
+                  <span className="text-[10px] text-rose-700">
+                    กรองเฉพาะตัวที่ยังไม่ถูกแบนและยังไม่ถูกเลือกเท่านั้น (ไม่แสดงคำแนะนำ PICK ปะปน)
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <p className="text-[10.5px] text-slate-500 leading-relaxed px-0.5">
-              คัดกรองฮีโร่อันตรายสูง ตัวถนัดของคู่แข่ง และตัวตัดคอมพ์ทีมเรา (ไม่ปะปนกับคำแนะนำ Pick):
-            </p>
-
-            <div className="flex flex-col gap-1.5">
-              {availableSmartBans.map((banItem) => {
-                const isMustBan = banItem.priority === 'must_ban';
-                return (
-                  <div
-                    key={banItem.hero.name}
-                    className={`p-2.5 rounded-xl border flex flex-col gap-1.5 transition-all shadow-2xs ${
-                      isMustBan
-                        ? 'bg-rose-50/40 border-rose-300'
-                        : 'bg-white border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
+            {/* Threat-Informed Ban Suggestions (Phase P2) */}
+            {enemyThreatReport.threatBans.length > 0 && (
+              <div className="p-2.5 bg-rose-50/60 border border-rose-300 rounded-xl flex flex-col gap-1.5 text-left shadow-2xs">
+                <span className="text-[10px] font-bold text-rose-900 uppercase flex items-center gap-1">
+                  <Shield size={11} className="text-rose-600" />
+                  <span>คำแนะนำแบนตัดภัยคุกคามคู่แข่ง (Threat-informed Ban):</span>
+                </span>
+                <div className="flex flex-col gap-1.5">
+                  {enemyThreatReport.threatBans.map((tb) => {
+                    const heroObj = allHeroes.find(
+                      (h) => h.name.toLowerCase() === tb.heroName.toLowerCase()
+                    );
+                    return (
                       <div
-                        onClick={() => onSelectHeroToInspect(banItem.hero.name)}
-                        className="flex items-center gap-2 min-w-0 cursor-pointer group"
+                        key={tb.heroName}
+                        className="p-1.5 bg-white border border-rose-200 rounded-lg flex items-center justify-between gap-2 shadow-2xs"
                       >
-                        <img
-                          src={getHeroImageUrl(banItem.hero.name)}
-                          alt={banItem.hero.name}
-                          className="w-9 h-9 rounded-lg object-cover border border-slate-200 flex-shrink-0 group-hover:scale-105 transition-transform"
-                        />
-                        <div className="flex flex-col min-w-0">
-                          <div className="flex items-center gap-1">
-                            <span className="font-bold text-xs text-slate-900 group-hover:text-rose-600">
-                              {banItem.hero.name}
-                            </span>
-                            <span className="text-[9px] font-bold px-1 rounded bg-slate-100 text-slate-600 uppercase">
-                              {banItem.targetRole || banItem.hero.primaryPos}
+                        <div className="flex items-center gap-2 min-w-0">
+                          <img
+                            src={getHeroImageUrl(tb.heroName)}
+                            alt={tb.heroName}
+                            className="w-8 h-8 rounded-lg object-cover border border-slate-200 flex-shrink-0"
+                          />
+                          <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-xs text-slate-900">{tb.heroName}</span>
+                              <span
+                                className={`text-[8px] font-black px-1.5 py-0.2 rounded uppercase ${
+                                  tb.priority === 'must_ban'
+                                    ? 'bg-rose-600 text-white'
+                                    : 'bg-amber-500 text-white'
+                                }`}
+                              >
+                                {tb.priority === 'must_ban' ? 'MUST BAN' : 'HIGH PRIORITY'}
+                              </span>
+                            </div>
+                            <span className="text-[9.5px] text-slate-600 line-clamp-1">
+                              {tb.reason}
                             </span>
                           </div>
-                          <span className="text-[9.5px] text-slate-500 truncate">
-                            {banItem.categoryLabel}
-                          </span>
                         </div>
+
+                        {onPickHeroDirectly && heroObj && (
+                          <button
+                            type="button"
+                            onClick={() => onPickHeroDirectly(heroObj)}
+                            className="px-2 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-[10px] font-bold transition-all shadow-2xs cursor-pointer flex-shrink-0 active:scale-95 flex items-center gap-1"
+                            title={`แบน ${tb.heroName}`}
+                          >
+                            <Ban size={10} />
+                            <span>แบน</span>
+                          </button>
+                        )}
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-                      {/* Confirm Ban Button */}
-                      {onPickHeroDirectly && (
-                        <button
-                          type="button"
-                          onClick={() => onPickHeroDirectly(banItem.hero)}
-                          className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-1 flex-shrink-0 active:scale-95"
-                          title={`ยืนยันการแบน ${banItem.hero.name}`}
+            <div className="flex flex-col gap-2">
+              {availableSmartBans.map((banItem, idx) => (
+                <div
+                  key={banItem.hero.name}
+                  className="p-2.5 bg-white border border-rose-200 hover:border-rose-400 rounded-xl shadow-2xs flex items-center justify-between gap-2 transition-all"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="w-5 h-5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-black flex items-center justify-center flex-shrink-0">
+                      {idx + 1}
+                    </span>
+                    <img
+                      src={getHeroImageUrl(banItem.hero.name)}
+                      alt={banItem.hero.name}
+                      className="w-10 h-10 rounded-xl object-cover border border-slate-200 flex-shrink-0"
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-bold text-xs text-slate-900">
+                          {banItem.hero.name}
+                        </span>
+                        <span
+                          className={`text-[8px] font-black px-1.5 py-0.2 rounded uppercase ${
+                            banItem.priority === 'must_ban'
+                              ? 'bg-rose-600 text-white'
+                              : 'bg-amber-500 text-white'
+                          }`}
                         >
-                          <Ban size={11} />
-                          <span>แบนตัวนี้</span>
-                        </button>
-                      )}
+                          {banItem.priority === 'must_ban' ? 'MUST BAN' : 'PRIORITY'}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-600 mt-0.5 line-clamp-2">
+                        {banItem.reason}
+                      </span>
                     </div>
-
-                    <p className="text-[10px] text-slate-700 bg-white/80 p-1.5 rounded-md border border-slate-200/60 leading-relaxed">
-                      <span className="font-bold text-rose-700">เหตุผล:</span> {banItem.reason}
-                    </p>
                   </div>
-                );
-              })}
+
+                  {onPickHeroDirectly && (
+                    <button
+                      type="button"
+                      onClick={() => onPickHeroDirectly(banItem.hero)}
+                      className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer flex-shrink-0 active:scale-95 flex items-center gap-1"
+                      title={`แบน ${banItem.hero.name}`}
+                    >
+                      <Ban size={11} />
+                      <span>แบน</span>
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}
-      </div>
 
-      {/* 3. Footer Bar */}
-      <div className="px-3 py-1.5 bg-[#FFF8FB] border-t border-[#F3D5E2] flex items-center justify-between text-[10px] text-slate-500 flex-shrink-0">
-        <span className="flex items-center gap-1 truncate">
-          <Info size={11} className="text-[#E91E63]" />
-          <span>ข้อมูล RoV Pro League 2026 & Scrim</span>
-        </span>
-        <span className="font-bold text-slate-700 flex-shrink-0">
-          MCU ESPORTS
-        </span>
+        {/* ========================================================================= */}
+        {/* POST-DRAFT SUMMARY (ดราฟต์เสร็จสมบูรณ์)                                   */}
+        {/* ========================================================================= */}
+        {situationalMode === 'summary' && (
+          <div className="flex flex-col gap-2.5">
+            {/* Header Card */}
+            <div className="p-3 bg-gradient-to-r from-emerald-50 to-white border border-emerald-200 rounded-xl shadow-2xs flex flex-col gap-1">
+              <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-xs">
+                <CheckCircle2 size={15} className="text-emerald-600" />
+                <span>สรุปผลวิเคราะห์คอมพ์หลังจบดราฟต์ (Post-Draft Summary)</span>
+              </div>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                การวิเคราะห์เชิงกลยุทธ์จากองค์ประกอบฮีโร่ทั้ง 10 ตัว
+                พร้อมเงื่อนไขการชนะและแนวทางการเดินเกม 3 ช่วงเวลา
+              </p>
+            </div>
+
+            {/* Strengths & Weaknesses */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {/* Strengths */}
+              <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl flex flex-col gap-1.5">
+                <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
+                  <TrendingUp size={13} className="text-emerald-600" />
+                  <span>จุดแข็งของคอมพ์ทีมเรา:</span>
+                </span>
+                <ul className="flex flex-col gap-1 pl-1">
+                  {postDraftSummary.compStrengths.map((s, idx) => (
+                    <li
+                      key={idx}
+                      className="text-[10px] text-slate-700 leading-tight flex items-start gap-1"
+                    >
+                      <span className="text-emerald-600 font-bold">•</span>
+                      <span>{s}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Weaknesses */}
+              <div className="p-2.5 bg-rose-50/70 border border-rose-200 rounded-xl flex flex-col gap-1.5">
+                <span className="text-[11px] font-bold text-rose-900 flex items-center gap-1">
+                  <TrendingDown size={13} className="text-rose-600" />
+                  <span>จุดอ่อน / ข้อพึงระวัง:</span>
+                </span>
+                <ul className="flex flex-col gap-1 pl-1">
+                  {postDraftSummary.compWeaknesses.map((w, idx) => (
+                    <li
+                      key={idx}
+                      className="text-[10px] text-slate-700 leading-tight flex items-start gap-1"
+                    >
+                      <span className="text-rose-600 font-bold">•</span>
+                      <span>{w}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Win Conditions */}
+            <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl flex flex-col gap-1.5">
+              <span className="text-[11px] font-bold text-amber-900 flex items-center gap-1">
+                <Target size={13} className="text-amber-600" />
+                <span>เงื่อนไขการชนะ (Win Conditions):</span>
+              </span>
+              <ul className="flex flex-col gap-1 pl-1">
+                {postDraftSummary.winConditions.map((wc, idx) => (
+                  <li
+                    key={idx}
+                    className="text-[10.5px] text-slate-800 leading-tight flex items-start gap-1"
+                  >
+                    <span className="text-amber-600 font-black">🏆</span>
+                    <span>{wc}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Phase Playbook */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-bold text-slate-700 uppercase flex items-center gap-1">
+                <Clock size={13} className="text-slate-500" />
+                <span>แนวทางการเล่นตามช่วงเวลา (Game Phase Playbook):</span>
+              </span>
+
+              {/* Early Game */}
+              <div className="p-2.5 bg-white border border-slate-200 rounded-xl flex flex-col gap-1 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                  <span className="font-bold text-xs text-sky-800">
+                    {postDraftSummary.earlyGame.timing}
+                  </span>
+                  <span className="text-[9px] font-bold bg-sky-50 text-sky-700 px-1.5 py-0.2 rounded border border-sky-200">
+                    คุมจังหวะต้นเกม
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-600">
+                  🎯 เป้าหมายหลัก: {postDraftSummary.earlyGame.focus}
+                </p>
+                <div className="flex flex-col gap-0.5 pl-1 mt-0.5">
+                  {postDraftSummary.earlyGame.objectives.map((obj, i) => (
+                    <span key={i} className="text-[9.5px] text-slate-500">
+                      - {obj}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Mid Game */}
+              <div className="p-2.5 bg-white border border-slate-200 rounded-xl flex flex-col gap-1 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                  <span className="font-bold text-xs text-indigo-800">
+                    {postDraftSummary.midGame.timing}
+                  </span>
+                  <span className="text-[9px] font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded border border-indigo-200">
+                    ดันป้อม & คุม Slayer
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-600">
+                  🎯 เป้าหมายหลัก: {postDraftSummary.midGame.focus}
+                </p>
+                <div className="flex flex-col gap-0.5 pl-1 mt-0.5">
+                  {postDraftSummary.midGame.objectives.map((obj, i) => (
+                    <span key={i} className="text-[9.5px] text-slate-500">
+                      - {obj}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Late Game */}
+              <div className="p-2.5 bg-white border border-slate-200 rounded-xl flex flex-col gap-1 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                  <span className="font-bold text-xs text-purple-800">
+                    {postDraftSummary.lateGame.timing}
+                  </span>
+                  <span className="text-[9px] font-bold bg-purple-50 text-purple-700 px-1.5 py-0.2 rounded border border-purple-200">
+                    ไฟต์ 5v5 ปิดเกม
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-600">
+                  🎯 เป้าหมายหลัก: {postDraftSummary.lateGame.focus}
+                </p>
+                <div className="flex flex-col gap-0.5 pl-1 mt-0.5">
+                  {postDraftSummary.lateGame.objectives.map((obj, i) => (
+                    <span key={i} className="text-[9.5px] text-slate-500">
+                      - {obj}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[9px] text-slate-400 text-center italic mt-1">
+              ที่มา: {postDraftSummary.provenance}
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );

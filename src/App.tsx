@@ -474,6 +474,7 @@ export default function App() {
       onPickHeroDirectly={handleSelectHero}
       isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
       isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
+      isDraftComplete={isDraftComplete}
     />
   );
 
