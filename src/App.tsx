@@ -475,6 +475,8 @@ export default function App() {
       isPickTurn={currentTurn?.phase === 'pick' || currentTurnSlot?.phase === 'pick'}
       isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
       isDraftComplete={isDraftComplete}
+      onOpenPostDraftModal={() => setIsLivePostDraftReportOpen(true)}
+      matchMetadata={matchMetadata}
     />
   );
 
@@ -1161,7 +1163,7 @@ export default function App() {
         isBanTurn={currentTurn?.phase === 'ban' || currentTurnSlot?.phase === 'ban'}
       />
 
-      {/* Live Draft Post-Draft Strategic Report Modal */}
+      {/* Live Draft Post-Draft Strategic Report Modal (Phase P3) */}
       <PostDraftReportModal
         isOpen={isLivePostDraftReportOpen}
         onClose={() => setIsLivePostDraftReportOpen(false)}
@@ -1169,6 +1171,15 @@ export default function App() {
         redTeamName={redTeamName}
         bluePicks={bluePicks}
         redPicks={redPicks}
+        blueIsUs={blueIsUs}
+        blueBans={blueBans}
+        redBans={redBans}
+        isDraftComplete={isDraftComplete}
+        matchMetadata={matchMetadata}
+        players={players}
+        heroToPlayersMap={heroToPlayersMap}
+        bannedHeroNames={bannedHeroNames}
+        pickedHeroNames={pickedHeroNames}
       />
 
       {/* 4. Mobile Floating Bottom Quick Action Dock (Compact, Ergonomic, Clean) */}

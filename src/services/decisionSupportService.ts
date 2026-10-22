@@ -4,6 +4,7 @@ import { PickSlotState } from '../hooks/useDraconmindDraft';
 import { statsDataProvider } from './statsDataProvider';
 import { RPL_2026_PRO_COMPS, ProMetaComp } from '../data/proMetaComps';
 import { mapToCompRole, CompRoleKey } from './coachAnalysisService';
+import { HEROES } from '../data/heroes';
 
 // =========================================================================
 // 1. DRAFT SAFETY CHECK (Phase P2 Comprehensive)
@@ -498,7 +499,7 @@ export const META_SUBSTITUTE_GUIDE: Record<string, TacticalSubstituteDefinition[
 };
 
 // =========================================================================
-// 6. POST-DRAFT SUMMARY
+// 6. POST-DRAFT SUMMARY & REVIEW (Phase P3 Comprehensive)
 // =========================================================================
 export interface GamePhaseInstruction {
   timing: string;
@@ -506,9 +507,116 @@ export interface GamePhaseInstruction {
   objectives: string[];
 }
 
+export interface CoachPracticeNotes {
+  targetPlan: string;
+  playerCommunication: string;
+  scrimObjectives: string;
+  additionalObservations: string;
+  lastSavedAt?: string;
+}
+
+export interface ScrimResultRecord {
+  hasResult: boolean;
+  result?: 'win' | 'loss' | 'unplayed';
+  opponent?: string;
+  matchDate?: string;
+  durationMinutes?: number;
+  notes?: string;
+  postMatchNotes?: string;
+  areasOfImprovement?: string;
+  lastUpdated?: string;
+}
+
+export interface TeamCompDetailedReview {
+  roleCoverage: {
+    rolesCovered: string[];
+    missingRoles: string[];
+    roleClashes: string[];
+  };
+  frontline: {
+    hasFrontline: boolean;
+    count: number;
+    details: string;
+    alternativeStyle?: string;
+  };
+  hardCc: {
+    hasHardCc: boolean;
+    count: number;
+    details: string;
+  };
+  backlineDive: {
+    hasDive: boolean;
+    details: string;
+  };
+  damageSplit: {
+    physical: number;
+    magic: number;
+    trueDmg: number;
+  };
+  powerSpike: string;
+  timingVulnerability: string;
+  lateGameViability: string;
+  winCondition: {
+    primaryType: string;
+    headline: string;
+    keySuccessConditions: string[];
+  };
+}
+
+export interface DraftDecisionReviewData {
+  keyPicksMade: Array<{ hero: string; position: string; reason: string }>;
+  bannedCombosImpact: Array<{
+    bannedHero: string;
+    affectedComp: string;
+    substituteUsed?: string;
+    tradeOffNote: string;
+  }>;
+  playerFitReview: Array<{
+    heroName: string;
+    playerNickname: string;
+    tierLabel: string;
+    starColor: 'gold' | 'silver' | 'none';
+    isComfortable: boolean;
+    note: string;
+  }>;
+  criticalWarningsOccurred: string[];
+  alternativePicksConsidered: string[];
+  hasHistory: boolean;
+}
+
+export interface GamePlanPlaybook {
+  primaryPlan: string;
+  keyExecutionRequirements: string[];
+  oppThreatWatchouts: string[];
+  earlyGame: GamePhaseInstruction;
+  midGame: GamePhaseInstruction;
+  lateGame: GamePhaseInstruction;
+  teamfightRules: {
+    whenToFight: string[];
+    whenToAvoid: string[];
+  };
+}
+
+export interface RealizedProComp {
+  compName: string;
+  compNameTh: string;
+  tier: string;
+  heroesPresent: string[];
+  description: string;
+}
+
 export interface PostDraftSummaryReport {
+  isDraftComplete?: boolean;
+  incompleteReason?: string;
+  sessionId?: string;
+  tournament?: string;
+  match?: string;
+  gameNumber?: number;
+  patch?: string;
+  timestamp?: string;
   teamName: string;
   oppTeamName: string;
+  ourSide?: 'blue' | 'red';
   compStrengths: string[];
   compWeaknesses: string[];
   winConditions: string[];
@@ -516,6 +624,37 @@ export interface PostDraftSummaryReport {
   midGame: GamePhaseInstruction;
   lateGame: GamePhaseInstruction;
   provenance: string;
+  // P3 Enhancements:
+  ourLineup?: Array<{
+    hero: Hero;
+    position: string;
+    assignedPlayer?: {
+      nickname: string;
+      playerName: string;
+      tier?: 'signature' | 'comfortable';
+      starColor?: 'gold' | 'silver';
+      isOnRole: boolean;
+      roleFitDescription: string;
+    };
+  }>;
+  oppLineup?: Array<{
+    hero: Hero;
+    position: string;
+  }>;
+  ourBans?: Hero[];
+  oppBans?: Hero[];
+  realizedComps?: RealizedProComp[];
+  ourStrategicOverview?: string;
+  oppStrategicOverview?: string;
+  compositionReview?: {
+    ourComp: TeamCompDetailedReview;
+    oppComp: TeamCompDetailedReview;
+    factVsEvaluationNotes: string[];
+  };
+  decisionReview?: DraftDecisionReviewData;
+  gamePlan?: GamePlanPlaybook;
+  coachNotes?: CoachPracticeNotes;
+  scrimResult?: ScrimResultRecord;
 }
 
 // =========================================================================
@@ -1531,45 +1670,380 @@ export function getComboFallbackAudits(
 }
 
 // =========================================================================
-// 6. GENERATE POST-DRAFT SUMMARY
+// 6. POST-DRAFT STORAGE HELPERS (Phase P3)
 // =========================================================================
+
+export function getCoachDraftNotes(sessionId: string): CoachPracticeNotes {
+  if (typeof window === 'undefined') {
+    return {
+      targetPlan: '',
+      playerCommunication: '',
+      scrimObjectives: '',
+      additionalObservations: '',
+    };
+  }
+  try {
+    const raw = localStorage.getItem(`mcu_rov_notes_${sessionId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return {
+    targetPlan: '',
+    playerCommunication: '',
+    scrimObjectives: '',
+    additionalObservations: '',
+  };
+}
+
+export function saveCoachDraftNotes(sessionId: string, notes: CoachPracticeNotes): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(
+      `mcu_rov_notes_${sessionId}`,
+      JSON.stringify({
+        ...notes,
+        lastSavedAt: new Date().toISOString(),
+      })
+    );
+  } catch {}
+}
+
+export function getScrimResult(sessionId: string): ScrimResultRecord {
+  if (typeof window === 'undefined') {
+    return { hasResult: false, result: 'unplayed' };
+  }
+  try {
+    const raw = localStorage.getItem(`mcu_rov_scrim_${sessionId}`);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return { hasResult: false, result: 'unplayed' };
+}
+
+export function saveScrimResult(sessionId: string, data: ScrimResultRecord): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(
+      `mcu_rov_scrim_${sessionId}`,
+      JSON.stringify({
+        ...data,
+        lastUpdated: new Date().toISOString(),
+      })
+    );
+  } catch {}
+}
+
+// =========================================================================
+// 7. GENERATE POST-DRAFT SUMMARY & REVIEW (Phase P3 Comprehensive)
+// =========================================================================
+
+export interface PostDraftSummaryOptions {
+  isDraftComplete?: boolean;
+  blueIsUs?: boolean;
+  ourBans?: (Hero | null)[];
+  oppBans?: (Hero | null)[];
+  matchMetadata?: {
+    tournament: string;
+    match: string;
+    gameNumber: number;
+    patch: string;
+  };
+  players?: Player[];
+  heroToPlayersMap?: Record<string, HeroPlayerBadge[]>;
+  bannedHeroNames?: Set<string>;
+  pickedHeroNames?: Set<string>;
+}
+
 export function generatePostDraftSummary(
   myPicks: PickSlotState[],
   oppPicks: PickSlotState[],
   myTeamName: string,
-  oppTeamName: string
+  oppTeamName: string,
+  options?: PostDraftSummaryOptions
 ): PostDraftSummaryReport {
+  const isComplete = options?.isDraftComplete ?? true;
+  const blueIsUs = options?.blueIsUs ?? true;
+  const ourSide: 'blue' | 'red' = blueIsUs ? 'blue' : 'red';
+  const meta = options?.matchMetadata;
+
+  const rawSessionId = `${meta?.tournament || 'RoV'}_${meta?.match || 'Match'}_G${meta?.gameNumber || 1}_${myTeamName}_vs_${oppTeamName}`;
+  const sessionId = rawSessionId.replace(/[^a-zA-Z0-9_\u0E00-\u0E7F]/g, '_');
+
   const myHeroes = myPicks.map((p) => p.hero).filter((h): h is Hero => h !== null);
   const oppHeroes = oppPicks.map((p) => p.hero).filter((h): h is Hero => h !== null);
 
-  const strengths: string[] = [];
-  const weaknesses: string[] = [];
-  const winConditions: string[] = [];
-
-  const hasFrontline = myHeroes.some((h) => HERO_FRONTLINE_LIST.has(h.name.toLowerCase()));
-  const hasHardCc = myHeroes.some((h) => HERO_HARD_CC_LIST.has(h.name.toLowerCase()));
-  const hasLateCarry = myHeroes.some((h) => h.roles.includes('marksman') || ['elsu', 'hayate', 'capheny', 'violet', 'laville', 'yorn', 'tel\'annas'].includes(h.name.toLowerCase()));
-  const hasDive = myHeroes.some((h) => HERO_DIVE_LIST.has(h.name.toLowerCase()));
-
-  if (hasFrontline) strengths.push('มีแนวหน้ารับดาเมจและยืนโซนพื้นที่ไฟต์ได้มั่นคง');
-  if (hasHardCc) strengths.push('มีสกิล Hard CC ต่อเนื่องในการหยุดการเคลื่อนไหวของศัตรู');
-  if (hasLateCarry) strengths.push('มีดาเมจเลทเกมต่อเนื่องจากแครี่หลักที่เชื่อถือได้');
-  if (hasDive) strengths.push('มีความสามารถในการล้วงตัวบางแนวหลังของศัตรูได้อย่างรวดเร็ว');
-  if (strengths.length < 3) strengths.push('การเดินเกมและสลับเลนทำได้รวดเร็วตามตำแหน่ง');
-
-  if (!hasFrontline) weaknesses.push('แนวหน้าบาง เสี่ยงโดนไฟต์ประชิดตัวและตัวเบิร์สหนัก');
-  if (!hasHardCc) weaknesses.push('ขาดสกิลหยุด CC เด็ดขาด อาจควบคุมเป้าหมายเดี่ยวได้ยาก');
-  const oppHasDive = oppHeroes.some((h) => HERO_DIVE_LIST.has(h.name.toLowerCase()));
-  if (oppHasDive) weaknesses.push('ศัตรูมีตัวล้วงแนวหลัง แครี่ต้องยืนตำแหน่งอย่างระมัดระวังตลอดเวลา');
-  if (weaknesses.length < 2) weaknesses.push('ต้องระวังการเสียเปรียบไฟต์ยืดเยื้อหากไม่ได้ Objective ใหญ่');
-
-  if (hasLateCarry) {
-    winConditions.push('ยื้อเกมและคุ้มกันแครี่จนได้ไอเทมหลัก 3 ชิ้นเพื่อชิงไฟต์เลทเกม');
+  // If draft is incomplete according to official rules (5 picks each)
+  if (!isComplete || myHeroes.length < 5 || oppHeroes.length < 5) {
+    return {
+      isDraftComplete: false,
+      incompleteReason:
+        'การดราฟต์ยังไม่เสร็จสมบูรณ์ตามกติกา RoV (ต้องเลือกฮีโร่ครบ 5 ตัว และแบนครบทั้ง 2 ทีม)',
+      sessionId,
+      tournament: meta?.tournament,
+      match: meta?.match,
+      gameNumber: meta?.gameNumber,
+      patch: meta?.patch,
+      timestamp: new Date().toISOString(),
+      teamName: myTeamName || 'ทีมเรา (Our Team)',
+      oppTeamName: oppTeamName || 'คู่แข่ง (Opponent)',
+      ourSide,
+      compStrengths: ['ยังไม่มีข้อมูลเนื่องจากดราฟต์ยังไม่เสร็จ'],
+      compWeaknesses: ['ยังไม่มีข้อมูลเนื่องจากดราฟต์ยังไม่เสร็จ'],
+      winConditions: ['ยังไม่มีข้อมูลเนื่องจากดราฟต์ยังไม่เสร็จ'],
+      earlyGame: { timing: '0 - 4 นาที', focus: 'รอจบดราฟต์', objectives: [] },
+      midGame: { timing: '4 - 10 นาที', focus: 'รอจบดราฟต์', objectives: [] },
+      lateGame: { timing: '10 นาทีขึ้นไป', focus: 'รอจบดราฟต์', objectives: [] },
+      provenance: 'ระบบจะวิเคราะห์อัตโนมัติเมื่อการดราฟต์เสร็จสมบูรณ์ครบทั้ง 10 ตัว',
+    };
   }
-  if (hasDive) {
-    winConditions.push('สร้างความได้เปรียบด้วยการลอบสังหารตัวดาเมจหลักศัตรูก่อนเปิดไฟต์ใหญ่ 5v5');
-  }
-  winConditions.push('คุมวิสัยทัศน์รอบหลุม Dark Slayer นาทีที่ 15 เพื่อชิงบัฟ Infinite Dark Slayer ปิดเกม');
+
+  // 1. Lineups & Player Assignments
+  const heroToPlayersMap = options?.heroToPlayersMap || {};
+  const playersList = options?.players || [];
+
+  const ourLineup = myPicks.map((slot) => {
+    const h = slot.hero!;
+    let assignedPlayerInfo: {
+      nickname: string;
+      playerName: string;
+      tier?: 'signature' | 'comfortable';
+      starColor?: 'gold' | 'silver';
+      isOnRole: boolean;
+      roleFitDescription: string;
+    } | undefined = undefined;
+
+    // Check slot assigned player first
+    if (slot.playerNickname) {
+      const pObj = playersList.find(
+        (p) => p.nickname.toLowerCase() === slot.playerNickname!.toLowerCase()
+      );
+      const badges = heroToPlayersMap[h.name] || [];
+      const badge = badges.find(
+        (b) => b.playerNickname.toLowerCase() === slot.playerNickname!.toLowerCase()
+      );
+
+      const isOnRole = pObj?.position === slot.pos || (!pObj?.position && true);
+
+      assignedPlayerInfo = {
+        nickname: slot.playerNickname,
+        playerName: slot.playerName || pObj?.name || slot.playerNickname,
+        tier: badge?.tier,
+        starColor: badge?.tier === 'signature' ? 'gold' : badge?.tier === 'comfortable' ? 'silver' : undefined,
+        isOnRole: Boolean(isOnRole),
+        roleFitDescription: isOnRole ? 'ตรงตำแหน่ง' : `เล่นสลับเลน (${slot.pos})`,
+      };
+    } else {
+      // Find best fit player from roster
+      const badges = heroToPlayersMap[h.name] || [];
+      if (badges.length > 0) {
+        const topBadge = badges.find((b) => b.tier === 'signature') || badges[0];
+        const pObj = playersList.find(
+          (p) => p.nickname.toLowerCase() === topBadge.playerNickname.toLowerCase()
+        );
+        const isOnRole = pObj?.position === slot.pos;
+        assignedPlayerInfo = {
+          nickname: topBadge.playerNickname,
+          playerName: topBadge.playerName,
+          tier: topBadge.tier,
+          starColor: topBadge.tier === 'signature' ? 'gold' : 'silver',
+          isOnRole: Boolean(isOnRole),
+          roleFitDescription: isOnRole ? 'ตรงตำแหน่งถนัด' : `ข้ามตำแหน่ง (${slot.pos})`,
+        };
+      }
+    }
+
+    return {
+      hero: h,
+      position: slot.pos,
+      assignedPlayer: assignedPlayerInfo,
+    };
+  });
+
+  const oppLineup = oppPicks.map((slot) => ({
+    hero: slot.hero!,
+    position: slot.pos,
+  }));
+
+  const ourBans = (options?.ourBans || []).filter((h): h is Hero => h !== null);
+  const oppBans = (options?.oppBans || []).filter((h): h is Hero => h !== null);
+
+  // 2. Realized Pro Meta Comps (RPL 2026)
+  const myHeroNamesLower = new Set(myHeroes.map((h) => h.name.toLowerCase()));
+  const realizedComps: RealizedProComp[] = [];
+
+  RPL_2026_PRO_COMPS.forEach((comp) => {
+    const present = comp.coreHeroes.filter((core) =>
+      myHeroNamesLower.has(core.toLowerCase())
+    );
+    if (present.length >= 2) {
+      realizedComps.push({
+        compName: comp.name,
+        compNameTh: comp.nameTh,
+        tier: comp.tier,
+        heroesPresent: present,
+        description: comp.tacticalDescription,
+      });
+    }
+  });
+
+  // 3. Team Composition Review (Powered by P2 Safety Evaluator)
+  const ourSafety = evaluateDraftSafety(myPicks, oppPicks, heroToPlayersMap);
+  const oppSafety = evaluateDraftSafety(oppPicks, myPicks, heroToPlayersMap);
+
+  const ourCompReview: TeamCompDetailedReview = {
+    roleCoverage: {
+      rolesCovered: ourSafety.roleCoverage.rolesCovered,
+      missingRoles: ourSafety.roleCoverage.missingRoles,
+      roleClashes: ourSafety.roleCoverage.roleClashes.map(
+        (c) => `${c.role}: ${c.heroes.join(', ')}`
+      ),
+    },
+    frontline: {
+      hasFrontline: ourSafety.teamComposition.hasFrontline,
+      count: ourSafety.teamComposition.hasFrontline ? 1 : 0,
+      details: ourSafety.teamComposition.frontlineDetails,
+      alternativeStyle: ourSafety.teamComposition.alternativeToolsNote,
+    },
+    hardCc: {
+      hasHardCc: ourSafety.teamComposition.hasHardCc,
+      count: ourSafety.teamComposition.hasHardCc ? 1 : 0,
+      details: ourSafety.teamComposition.hardCcDetails,
+    },
+    backlineDive: {
+      hasDive: ourSafety.teamComposition.hasBacklineDive,
+      details: ourSafety.teamComposition.backlineDiveDetails,
+    },
+    damageSplit: {
+      physical: ourSafety.teamComposition.damageBalance.physical,
+      magic: ourSafety.teamComposition.damageBalance.magic,
+      trueDmg: ourSafety.teamComposition.damageBalance.trueDmg,
+    },
+    powerSpike: ourSafety.gameTiming.powerSpike,
+    timingVulnerability: ourSafety.gameTiming.timingVulnerability,
+    lateGameViability: ourSafety.gameTiming.lateGameViability,
+    winCondition: {
+      primaryType: ourSafety.winCondition.primaryType,
+      headline: ourSafety.winCondition.headline,
+      keySuccessConditions: ourSafety.winCondition.keySuccessConditions,
+    },
+  };
+
+  const oppCompReview: TeamCompDetailedReview = {
+    roleCoverage: {
+      rolesCovered: oppSafety.roleCoverage.rolesCovered,
+      missingRoles: oppSafety.roleCoverage.missingRoles,
+      roleClashes: oppSafety.roleCoverage.roleClashes.map(
+        (c) => `${c.role}: ${c.heroes.join(', ')}`
+      ),
+    },
+    frontline: {
+      hasFrontline: oppSafety.teamComposition.hasFrontline,
+      count: oppSafety.teamComposition.hasFrontline ? 1 : 0,
+      details: oppSafety.teamComposition.frontlineDetails,
+      alternativeStyle: oppSafety.teamComposition.alternativeToolsNote,
+    },
+    hardCc: {
+      hasHardCc: oppSafety.teamComposition.hasHardCc,
+      count: oppSafety.teamComposition.hasHardCc ? 1 : 0,
+      details: oppSafety.teamComposition.hardCcDetails,
+    },
+    backlineDive: {
+      hasDive: oppSafety.teamComposition.hasBacklineDive,
+      details: oppSafety.teamComposition.backlineDiveDetails,
+    },
+    damageSplit: {
+      physical: oppSafety.teamComposition.damageBalance.physical,
+      magic: oppSafety.teamComposition.damageBalance.magic,
+      trueDmg: oppSafety.teamComposition.damageBalance.trueDmg,
+    },
+    powerSpike: oppSafety.gameTiming.powerSpike,
+    timingVulnerability: oppSafety.gameTiming.timingVulnerability,
+    lateGameViability: oppSafety.gameTiming.lateGameViability,
+    winCondition: {
+      primaryType: oppSafety.winCondition.primaryType,
+      headline: oppSafety.winCondition.headline,
+      keySuccessConditions: oppSafety.winCondition.keySuccessConditions,
+    },
+  };
+
+  const factVsEvaluationNotes: string[] = [
+    'การประเมินแยกแยะระหว่างข้อเท็จจริง (ตัวเลขสถิติฮีโร่) กับการตีความเชิงแผนการเล่น',
+    'การขาดแทงก์สายเพียวไม่ได้หมายถึงการแพ้ดราฟต์ หากทีมมีตัว Disengage / Poke / Burst ล้วงทดแทน',
+    'ตัวเลขความได้เปรียบคำนวณจากสถิติ RPL Matchups จริง ไม่มีการสุ่มตัวเลขเปอร์เซ็นต์ลอยๆ',
+  ];
+
+  // 4. Draft Decision Review
+  const bannedHeroNames = options?.bannedHeroNames || new Set<string>();
+  const bannedCombosImpact: DraftDecisionReviewData['bannedCombosImpact'] = [];
+
+  RPL_2026_PRO_COMPS.forEach((comp) => {
+    const bannedCore = comp.coreHeroes.filter((h) => bannedHeroNames.has(h));
+    bannedCore.forEach((bHero) => {
+      const guide = META_SUBSTITUTE_GUIDE[bHero];
+      bannedCombosImpact.push({
+        bannedHero: bHero,
+        affectedComp: `${comp.nameTh} (${comp.name})`,
+        substituteUsed: guide ? guide[0]?.substitute : undefined,
+        tradeOffNote: guide ? guide[0]?.tradeOff : 'โดนแบนตัดแผนหลัก',
+      });
+    });
+  });
+
+  const playerFitReview: DraftDecisionReviewData['playerFitReview'] = ourLineup.map((item) => {
+    const p = item.assignedPlayer;
+    if (!p) {
+      return {
+        heroName: item.hero.name,
+        playerNickname: 'ยังไม่ระบุ',
+        tierLabel: 'ไม่มีข้อมูล',
+        starColor: 'none',
+        isComfortable: false,
+        note: 'ไม่มีบันทึกข้อมูลความถนัดในพูลนักแข่ง',
+      };
+    }
+    return {
+      heroName: item.hero.name,
+      playerNickname: p.nickname,
+      tierLabel: p.tier === 'signature' ? 'Signature ⭐' : p.tier === 'comfortable' ? 'Comfortable ★' : 'นอกพูล',
+      starColor: p.starColor || 'none',
+      isComfortable: Boolean(p.tier),
+      note: p.tier === 'signature'
+        ? `ฮีโร่ลายเซ็นของ ${p.nickname} มั่นใจได้ในแมตช์จริง`
+        : p.tier === 'comfortable'
+        ? `อยู่ในพูลซ้อมที่เล่นได้ของ ${p.nickname}`
+        : `${p.nickname} ไม่มีข้อมูลความชำนาญ ควรปรึกษาก่อนแข่ง`,
+    };
+  });
+
+  const decisionReview: DraftDecisionReviewData = {
+    keyPicksMade: ourLineup.map((l) => ({
+      hero: l.hero.name,
+      position: l.position,
+      reason: `เติมเต็มตำแหน่ง ${l.position} และขับเคลื่อนแผน ${ourSafety.winCondition.primaryType}`,
+    })),
+    bannedCombosImpact: bannedCombosImpact.slice(0, 3),
+    playerFitReview,
+    criticalWarningsOccurred: ourSafety.topWarnings.map((w) => `${w.title}: ${w.detail}`),
+    alternativePicksConsidered: [
+      'ตัวเลือกสำรองตาม Heuristic Role Fit ในระบบ Draft Recommendation Engine',
+      'ฮีโร่แก้ทางคู่แข่งในพูลที่ยังว่างอยู่',
+    ],
+    hasHistory: true,
+  };
+
+  // 5. Game Plan Playbook (7 Key Points)
+  const enemyThreats = analyzeEnemyThreats(oppPicks, myPicks, HEROES, bannedHeroNames, new Set(), oppTeamName, heroToPlayersMap);
+
+  const teamfightRules = {
+    whenToFight: [
+      `เมื่อ ${ourSafety.teamComposition.hasEngage ? 'ตัวเปิดไฟต์หลักพร้อมสกิลจับตาย' : 'ตัวเบิร์สดาเมจหลักพร้อมสกิลครบ'} และแนวหลังยืนในโซนปลอดภัย`,
+      'เมื่อศัตรูแยกดันเลน หรือตัวทำดาเมจหลักของศัตรูไม่อยู่ในพื้นที่ไฟต์',
+      'เมื่อคุมพื้นที่พุ่มไม้รอบหลุม Dark Slayer / Abyssal Dragon ได้สมบูรณ์ก่อนศัตรู',
+    ],
+    whenToAvoid: [
+      'เมื่อตัวรับดาเมจแนวหน้าหรือโรมมิ่งยังมาไม่ถึง หรือสกิล CC สำคัญติดคูลดาวน์',
+      'เมื่อต้องไฟต์ในพื้นที่แคบหากศัตรูมีสกิล AoE หมู่รุนแรง',
+      'เมื่อศัตรูเพิ่งได้บัฟ Infinite Dark Slayer นาทีที่ 15 ให้ถอยตั้งรับในป้อมเท่านั้น',
+    ],
+  };
 
   const earlyGame: GamePhaseInstruction = {
     timing: '0 - 4 นาที (ต้นเกม)',
@@ -1601,9 +2075,65 @@ export function generatePostDraftSummary(
     ],
   };
 
+  const gamePlan: GamePlanPlaybook = {
+    primaryPlan: ourSafety.winCondition.headline,
+    keyExecutionRequirements: ourSafety.winCondition.keySuccessConditions,
+    oppThreatWatchouts: enemyThreats.threats.map((t) => `${t.title}: ${t.tacticalAdvice}`),
+    earlyGame,
+    midGame,
+    lateGame,
+    teamfightRules,
+  };
+
+  // 6. Strengths & Weaknesses
+  const strengths: string[] = [];
+  const weaknesses: string[] = [];
+  const winConditions: string[] = ourSafety.winCondition.keySuccessConditions;
+
+  if (ourSafety.teamComposition.hasFrontline) {
+    strengths.push(`แนวหน้าแข็งแกร่ง (${ourSafety.teamComposition.frontlineDetails}) ยืนโซนไฟต์ได้มั่นคง`);
+  } else if (ourSafety.teamComposition.alternativeToolsNote) {
+    strengths.push(`สไตล์ยืดหยุ่น: ${ourSafety.teamComposition.alternativeToolsNote}`);
+  }
+
+  if (ourSafety.teamComposition.hasHardCc) {
+    strengths.push(`มี Hard CC ควบคุมจังหวะ (${ourSafety.teamComposition.hardCcDetails})`);
+  }
+  if (ourSafety.teamComposition.hasBacklineDive) {
+    strengths.push('มีความสามารถในการล้วงตัวบางแนวหลังของศัตรูได้อย่างรวดเร็ว');
+  }
+  if (strengths.length < 3) {
+    strengths.push(`สัดส่วนดาเมจครอบคลุม: กายภาพ ${ourSafety.teamComposition.damageBalance.physical}% / เวท ${ourSafety.teamComposition.damageBalance.magic}%`);
+  }
+
+  if (!ourSafety.teamComposition.hasFrontline) {
+    weaknesses.push('แนวหน้าบาง เสี่ยงโดนไฟต์ประชิดตัวและตัวเบิร์สหนัก ต้องเน้นระยะและการเล่นแบบดักซุ่ม');
+  }
+  if (!ourSafety.teamComposition.hasHardCc) {
+    weaknesses.push('ขาดสกิลหยุด CC เด็ดขาด อาจควบคุมเป้าหมายเดี่ยวที่คล่องตัวได้ยาก');
+  }
+  if (ourSafety.gameTiming.timingVulnerability) {
+    weaknesses.push(`จุดเปราะบางด้านเวลา: ${ourSafety.gameTiming.timingVulnerability}`);
+  }
+  if (weaknesses.length < 2) {
+    weaknesses.push('ต้องระวังการเสียเปรียบไฟต์ยืดเยื้อหากไม่ได้ Objective ใหญ่');
+  }
+
+  // 7. Load persisted Coach Practice Notes & Scrim Result
+  const coachNotes = getCoachDraftNotes(sessionId);
+  const scrimResult = getScrimResult(sessionId);
+
   return {
+    isDraftComplete: true,
+    sessionId,
+    tournament: meta?.tournament,
+    match: meta?.match,
+    gameNumber: meta?.gameNumber,
+    patch: meta?.patch,
+    timestamp: new Date().toISOString(),
     teamName: myTeamName || 'ทีมเรา (Our Team)',
     oppTeamName: oppTeamName || 'คู่แข่ง (Opponent)',
+    ourSide,
     compStrengths: strengths.slice(0, 3),
     compWeaknesses: weaknesses.slice(0, 3),
     winConditions: winConditions.slice(0, 3),
@@ -1611,5 +2141,21 @@ export function generatePostDraftSummary(
     midGame,
     lateGame,
     provenance: 'วิเคราะห์เชิงกลยุทธ์จากองค์ประกอบฮีโร่ทั้ง 10 ตัวตามมาตรฐานแข่งขัน RoV RPL 2026',
+    ourLineup,
+    oppLineup,
+    ourBans,
+    oppBans,
+    realizedComps,
+    ourStrategicOverview: `ทีมวางแผนการเล่นแบบ ${ourSafety.winCondition.primaryType} (${ourSafety.winCondition.headline})`,
+    oppStrategicOverview: `คู่แข่งจัดคอมพ์แบบ ${oppSafety.winCondition.primaryType} (${oppSafety.winCondition.headline})`,
+    compositionReview: {
+      ourComp: ourCompReview,
+      oppComp: oppCompReview,
+      factVsEvaluationNotes,
+    },
+    decisionReview,
+    gamePlan,
+    coachNotes,
+    scrimResult,
   };
 }

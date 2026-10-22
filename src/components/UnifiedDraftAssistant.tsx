@@ -53,6 +53,7 @@ import {
   FileText,
   Clock,
   Compass,
+  BookOpen,
 } from 'lucide-react';
 
 export type AssistantSituationalMode = 'inspect' | 'counter_opp' | 'banned_combos' | 'smart_ban' | 'summary';
@@ -82,6 +83,13 @@ interface UnifiedDraftAssistantProps {
   isPickTurn?: boolean;
   isBanTurn?: boolean;
   isDraftComplete?: boolean;
+  onOpenPostDraftModal?: () => void;
+  matchMetadata?: {
+    tournament?: string;
+    match?: string;
+    gameNumber?: number;
+    patch?: string;
+  };
 }
 
 export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
@@ -105,6 +113,8 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
   isPickTurn = false,
   isBanTurn = false,
   isDraftComplete = false,
+  onOpenPostDraftModal,
+  matchMetadata,
 }) => {
   // Target hero object being inspected/previewed
   const currentHero = useMemo(() => {
@@ -203,10 +213,41 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
     return evaluatePlayerFitWithRoles(currentHero.name, players, heroToPlayersMap);
   }, [currentHero, players, heroToPlayersMap]);
 
-  // 6. DECISION SUPPORT 5: Post-Draft Summary
+  // 6. DECISION SUPPORT 5: Post-Draft Summary (Phase P3)
   const postDraftSummary: PostDraftSummaryReport = useMemo(() => {
-    return generatePostDraftSummary(myPicks, oppPicks, myTeamName, oppTeamName);
-  }, [myPicks, oppPicks, myTeamName, oppTeamName]);
+    return generatePostDraftSummary(myPicks, oppPicks, myTeamName, oppTeamName, {
+      isDraftComplete,
+      blueIsUs,
+      ourBans: blueIsUs ? blueBans : redBans,
+      oppBans: blueIsUs ? redBans : blueBans,
+      matchMetadata: matchMetadata
+        ? {
+            tournament: matchMetadata.tournament || 'RoV RPL 2026',
+            match: matchMetadata.match || 'Match',
+            gameNumber: matchMetadata.gameNumber || 1,
+            patch: matchMetadata.patch || 'Latest',
+          }
+        : undefined,
+      players,
+      heroToPlayersMap,
+      bannedHeroNames,
+      pickedHeroNames,
+    });
+  }, [
+    myPicks,
+    oppPicks,
+    myTeamName,
+    oppTeamName,
+    isDraftComplete,
+    blueIsUs,
+    blueBans,
+    redBans,
+    matchMetadata,
+    players,
+    heroToPlayersMap,
+    bannedHeroNames,
+    pickedHeroNames,
+  ]);
 
   // 7. DECISION SUPPORT 6: Combo Fallback Audits (Phase P1)
   const comboFallbackAudits: ComboFallbackReportItem[] = useMemo(() => {
@@ -2391,157 +2432,244 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
         {/* ========================================================================= */}
         {/* POST-DRAFT SUMMARY (ดราฟต์เสร็จสมบูรณ์)                                   */}
         {/* ========================================================================= */}
+        {/* ========================================================================= */}
+        {/* POST-DRAFT SUMMARY (ดราฟต์เสร็จสมบูรณ์ - Phase P3)                        */}
+        {/* ========================================================================= */}
         {situationalMode === 'summary' && (
           <div className="flex flex-col gap-2.5">
-            {/* Header Card */}
-            <div className="p-3 bg-gradient-to-r from-emerald-50 to-white border border-emerald-200 rounded-xl shadow-2xs flex flex-col gap-1">
-              <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-xs">
-                <CheckCircle2 size={15} className="text-emerald-600" />
-                <span>สรุปผลวิเคราะห์คอมพ์หลังจบดราฟต์ (Post-Draft Summary)</span>
-              </div>
-              <p className="text-[11px] text-slate-600 leading-relaxed">
-                การวิเคราะห์เชิงกลยุทธ์จากองค์ประกอบฮีโร่ทั้ง 10 ตัว
-                พร้อมเงื่อนไขการชนะและแนวทางการเดินเกม 3 ช่วงเวลา
-              </p>
-            </div>
-
-            {/* Strengths & Weaknesses */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {/* Strengths */}
-              <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl flex flex-col gap-1.5">
-                <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
-                  <TrendingUp size={13} className="text-emerald-600" />
-                  <span>จุดแข็งของคอมพ์ทีมเรา:</span>
-                </span>
-                <ul className="flex flex-col gap-1 pl-1">
-                  {postDraftSummary.compStrengths.map((s, idx) => (
-                    <li
-                      key={idx}
-                      className="text-[10px] text-slate-700 leading-tight flex items-start gap-1"
-                    >
-                      <span className="text-emerald-600 font-bold">•</span>
-                      <span>{s}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Weaknesses */}
-              <div className="p-2.5 bg-rose-50/70 border border-rose-200 rounded-xl flex flex-col gap-1.5">
-                <span className="text-[11px] font-bold text-rose-900 flex items-center gap-1">
-                  <TrendingDown size={13} className="text-rose-600" />
-                  <span>จุดอ่อน / ข้อพึงระวัง:</span>
-                </span>
-                <ul className="flex flex-col gap-1 pl-1">
-                  {postDraftSummary.compWeaknesses.map((w, idx) => (
-                    <li
-                      key={idx}
-                      className="text-[10px] text-slate-700 leading-tight flex items-start gap-1"
-                    >
-                      <span className="text-rose-600 font-bold">•</span>
-                      <span>{w}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Win Conditions */}
-            <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl flex flex-col gap-1.5">
-              <span className="text-[11px] font-bold text-amber-900 flex items-center gap-1">
-                <Target size={13} className="text-amber-600" />
-                <span>เงื่อนไขการชนะ (Win Conditions):</span>
-              </span>
-              <ul className="flex flex-col gap-1 pl-1">
-                {postDraftSummary.winConditions.map((wc, idx) => (
-                  <li
-                    key={idx}
-                    className="text-[10.5px] text-slate-800 leading-tight flex items-start gap-1"
+            {!postDraftSummary.isDraftComplete ? (
+              <div className="p-3.5 bg-amber-50/80 border border-amber-300 rounded-xl flex flex-col gap-2 text-center shadow-2xs">
+                <div className="flex items-center justify-center gap-1.5 text-amber-900 font-bold text-xs">
+                  <AlertTriangle size={15} className="text-amber-600" />
+                  <span>ยังดราฟต์ไม่เสร็จสิ้น (Draft In Progress)</span>
+                </div>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  {postDraftSummary.incompleteReason ||
+                    'ระบบจะสร้างบทวิเคราะห์ฉบับเต็มและแผนการเล่น 7 จุดเมื่อดราฟต์ครบ 10 ตัว'}
+                </p>
+                <div className="flex items-center justify-center gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setSituationalMode(isBanTurn ? 'smart_ban' : currentHero ? 'inspect' : 'counter_opp')}
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg cursor-pointer transition-all shadow-2xs"
                   >
-                    <span className="text-amber-600 font-black">🏆</span>
-                    <span>{wc}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Phase Playbook */}
-            <div className="flex flex-col gap-2">
-              <span className="text-[11px] font-bold text-slate-700 uppercase flex items-center gap-1">
-                <Clock size={13} className="text-slate-500" />
-                <span>แนวทางการเล่นตามช่วงเวลา (Game Phase Playbook):</span>
-              </span>
-
-              {/* Early Game */}
-              <div className="p-2.5 bg-white border border-slate-200 rounded-xl flex flex-col gap-1 shadow-2xs">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-1">
-                  <span className="font-bold text-xs text-sky-800">
-                    {postDraftSummary.earlyGame.timing}
-                  </span>
-                  <span className="text-[9px] font-bold bg-sky-50 text-sky-700 px-1.5 py-0.2 rounded border border-sky-200">
-                    คุมจังหวะต้นเกม
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-600">
-                  🎯 เป้าหมายหลัก: {postDraftSummary.earlyGame.focus}
-                </p>
-                <div className="flex flex-col gap-0.5 pl-1 mt-0.5">
-                  {postDraftSummary.earlyGame.objectives.map((obj, i) => (
-                    <span key={i} className="text-[9.5px] text-slate-500">
-                      - {obj}
-                    </span>
-                  ))}
+                    ← กลับไปดูคำแนะนำ BAN/PICK
+                  </button>
                 </div>
               </div>
+            ) : (
+              <>
+                {/* Header Card with Pro Analytics & Full Modal Trigger */}
+                <div className="p-3 bg-gradient-to-r from-emerald-50 to-white border border-emerald-200 rounded-xl shadow-2xs flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-emerald-800 font-bold text-xs">
+                      <CheckCircle2 size={15} className="text-emerald-600" />
+                      <span>สรุปผลวิเคราะห์คอมพ์หลังจบดราฟต์ (Post-Draft Review)</span>
+                    </div>
+                    {onOpenPostDraftModal && (
+                      <button
+                        type="button"
+                        onClick={onOpenPostDraftModal}
+                        className="px-2.5 py-1 bg-[#E91E63] hover:bg-[#D81B60] text-white text-[10px] font-bold rounded-lg cursor-pointer transition-all shadow-2xs flex items-center gap-1"
+                        title="เปิดรายงานฉบับเต็มพร้อมบันทึกการซ้อมและพิมพ์สรุป"
+                      >
+                        <FileText size={11} />
+                        <span>เปิดรายงานฉบับเต็ม</span>
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    {postDraftSummary.ourStrategicOverview ||
+                      'การวิเคราะห์เชิงกลยุทธ์จากองค์ประกอบฮีโร่ทั้ง 10 ตัว พร้อมเงื่อนไขการชนะและแผนการเล่น 7 จุด'}
+                  </p>
 
-              {/* Mid Game */}
-              <div className="p-2.5 bg-white border border-slate-200 rounded-xl flex flex-col gap-1 shadow-2xs">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-1">
-                  <span className="font-bold text-xs text-indigo-800">
-                    {postDraftSummary.midGame.timing}
-                  </span>
-                  <span className="text-[9px] font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded border border-indigo-200">
-                    ดันป้อม & คุม Slayer
-                  </span>
+                  {/* Realized RPL Comps Badges */}
+                  {postDraftSummary.realizedComps && postDraftSummary.realizedComps.length > 0 && (
+                    <div className="flex items-center gap-1 flex-wrap pt-0.5 border-t border-emerald-100">
+                      <span className="text-[9.5px] font-bold text-emerald-900">คอมโบ Pro Meta:</span>
+                      {postDraftSummary.realizedComps.map((c) => (
+                        <span
+                          key={c.compName}
+                          className="px-1.5 py-0.2 rounded bg-pink-100 text-[#E91E63] border border-pink-200 text-[9px] font-bold"
+                        >
+                          ⭐ {c.compNameTh} ({c.tier})
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <p className="text-[10px] text-slate-600">
-                  🎯 เป้าหมายหลัก: {postDraftSummary.midGame.focus}
-                </p>
-                <div className="flex flex-col gap-0.5 pl-1 mt-0.5">
-                  {postDraftSummary.midGame.objectives.map((obj, i) => (
-                    <span key={i} className="text-[9.5px] text-slate-500">
-                      - {obj}
+
+                {/* Strengths & Weaknesses */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {/* Strengths */}
+                  <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl flex flex-col gap-1.5">
+                    <span className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
+                      <TrendingUp size={13} className="text-emerald-600" />
+                      <span>จุดแข็งของคอมพ์ทีมเรา:</span>
                     </span>
-                  ))}
-                </div>
-              </div>
+                    <ul className="flex flex-col gap-1 pl-1">
+                      {postDraftSummary.compStrengths.map((s, idx) => (
+                        <li
+                          key={idx}
+                          className="text-[10px] text-slate-700 leading-tight flex items-start gap-1"
+                        >
+                          <span className="text-emerald-600 font-bold">•</span>
+                          <span>{s}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
 
-              {/* Late Game */}
-              <div className="p-2.5 bg-white border border-slate-200 rounded-xl flex flex-col gap-1 shadow-2xs">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-1">
-                  <span className="font-bold text-xs text-purple-800">
-                    {postDraftSummary.lateGame.timing}
-                  </span>
-                  <span className="text-[9px] font-bold bg-purple-50 text-purple-700 px-1.5 py-0.2 rounded border border-purple-200">
-                    ไฟต์ 5v5 ปิดเกม
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-600">
-                  🎯 เป้าหมายหลัก: {postDraftSummary.lateGame.focus}
-                </p>
-                <div className="flex flex-col gap-0.5 pl-1 mt-0.5">
-                  {postDraftSummary.lateGame.objectives.map((obj, i) => (
-                    <span key={i} className="text-[9.5px] text-slate-500">
-                      - {obj}
+                  {/* Weaknesses */}
+                  <div className="p-2.5 bg-rose-50/70 border border-rose-200 rounded-xl flex flex-col gap-1.5">
+                    <span className="text-[11px] font-bold text-rose-900 flex items-center gap-1">
+                      <TrendingDown size={13} className="text-rose-600" />
+                      <span>จุดอ่อน / ข้อพึงระวัง:</span>
                     </span>
-                  ))}
+                    <ul className="flex flex-col gap-1 pl-1">
+                      {postDraftSummary.compWeaknesses.map((w, idx) => (
+                        <li
+                          key={idx}
+                          className="text-[10px] text-slate-700 leading-tight flex items-start gap-1"
+                        >
+                          <span className="text-rose-600 font-bold">•</span>
+                          <span>{w}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="text-[9px] text-slate-400 text-center italic mt-1">
-              ที่มา: {postDraftSummary.provenance}
-            </div>
+                {/* Win Conditions */}
+                <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-xl flex flex-col gap-1.5">
+                  <span className="text-[11px] font-bold text-amber-900 flex items-center gap-1">
+                    <Target size={13} className="text-amber-600" />
+                    <span>เงื่อนไขการชนะ (Win Conditions):</span>
+                  </span>
+                  <ul className="flex flex-col gap-1 pl-1">
+                    {postDraftSummary.winConditions.map((wc, idx) => (
+                      <li
+                        key={idx}
+                        className="text-[10.5px] text-slate-800 leading-tight flex items-start gap-1"
+                      >
+                        <span className="text-amber-600 font-black">🏆</span>
+                        <span>{wc}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Phase Playbook */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-[11px] font-bold text-slate-700 uppercase flex items-center gap-1">
+                    <Clock size={13} className="text-slate-500" />
+                    <span>แนวทางการเล่นตามช่วงเวลา (Game Phase Playbook):</span>
+                  </span>
+
+                  {/* Early Game */}
+                  <div className="p-2.5 bg-white border border-slate-200 rounded-xl flex flex-col gap-1 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                      <span className="font-bold text-xs text-sky-800">
+                        {postDraftSummary.earlyGame.timing}
+                      </span>
+                      <span className="text-[9px] font-bold bg-sky-50 text-sky-700 px-1.5 py-0.2 rounded border border-sky-200">
+                        คุมจังหวะต้นเกม
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-600">
+                      🎯 เป้าหมายหลัก: {postDraftSummary.earlyGame.focus}
+                    </p>
+                    <div className="flex flex-col gap-0.5 pl-1 mt-0.5">
+                      {postDraftSummary.earlyGame.objectives.map((obj, i) => (
+                        <span key={i} className="text-[9.5px] text-slate-500">
+                          - {obj}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Mid Game */}
+                  <div className="p-2.5 bg-white border border-slate-200 rounded-xl flex flex-col gap-1 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                      <span className="font-bold text-xs text-indigo-800">
+                        {postDraftSummary.midGame.timing}
+                      </span>
+                      <span className="text-[9px] font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded border border-indigo-200">
+                        ดันป้อม & คุม Slayer
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-600">
+                      🎯 เป้าหมายหลัก: {postDraftSummary.midGame.focus}
+                    </p>
+                    <div className="flex flex-col gap-0.5 pl-1 mt-0.5">
+                      {postDraftSummary.midGame.objectives.map((obj, i) => (
+                        <span key={i} className="text-[9.5px] text-slate-500">
+                          - {obj}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Late Game */}
+                  <div className="p-2.5 bg-white border border-slate-200 rounded-xl flex flex-col gap-1 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-1">
+                      <span className="font-bold text-xs text-purple-800">
+                        {postDraftSummary.lateGame.timing}
+                      </span>
+                      <span className="text-[9px] font-bold bg-purple-50 text-purple-700 px-1.5 py-0.2 rounded border border-purple-200">
+                        ไฟต์ 5v5 ปิดเกม
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-600">
+                      🎯 เป้าหมายหลัก: {postDraftSummary.lateGame.focus}
+                    </p>
+                    <div className="flex flex-col gap-0.5 pl-1 mt-0.5">
+                      {postDraftSummary.lateGame.objectives.map((obj, i) => (
+                        <span key={i} className="text-[9.5px] text-slate-500">
+                          - {obj}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Teamfight Rules Highlight (Phase P3) */}
+                {postDraftSummary.gamePlan?.teamfightRules && (
+                  <div className="p-2.5 bg-white border border-[#F3D5E2] rounded-xl flex flex-col gap-1.5 shadow-2xs">
+                    <span className="text-[11px] font-bold text-slate-800 flex items-center gap-1">
+                      <Swords size={12} className="text-[#E91E63]" />
+                      <span>กฎไฟต์ 5v5 (Teamfight Rules):</span>
+                    </span>
+                    <div className="flex flex-col gap-1 text-[10px]">
+                      <div className="p-1.5 bg-emerald-50 rounded-lg text-emerald-900 border border-emerald-100">
+                        <span className="font-bold">✅ ควรบวก: </span>
+                        <span>{postDraftSummary.gamePlan.teamfightRules.whenToFight[0]}</span>
+                      </div>
+                      <div className="p-1.5 bg-rose-50 rounded-lg text-rose-900 border border-rose-100">
+                        <span className="font-bold">❌ ควรเลี่ยง: </span>
+                        <span>{postDraftSummary.gamePlan.teamfightRules.whenToAvoid[0]}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Full Report Modal CTA Banner */}
+                {onOpenPostDraftModal && (
+                  <button
+                    type="button"
+                    onClick={onOpenPostDraftModal}
+                    className="w-full py-2 bg-gradient-to-r from-[#E91E63] to-[#D81B60] hover:brightness-105 text-white font-bold text-xs rounded-xl shadow-md shadow-[#E91E63]/20 flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-[0.98]"
+                  >
+                    <BookOpen size={13} />
+                    <span>📑 เปิดรายงานกลยุทธ์ฉบับเต็ม & บันทึกการซ้อม</span>
+                  </button>
+                )}
+
+                <div className="text-[9px] text-slate-400 text-center italic mt-0.5">
+                  ที่มา: {postDraftSummary.provenance}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>
