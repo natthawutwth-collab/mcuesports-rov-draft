@@ -8,6 +8,7 @@ import {
   RPL_2026_PLAYED_AGAINST_DATA,
   RPL_2026_PLAYED_WITH_DATA,
 } from '../data/rpl2026SummerStats';
+import { HeroMatchup, HeroSynergy } from '../types/stats';
 import {
   DraftPredictionService,
   DraftTacticalIntelligence,
@@ -205,7 +206,7 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
     bluePickNames.forEach((bHero) => {
       const matchData = RPL_2026_PLAYED_AGAINST_DATA[bHero] || [];
       redPickNames.forEach((rHero) => {
-        const found = matchData.find((m) => m.opponentHero === rHero);
+        const found = matchData.find((m: HeroMatchup) => m.opponentHero === rHero);
         if (found) {
           if (found.winRate > 52) {
             blueCounterWins++;
@@ -222,7 +223,7 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
     for (let i = 0; i < bluePickNames.length; i++) {
       const allyData = RPL_2026_PLAYED_WITH_DATA[bluePickNames[i]] || [];
       for (let j = i + 1; j < bluePickNames.length; j++) {
-        const found = allyData.find((a) => a.allyHero === bluePickNames[j]);
+        const found = allyData.find((a: HeroSynergy) => a.allyHero === bluePickNames[j]);
         if (found && (found.winRate >= 52 || (found.diff && found.diff > 0))) {
           blueCombosCount++;
         }
@@ -233,7 +234,7 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
     for (let i = 0; i < redPickNames.length; i++) {
       const allyData = RPL_2026_PLAYED_WITH_DATA[redPickNames[i]] || [];
       for (let j = i + 1; j < redPickNames.length; j++) {
-        const found = allyData.find((a) => a.allyHero === redPickNames[j]);
+        const found = allyData.find((a: HeroSynergy) => a.allyHero === redPickNames[j]);
         if (found && (found.winRate >= 52 || (found.diff && found.diff > 0))) {
           redCombosCount++;
         }
@@ -328,7 +329,7 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
 
       const matchData = RPL_2026_PLAYED_AGAINST_DATA[hero.name] || [];
       enemyPicks.forEach((opp) => {
-        const found = matchData.find((m) => m.opponentHero === opp);
+        const found = matchData.find((m: HeroMatchup) => m.opponentHero === opp);
         if (found && found.winRate >= 53) {
           score += 10;
           reasons.push(`ชนะทาง ${opp} (WR ${found.winRate}%)`);
@@ -337,7 +338,7 @@ export const TacticalSplitPanel: React.FC<TacticalSplitPanelProps> = ({
 
       const allyData = RPL_2026_PLAYED_WITH_DATA[hero.name] || [];
       friendlyPicks.forEach((ally) => {
-        const found = allyData.find((a) => a.allyHero === ally);
+        const found = allyData.find((a: HeroSynergy) => a.allyHero === ally);
         if (found && found.winRate >= 53) {
           score += 8;
           reasons.push(`คอมโบเข้าขา ${ally} (WR ${found.winRate}%)`);

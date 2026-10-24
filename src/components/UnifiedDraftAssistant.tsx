@@ -169,6 +169,9 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
     setOpenSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // Tactical Sub-Tab for Hero Consideration Mode (All vs Player vs Fallback vs Combos vs Threats)
+  const [inspectSubTab, setInspectSubTab] = useState<'all' | 'playerFit' | 'fallbackSubs' | 'combos' | 'opponent'>('all');
+
   // 1. My Picks vs Opponent Picks
   const myPicks = activeTurnTeam === 'blue' ? bluePicks : redPicks;
   const oppPicks = activeTurnTeam === 'blue' ? redPicks : bluePicks;
@@ -689,12 +692,12 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
       </div>
 
       {/* 2. Scrollable Body */}
-      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2.5 sm:p-3 flex flex-col gap-2.5 bg-[#FFF8FB]/30">
+      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-2.5 sm:p-3 pb-8 flex flex-col gap-3 bg-[#FFF8FB]/30">
         {/* ========================================================= */}
         {/* DRAFT SAFETY CHECK (Pinned Top Banner - Phase P2)         */}
         {/* ========================================================= */}
         {!isDraftComplete && (
-          <div className="flex flex-col bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
+          <div className="flex-shrink-0 isolate w-full bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs mb-0.5">
             <div
               onClick={() => toggleSection('safetyBanner')}
               className={`px-2.5 py-1.5 flex items-center justify-between cursor-pointer transition-colors ${
@@ -1084,11 +1087,11 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                 </div>
               </div>
             ) : (
-              <>
+              <div className="flex flex-col gap-3 w-full">
                 {/* ================================================================= */}
                 {/* 1. คำแนะนำหลัก / ฮีโร่ที่กำลังพิจารณา (Hero Under Consideration) */}
                 {/* ================================================================= */}
-                <div className="p-2.5 bg-white border border-[#F3D5E2] rounded-xl shadow-xs flex flex-col gap-2">
+                <div className="flex-shrink-0 isolate w-full p-2.5 bg-white border border-[#F3D5E2] rounded-xl shadow-xs flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-[#E91E63] uppercase tracking-wider flex items-center gap-1">
                       <Target size={12} />
@@ -1165,555 +1168,640 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                   </div>
                 </div>
 
+                {/* Tactical Inspector Sub-Navigation Filter Bar */}
+                <div className="flex-shrink-0 isolate w-full bg-white p-1 rounded-xl border border-[#F3D5E2] shadow-2xs flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setInspectSubTab('all')}
+                    className={`flex-1 py-1 px-1 rounded-lg text-[9.5px] font-bold transition-all text-center cursor-pointer ${
+                      inspectSubTab === 'all'
+                        ? 'bg-[#E91E63] text-white shadow-2xs'
+                        : 'text-slate-600 hover:text-[#E91E63] hover:bg-[#FFF0F5]'
+                    }`}
+                  >
+                    ดูทั้งหมด
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInspectSubTab('playerFit');
+                      setOpenSections((prev) => ({ ...prev, playerFit: true }));
+                    }}
+                    className={`flex-1 py-1 px-1 rounded-lg text-[9.5px] font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1 ${
+                      inspectSubTab === 'playerFit'
+                        ? 'bg-amber-500 text-white shadow-2xs'
+                        : 'text-slate-600 hover:text-amber-700 hover:bg-amber-50'
+                    }`}
+                  >
+                    <Users size={11} />
+                    <span>ผู้เล่น</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInspectSubTab('fallbackSubs');
+                      setOpenSections((prev) => ({ ...prev, fallbackSubs: true }));
+                    }}
+                    className={`flex-1 py-1 px-1 rounded-lg text-[9.5px] font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1 ${
+                      inspectSubTab === 'fallbackSubs'
+                        ? 'bg-rose-600 text-white shadow-2xs'
+                        : 'text-slate-600 hover:text-rose-700 hover:bg-rose-50'
+                    }`}
+                  >
+                    <RefreshCw size={11} />
+                    <span>ตัวสำรอง</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInspectSubTab('combos');
+                      setOpenSections((prev) => ({ ...prev, combos: true }));
+                    }}
+                    className={`flex-1 py-1 px-1 rounded-lg text-[9.5px] font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1 ${
+                      inspectSubTab === 'combos'
+                        ? 'bg-purple-600 text-white shadow-2xs'
+                        : 'text-slate-600 hover:text-purple-700 hover:bg-purple-50'
+                    }`}
+                  >
+                    <Layers size={11} />
+                    <span>คอมโบ</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setInspectSubTab('opponent');
+                      setOpenSections((prev) => ({ ...prev, opponent: true }));
+                    }}
+                    className={`flex-1 py-1 px-1 rounded-lg text-[9.5px] font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1 ${
+                      inspectSubTab === 'opponent'
+                        ? 'bg-sky-600 text-white shadow-2xs'
+                        : 'text-slate-600 hover:text-sky-700 hover:bg-sky-50'
+                    }`}
+                  >
+                    <Swords size={11} />
+                    <span>แก้ทาง</span>
+                  </button>
+                </div>
+
                 {/* ================================================================= */}
                 {/* 2. ผู้เล่นที่เหมาะสมที่สุด (Best-fit Player & Player Fit)         */}
                 {/* ================================================================= */}
-                <div className="bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
-                  <button
-                    type="button"
-                    onClick={() => toggleSection('playerFit')}
-                    className="w-full px-2.5 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex items-center justify-between text-left cursor-pointer"
-                  >
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-[#E91E63]">
-                      <Users size={13} />
-                      <span>2. ผู้เล่นที่เหมาะสมที่สุด (Player Fit)</span>
-                    </div>
-                    {openSections.playerFit ? (
-                      <ChevronUp size={14} className="text-slate-400" />
-                    ) : (
-                      <ChevronDown size={14} className="text-slate-400" />
-                    )}
-                  </button>
+                {(inspectSubTab === 'all' || inspectSubTab === 'playerFit') && (
+                  <div className="flex-shrink-0 isolate w-full bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('playerFit')}
+                      className="w-full px-2.5 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex items-center justify-between text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-[#E91E63]">
+                        <Users size={13} />
+                        <span>2. ผู้เล่นที่เหมาะสมที่สุด (Player Fit)</span>
+                      </div>
+                      {openSections.playerFit ? (
+                        <ChevronUp size={14} className="text-slate-400" />
+                      ) : (
+                        <ChevronDown size={14} className="text-slate-400" />
+                      )}
+                    </button>
 
-                  {openSections.playerFit && (
-                    <div className="p-2.5 flex flex-col gap-2">
-                      {playerFitReport.hasComfortData && playerFitReport.bestFitPlayer ? (
-                        <>
-                          {/* Best Fit Player Card */}
-                          <div className="p-2 bg-gradient-to-r from-amber-50 to-white border border-amber-300 rounded-lg flex flex-col gap-1.5 shadow-2xs">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-1.5">
+                    {openSections.playerFit && (
+                      <div className="p-2.5 flex flex-col gap-2">
+                        {playerFitReport.hasComfortData && playerFitReport.bestFitPlayer ? (
+                          <>
+                            {/* Best Fit Player Card */}
+                            <div className="p-2 bg-gradient-to-r from-amber-50 to-white border border-amber-300 rounded-lg flex flex-col gap-1.5 shadow-2xs">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className={`text-sm ${
+                                      playerFitReport.bestFitPlayer.player.starColor === 'gold'
+                                        ? 'text-amber-500'
+                                        : 'text-slate-400'
+                                    }`}
+                                  >
+                                    {playerFitReport.bestFitPlayer.player.starColor === 'gold'
+                                      ? '⭐'
+                                      : '★'}
+                                  </span>
+                                  <span className="font-bold text-xs text-slate-900">
+                                    {playerFitReport.bestFitPlayer.player.nickname}
+                                  </span>
+                                  <span className="text-[10px] text-slate-500">
+                                    ({playerFitReport.bestFitPlayer.player.playerName})
+                                  </span>
+                                </div>
+
                                 <span
-                                  className={`text-sm ${
+                                  className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
                                     playerFitReport.bestFitPlayer.player.starColor === 'gold'
-                                      ? 'text-amber-500'
-                                      : 'text-slate-400'
+                                      ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                      : 'bg-slate-100 text-slate-700 border-slate-300'
                                   }`}
                                 >
                                   {playerFitReport.bestFitPlayer.player.starColor === 'gold'
-                                    ? '⭐'
-                                    : '★'}
-                                </span>
-                                <span className="font-bold text-xs text-slate-900">
-                                  {playerFitReport.bestFitPlayer.player.nickname}
-                                </span>
-                                <span className="text-[10px] text-slate-500">
-                                  ({playerFitReport.bestFitPlayer.player.playerName})
+                                    ? '⭐ ดาวสีทอง (ถนัด)'
+                                    : '★ ดาวสีเงิน (พอเล่นได้)'}
                                 </span>
                               </div>
 
-                              <span
-                                className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
-                                  playerFitReport.bestFitPlayer.player.starColor === 'gold'
-                                    ? 'bg-amber-100 text-amber-900 border-amber-300'
-                                    : 'bg-slate-100 text-slate-700 border-slate-300'
-                                }`}
-                              >
-                                {playerFitReport.bestFitPlayer.player.starColor === 'gold'
-                                  ? '⭐ ดาวสีทอง (ถนัด)'
-                                  : '★ ดาวสีเงิน (พอเล่นได้)'}
-                              </span>
-                            </div>
-
-                            {/* Position & Role suitability */}
-                            <div className="flex items-center justify-between text-[10px] bg-white/90 p-1.5 rounded border border-amber-200">
-                              <span className="text-slate-600 font-medium">
-                                ตำแหน่งผู้เล่น:{' '}
-                                <span className="font-bold text-slate-800">
-                                  {playerFitReport.bestFitPlayer.player.playerRole}
+                              {/* Position & Role suitability */}
+                              <div className="flex items-center justify-between text-[10px] bg-white/90 p-1.5 rounded border border-amber-200">
+                                <span className="text-slate-600 font-medium">
+                                  ตำแหน่งผู้เล่น:{' '}
+                                  <span className="font-bold text-slate-800">
+                                    {playerFitReport.bestFitPlayer.player.playerRole}
+                                  </span>
                                 </span>
-                              </span>
-                              <span
-                                className={`font-bold ${
-                                  playerFitReport.bestFitPlayer.player.roleFit === 'on_role'
-                                    ? 'text-emerald-700'
-                                    : 'text-amber-700'
-                                }`}
-                              >
-                                {playerFitReport.bestFitPlayer.player.roleFitDescription}
-                              </span>
+                                <span
+                                  className={`font-bold ${
+                                    playerFitReport.bestFitPlayer.player.roleFit === 'on_role'
+                                      ? 'text-emerald-700'
+                                      : 'text-amber-700'
+                                  }`}
+                                >
+                                  {playerFitReport.bestFitPlayer.player.roleFitDescription}
+                                </span>
+                              </div>
+
+                              {/* Brief concrete reason */}
+                              <p className="text-[10.5px] text-amber-950 leading-snug">
+                                💡 {playerFitReport.bestFitPlayer.recommendationReason}
+                              </p>
                             </div>
 
-                            {/* Brief concrete reason */}
-                            <p className="text-[10.5px] text-amber-950 leading-snug">
-                              💡 {playerFitReport.bestFitPlayer.recommendationReason}
-                            </p>
-                          </div>
-
-                          {/* Other players who can play this hero */}
-                          {playerFitReport.otherPlayers.length > 0 && (
-                            <div className="flex flex-col gap-1 pt-1 border-t border-slate-100">
-                              <span className="text-[10px] font-bold text-slate-600">
-                                ผู้เล่นคนอื่นในทีมที่เล่นฮีโร่นี้ได้:
-                              </span>
-                              <div className="flex flex-col gap-1">
-                                {playerFitReport.otherPlayers.map((other) => (
-                                  <div
-                                    key={other.playerId}
-                                    className="p-1.5 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-between text-[10px]"
-                                  >
-                                    <div className="flex items-center gap-1.5">
-                                      <span
-                                        className={
-                                          other.starColor === 'gold'
-                                            ? 'text-amber-500'
-                                            : 'text-slate-400'
-                                        }
-                                      >
-                                        {other.starColor === 'gold' ? '⭐' : '★'}
-                                      </span>
-                                      <span className="font-bold text-slate-800">
-                                        {other.nickname}
-                                      </span>
-                                      <span className="text-slate-500">({other.playerRole})</span>
-                                    </div>
-                                    <span
-                                      className={`px-1.5 py-0.2 rounded font-bold text-[9px] border ${
-                                        other.starColor === 'gold'
-                                          ? 'bg-amber-50 text-amber-800 border-amber-300'
-                                          : 'bg-white text-slate-600 border-slate-300'
-                                      }`}
+                            {/* Other players who can play this hero */}
+                            {playerFitReport.otherPlayers.length > 0 && (
+                              <div className="flex flex-col gap-1 pt-1 border-t border-slate-100">
+                                <span className="text-[10px] font-bold text-slate-600">
+                                  ผู้เล่นคนอื่นในทีมที่เล่นฮีโร่นี้ได้:
+                                </span>
+                                <div className="flex flex-col gap-1">
+                                  {playerFitReport.otherPlayers.map((other) => (
+                                    <div
+                                      key={other.playerId}
+                                      className="p-1.5 bg-slate-50 border border-slate-200 rounded-md flex items-center justify-between text-[10px] flex-shrink-0"
                                     >
-                                      {other.tierLabel}
-                                    </span>
-                                  </div>
-                                ))}
+                                      <div className="flex items-center gap-1.5">
+                                        <span
+                                          className={
+                                            other.starColor === 'gold'
+                                              ? 'text-amber-500'
+                                              : 'text-slate-400'
+                                          }
+                                        >
+                                          {other.starColor === 'gold' ? '⭐' : '★'}
+                                        </span>
+                                        <span className="font-bold text-slate-800">
+                                          {other.nickname}
+                                        </span>
+                                        <span className="text-slate-500">({other.playerRole})</span>
+                                      </div>
+                                      <span
+                                        className={`px-1.5 py-0.2 rounded font-bold text-[9px] border ${
+                                          other.starColor === 'gold'
+                                            ? 'bg-amber-50 text-amber-800 border-amber-300'
+                                            : 'bg-white text-slate-600 border-slate-300'
+                                        }`}
+                                      >
+                                        {other.tierLabel}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <div className="p-2.5 text-center text-slate-600 text-[11px] bg-slate-50 rounded-lg border border-slate-200 leading-relaxed">
-                          <span>
-                            {playerFitReport.warningNotice ||
-                              'ไม่พบข้อมูลเพียงพอในพูลนักแข่งของทีม MCU สำหรับฮีโร่ตัวนี้ — โค้ชควรสอบถามความมั่นใจก่อนหยิบ (ห้ามสมมติว่าเล่นได้)'}
-                          </span>
-                        </div>
-                      )}
+                            )}
+                          </>
+                        ) : (
+                          <div className="p-2.5 text-center text-slate-600 text-[11px] bg-slate-50 rounded-lg border border-slate-200 leading-relaxed">
+                            <span>
+                              {playerFitReport.warningNotice ||
+                                'ไม่พบข้อมูลเพียงพอในพูลนักแข่งของทีม MCU สำหรับฮีโร่ตัวนี้ — โค้ชควรสอบถามความมั่นใจก่อนหยิบ (ห้ามสมมติว่าเล่นได้)'}
+                            </span>
+                          </div>
+                        )}
 
-                      <div className="text-[9px] text-slate-400 italic mt-0.5">
-                        ที่มา: {playerFitReport.provenance}
+                        <div className="text-[9px] text-slate-400 italic mt-0.5">
+                          ที่มา: {playerFitReport.provenance}
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
 
                 {/* ================================================================= */}
                 {/* 3. ตัวเลือกสำรอง / COMBO FALLBACK                                 */}
                 {/* ================================================================= */}
-                <div className="bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
-                  <button
-                    type="button"
-                    onClick={() => toggleSection('fallbackSubs')}
-                    className="w-full px-2.5 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex items-center justify-between text-left cursor-pointer"
-                  >
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-[#E91E63]">
-                      <RefreshCw size={13} />
-                      <span>3. ตัวเลือกสำรอง / Combo Fallback</span>
-                    </div>
-                    {openSections.fallbackSubs ? (
-                      <ChevronUp size={14} className="text-slate-400" />
-                    ) : (
-                      <ChevronDown size={14} className="text-slate-400" />
-                    )}
-                  </button>
+                {(inspectSubTab === 'all' || inspectSubTab === 'fallbackSubs') && (
+                  <div className="flex-shrink-0 isolate w-full bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('fallbackSubs')}
+                      className="w-full px-2.5 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex items-center justify-between text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-[#E91E63]">
+                        <RefreshCw size={13} />
+                        <span>3. ตัวเลือกสำรอง / Combo Fallback</span>
+                      </div>
+                      {openSections.fallbackSubs ? (
+                        <ChevronUp size={14} className="text-slate-400" />
+                      ) : (
+                        <ChevronDown size={14} className="text-slate-400" />
+                      )}
+                    </button>
 
-                  {openSections.fallbackSubs && (
-                    <div className="p-2.5 flex flex-col gap-2">
-                      {/* Substitutes for current hero if banned or taken */}
-                      {inspectedHeroSubstitutes.length > 0 ? (
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[10px] font-bold text-slate-600">
-                            ตัวเลือกทดแทนหาก {currentHero.name} โดนแบน / ถูกแย่ง (เรียงตามความเหมาะสม):
-                          </span>
+                    {openSections.fallbackSubs && (
+                      <div className="p-2.5 flex flex-col gap-2">
+                        {/* Substitutes for current hero if banned or taken */}
+                        {inspectedHeroSubstitutes.length > 0 ? (
                           <div className="flex flex-col gap-1.5">
-                            {inspectedHeroSubstitutes.map((sub) => (
-                              <div
-                                key={sub.substitute}
-                                onClick={() => onSelectHeroToInspect(sub.substitute)}
-                                className="p-2 bg-amber-50/50 hover:bg-amber-50 border border-amber-200 hover:border-[#E91E63] rounded-lg flex flex-col gap-1 cursor-pointer transition-all shadow-2xs group"
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-1.5">
-                                    <img
-                                      src={getHeroImageUrl(sub.substitute)}
-                                      alt={sub.substitute}
-                                      className="w-6 h-6 rounded object-cover border border-slate-200"
-                                    />
-                                    <span className="font-bold text-xs text-slate-900 group-hover:text-[#E91E63]">
-                                      {sub.substitute}
-                                    </span>
-                                    <span className="text-[9.5px] text-slate-500">
-                                      ({sub.role})
-                                    </span>
-                                  </div>
-                                  <span
-                                    className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
-                                      sub.isVerifiedSubstitute
-                                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                        : 'bg-slate-100 text-slate-700 border-slate-300'
-                                    }`}
-                                  >
-                                    {sub.isVerifiedSubstitute
-                                      ? sub.effectiveness
-                                      : 'ทางเลือกที่ต้องพิจารณา'}
-                                  </span>
-                                </div>
-
-                                <p className="text-[9.5px] text-slate-700 leading-tight">
-                                  📋 แผนเดิม: {sub.planCompatibility}
-                                </p>
-                                <p className="text-[9.5px] text-slate-600 leading-tight">
-                                  ⚖️ ข้อแลกเปลี่ยน: {sub.tradeOff}
-                                </p>
-
-                                {/* Players who play this substitute */}
-                                {sub.playersWhoPlay.length > 0 && (
-                                  <div className="flex items-center gap-1 flex-wrap pt-1 border-t border-amber-100">
-                                    <span className="text-[9px] text-slate-500 font-medium">
-                                      นักแข่งที่เล่นได้:
-                                    </span>
-                                    {sub.playersWhoPlay.map((p) => (
-                                      <span
-                                        key={p.nickname}
-                                        className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded border ${
-                                          p.starColor === 'gold'
-                                            ? 'bg-amber-100 text-amber-900 border-amber-300'
-                                            : 'bg-white text-slate-700 border-slate-300'
-                                        }`}
-                                      >
-                                        {p.starColor === 'gold' ? '⭐' : '★'} {p.nickname} (
-                                        {p.playerRole})
+                            <span className="text-[10px] font-bold text-slate-600">
+                              ตัวเลือกทดแทนหาก {currentHero.name} โดนแบน / ถูกแย่ง (เรียงตามความเหมาะสม):
+                            </span>
+                            <div className="flex flex-col gap-1.5">
+                              {inspectedHeroSubstitutes.map((sub) => (
+                                <div
+                                  key={sub.substitute}
+                                  onClick={() => onSelectHeroToInspect(sub.substitute)}
+                                  className="flex-shrink-0 p-2 bg-amber-50/50 hover:bg-amber-50 border border-amber-200 hover:border-[#E91E63] rounded-lg flex flex-col gap-1 cursor-pointer transition-all shadow-2xs group"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5">
+                                      <img
+                                        src={getHeroImageUrl(sub.substitute)}
+                                        alt={sub.substitute}
+                                        className="w-6 h-6 rounded object-cover border border-slate-200"
+                                      />
+                                      <span className="font-bold text-xs text-slate-900 group-hover:text-[#E91E63]">
+                                        {sub.substitute}
                                       </span>
-                                    ))}
+                                      <span className="text-[9.5px] text-slate-500">
+                                        ({sub.role})
+                                      </span>
+                                    </div>
+                                    <span
+                                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
+                                        sub.isVerifiedSubstitute
+                                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                          : 'bg-slate-100 text-slate-700 border-slate-300'
+                                      }`}
+                                    >
+                                      {sub.isVerifiedSubstitute
+                                        ? sub.effectiveness
+                                        : 'ทางเลือกที่ต้องพิจารณา'}
+                                    </span>
                                   </div>
-                                )}
+
+                                  <p className="text-[9.5px] text-slate-700 leading-tight">
+                                    📋 แผนเดิม: {sub.planCompatibility}
+                                  </p>
+                                  <p className="text-[9.5px] text-slate-600 leading-tight">
+                                    ⚖️ ข้อแลกเปลี่ยน: {sub.tradeOff}
+                                  </p>
+
+                                  {/* Players who play this substitute */}
+                                  {sub.playersWhoPlay.length > 0 && (
+                                    <div className="flex items-center gap-1 flex-wrap pt-1 border-t border-amber-100">
+                                      <span className="text-[9px] text-slate-500 font-medium">
+                                        นักแข่งที่เล่นได้:
+                                      </span>
+                                      {sub.playersWhoPlay.map((p) => (
+                                        <span
+                                          key={p.nickname}
+                                          className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded border ${
+                                            p.starColor === 'gold'
+                                              ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                              : 'bg-white text-slate-700 border-slate-300'
+                                          }`}
+                                        >
+                                          {p.starColor === 'gold' ? '⭐' : '★'} {p.nickname} (
+                                          {p.playerRole})
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-2.5 text-center text-slate-600 text-[11px] bg-slate-50 rounded-lg border border-slate-200 leading-relaxed">
+                            <span>
+                              {heroStatus?.isAvailable
+                                ? `${currentHero.name} พร้อมเลือกในดราฟต์ ยังไม่มีความจำเป็นต้องใช้ตัวสำรอง`
+                                : 'ยังไม่มีบันทึกตัวแทนเฉพาะสำหรับฮีโร่ตัวนี้ในระบบ'}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Fallback if Key Partner is Banned */}
+                        {partnerSubstitutes.length > 0 && (
+                          <div className="flex flex-col gap-1.5 pt-2 border-t border-[#F3D5E2]">
+                            <span className="text-[10.5px] font-bold text-amber-700 flex items-center gap-1">
+                              <AlertTriangle size={12} className="text-amber-600" />
+                              <span>ฮีโร่คู่หูของแผนติดแบน/ถูกแย่ง — แผนสำรอง:</span>
+                            </span>
+
+                            {partnerSubstitutes.map((ps) => (
+                              <div
+                                key={ps.bannedPartner}
+                                className="p-2 bg-amber-50/60 border border-amber-200 rounded-lg flex flex-col gap-1 flex-shrink-0"
+                              >
+                                <span className="text-[11px] font-bold text-amber-900">
+                                  ขาด{' '}
+                                  <span className="underline decoration-rose-500 font-black">
+                                    {ps.bannedPartner}
+                                  </span>{' '}
+                                  ในแผน {ps.compName}:
+                                </span>
+                                <div className="flex flex-col gap-1">
+                                  {ps.substitutes.map((sub) => (
+                                    <div
+                                      key={sub.substitute}
+                                      onClick={() => onSelectHeroToInspect(sub.substitute)}
+                                      className="p-1.5 bg-white border border-amber-200 hover:border-[#E91E63] rounded-md flex flex-col gap-0.5 cursor-pointer shadow-2xs group flex-shrink-0"
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-1.5">
+                                          <img
+                                            src={getHeroImageUrl(sub.substitute)}
+                                            alt={sub.substitute}
+                                            className="w-5 h-5 rounded object-cover border border-slate-200"
+                                          />
+                                          <span className="font-bold text-xs text-slate-900 group-hover:text-[#E91E63]">
+                                            {sub.substitute}
+                                          </span>
+                                          <span className="text-[9.5px] text-slate-500">
+                                            ({sub.role})
+                                          </span>
+                                        </div>
+                                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                                          {sub.effectiveness}
+                                        </span>
+                                      </div>
+                                      <span className="text-[9.5px] text-slate-600 leading-tight">
+                                        ⚖️ ข้อแลกเปลี่ยน: {sub.tradeOff}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
                               </div>
                             ))}
                           </div>
-                        </div>
-                      ) : (
-                        <div className="p-2 text-center text-slate-500 text-[11px] bg-slate-50 rounded-lg border border-slate-200">
-                          <span>
-                            {heroStatus?.isAvailable
-                              ? `${currentHero.name} พร้อมเลือกในดราฟต์ ยังไม่มีความจำเป็นต้องใช้ตัวสำรอง`
-                              : 'ยังไม่มีบันทึกตัวแทนเฉพาะสำหรับฮีโร่ตัวนี้ในระบบ'}
-                          </span>
-                        </div>
-                      )}
-
-                      {/* Fallback if Key Partner is Banned */}
-                      {partnerSubstitutes.length > 0 && (
-                        <div className="flex flex-col gap-1.5 pt-2 border-t border-[#F3D5E2]">
-                          <span className="text-[10.5px] font-bold text-amber-700 flex items-center gap-1">
-                            <AlertTriangle size={12} className="text-amber-600" />
-                            <span>ฮีโร่คู่หูของแผนติดแบน/ถูกแย่ง — แผนสำรอง:</span>
-                          </span>
-
-                          {partnerSubstitutes.map((ps) => (
-                            <div
-                              key={ps.bannedPartner}
-                              className="p-2 bg-amber-50/60 border border-amber-200 rounded-lg flex flex-col gap-1"
-                            >
-                              <span className="text-[11px] font-bold text-amber-900">
-                                ขาด{' '}
-                                <span className="underline decoration-rose-500 font-black">
-                                  {ps.bannedPartner}
-                                </span>{' '}
-                                ในแผน {ps.compName}:
-                              </span>
-                              <div className="flex flex-col gap-1">
-                                {ps.substitutes.map((sub) => (
-                                  <div
-                                    key={sub.substitute}
-                                    onClick={() => onSelectHeroToInspect(sub.substitute)}
-                                    className="p-1.5 bg-white border border-amber-200 hover:border-[#E91E63] rounded-md flex flex-col gap-0.5 cursor-pointer shadow-2xs group"
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center gap-1.5">
-                                        <img
-                                          src={getHeroImageUrl(sub.substitute)}
-                                          alt={sub.substitute}
-                                          className="w-5 h-5 rounded object-cover border border-slate-200"
-                                        />
-                                        <span className="font-bold text-xs text-slate-900 group-hover:text-[#E91E63]">
-                                          {sub.substitute}
-                                        </span>
-                                        <span className="text-[9.5px] text-slate-500">
-                                          ({sub.role})
-                                        </span>
-                                      </div>
-                                      <span className="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                                        {sub.effectiveness}
-                                      </span>
-                                    </div>
-                                    <span className="text-[9.5px] text-slate-600 leading-tight">
-                                      ⚖️ ข้อแลกเปลี่ยน: {sub.tradeOff}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* ================================================================= */}
                 {/* 4. คอมโบที่เกี่ยวข้อง & TEAM IDENTITY                             */}
                 {/* ================================================================= */}
-                <div className="bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
-                  <button
-                    type="button"
-                    onClick={() => toggleSection('combos')}
-                    className="w-full px-2.5 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex items-center justify-between text-left cursor-pointer"
-                  >
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-[#E91E63]">
-                      <Layers size={13} />
-                      <span>4. คอมโบที่เกี่ยวข้อง & แผนทีม (Team Identity)</span>
-                    </div>
-                    {openSections.combos ? (
-                      <ChevronUp size={14} className="text-slate-400" />
-                    ) : (
-                      <ChevronDown size={14} className="text-slate-400" />
-                    )}
-                  </button>
-
-                  {openSections.combos && (
-                    <div className="p-2.5 flex flex-col gap-2">
-                      {/* Team Identity Alignment */}
-                      {teamIdentityReport.inspectedHeroAlignment && (
-                        <div
-                          className={`p-2 rounded-lg border flex flex-col gap-1 ${
-                            teamIdentityReport.inspectedHeroAlignment.alignment === 'reinforces'
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
-                              : teamIdentityReport.inspectedHeroAlignment.alignment === 'clashes'
-                              ? 'bg-rose-50 border-rose-200 text-rose-950'
-                              : 'bg-slate-50 border-slate-200 text-slate-900'
-                          }`}
-                        >
-                          <span className="font-bold text-xs">
-                            {teamIdentityReport.inspectedHeroAlignment.headline}
-                          </span>
-                          <p className="text-[10px] leading-relaxed opacity-90">
-                            {teamIdentityReport.inspectedHeroAlignment.reason}
-                          </p>
-                          <div className="text-[9.5px] font-bold text-slate-700 bg-white/70 p-1.5 rounded border border-slate-200/50">
-                            🎯 แท็กติก: {teamIdentityReport.inspectedHeroAlignment.tacticalNote}
-                          </div>
-                        </div>
+                {(inspectSubTab === 'all' || inspectSubTab === 'combos') && (
+                  <div className="flex-shrink-0 isolate w-full bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('combos')}
+                      className="w-full px-2.5 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex items-center justify-between text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-[#E91E63]">
+                        <Layers size={13} />
+                        <span>4. คอมโบที่เกี่ยวข้อง & แผนทีม (Team Identity)</span>
+                      </div>
+                      {openSections.combos ? (
+                        <ChevronUp size={14} className="text-slate-400" />
+                      ) : (
+                        <ChevronDown size={14} className="text-slate-400" />
                       )}
+                    </button>
 
-                      {/* Top 3 Synergy Partners (from empirical Pro League RPL dataset) */}
-                      {topPartners.length > 0 && (
-                        <div className="flex flex-col gap-1.5 pt-1">
-                          <span className="text-[10px] font-bold text-slate-500 uppercase">
-                            คู่หูคอมโบใน Pro League (RPL n=142):
-                          </span>
-                          {topPartners.map((item) => {
-                            const isBanned = bannedHeroNames.has(item.allyHero);
-                            const isPicked = pickedHeroNames.has(item.allyHero);
+                    {openSections.combos && (
+                      <div className="p-2.5 flex flex-col gap-2">
+                        {/* Team Identity Alignment */}
+                        {teamIdentityReport.inspectedHeroAlignment && (
+                          <div
+                            className={`p-2 rounded-lg border flex flex-col gap-1 flex-shrink-0 ${
+                              teamIdentityReport.inspectedHeroAlignment.alignment === 'reinforces'
+                                ? 'bg-emerald-50 border-emerald-200 text-emerald-950'
+                                : teamIdentityReport.inspectedHeroAlignment.alignment === 'clashes'
+                                ? 'bg-rose-50 border-rose-200 text-rose-950'
+                                : 'bg-slate-50 border-slate-200 text-slate-900'
+                            }`}
+                          >
+                            <span className="font-bold text-xs">
+                              {teamIdentityReport.inspectedHeroAlignment.headline}
+                            </span>
+                            <p className="text-[10px] leading-relaxed opacity-90">
+                              {teamIdentityReport.inspectedHeroAlignment.reason}
+                            </p>
+                            <div className="text-[9.5px] font-bold text-slate-700 bg-white/70 p-1.5 rounded border border-slate-200/50">
+                              🎯 แท็กติก: {teamIdentityReport.inspectedHeroAlignment.tacticalNote}
+                            </div>
+                          </div>
+                        )}
 
-                            return (
-                              <div
-                                key={item.allyHero}
-                                className={`p-1.5 rounded-lg border flex items-center justify-between gap-2 shadow-2xs ${
-                                  isBanned
-                                    ? 'bg-rose-50/70 border-rose-200 opacity-60'
-                                    : isPicked
-                                    ? 'bg-slate-100 border-slate-200'
-                                    : 'bg-white border-slate-200 hover:border-[#E91E63]'
-                                }`}
-                              >
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <img
-                                    src={getHeroImageUrl(item.allyHero)}
-                                    alt={item.allyHero}
-                                    className="w-7 h-7 rounded-lg object-cover border border-slate-200 flex-shrink-0"
-                                  />
-                                  <div className="flex flex-col min-w-0">
-                                    <div className="flex items-center gap-1">
-                                      <span className="font-bold text-xs text-slate-900 truncate">
-                                        {item.allyHero}
+                        {/* Top 3 Synergy Partners (from empirical Pro League RPL dataset) */}
+                        {topPartners.length > 0 && (
+                          <div className="flex flex-col gap-1.5 pt-1">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase">
+                              คู่หูคอมโบใน Pro League (RPL n=142):
+                            </span>
+                            {topPartners.map((item) => {
+                              const isBanned = bannedHeroNames.has(item.allyHero);
+                              const isPicked = pickedHeroNames.has(item.allyHero);
+
+                              return (
+                                <div
+                                  key={item.allyHero}
+                                  className={`p-1.5 rounded-lg border flex items-center justify-between gap-2 shadow-2xs flex-shrink-0 ${
+                                    isBanned
+                                      ? 'bg-rose-50/70 border-rose-200 opacity-60'
+                                      : isPicked
+                                      ? 'bg-slate-100 border-slate-200'
+                                      : 'bg-white border-slate-200 hover:border-[#E91E63]'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <img
+                                      src={getHeroImageUrl(item.allyHero)}
+                                      alt={item.allyHero}
+                                      className="w-7 h-7 rounded-lg object-cover border border-slate-200 flex-shrink-0"
+                                    />
+                                    <div className="flex flex-col min-w-0">
+                                      <div className="flex items-center gap-1">
+                                        <span className="font-bold text-xs text-slate-900 truncate">
+                                          {item.allyHero}
+                                        </span>
+                                        {isBanned && (
+                                          <span className="text-[7.5px] font-bold px-1 rounded bg-rose-600 text-white">
+                                            BANNED
+                                          </span>
+                                        )}
+                                        {isPicked && (
+                                          <span className="text-[7.5px] font-bold px-1 rounded bg-slate-600 text-white">
+                                            PICKED
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="text-[9.5px] text-slate-500">
+                                        สถิติแข่ง: {item.games} แมตช์ • Win Rate{' '}
+                                        {(item.winRate || 50).toFixed(1)}%
                                       </span>
-                                      {isBanned && (
-                                        <span className="text-[7.5px] font-bold px-1 rounded bg-rose-600 text-white">
-                                          BANNED
-                                        </span>
-                                      )}
-                                      {isPicked && (
-                                        <span className="text-[7.5px] font-bold px-1 rounded bg-slate-600 text-white">
-                                          PICKED
-                                        </span>
-                                      )}
                                     </div>
-                                    <span className="text-[9.5px] text-slate-500">
-                                      สถิติแข่ง: {item.games} แมตช์ • Win Rate{' '}
-                                      {(item.winRate || 50).toFixed(1)}%
+                                  </div>
+
+                                  <div className="flex flex-col items-end flex-shrink-0">
+                                    <span
+                                      className={`text-[9.5px] font-black ${
+                                        (item.diff ?? 0) >= 0
+                                          ? 'text-emerald-600'
+                                          : 'text-rose-600'
+                                      }`}
+                                    >
+                                      {(item.diff ?? 0) >= 0
+                                        ? `+${(item.diff ?? 0).toFixed(1)}%`
+                                        : `${(item.diff ?? 0).toFixed(1)}%`}
                                     </span>
+                                    <span className="text-[7.5px] text-slate-400">Synergy Diff</span>
                                   </div>
                                 </div>
-
-                                <div className="flex flex-col items-end flex-shrink-0">
-                                  <span
-                                    className={`text-[9.5px] font-black ${
-                                      (item.diff ?? 0) >= 0
-                                        ? 'text-emerald-600'
-                                        : 'text-rose-600'
-                                    }`}
-                                  >
-                                    {(item.diff ?? 0) >= 0
-                                      ? `+${(item.diff ?? 0).toFixed(1)}%`
-                                      : `${(item.diff ?? 0).toFixed(1)}%`}
-                                  </span>
-                                  <span className="text-[7.5px] text-slate-400">Synergy Diff</span>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* ================================================================= */}
                 {/* 5. จุดเสี่ยงและตัวแก้ทางจากคู่แข่ง (Threats & Counters)            */}
                 {/* ================================================================= */}
-                <div className="bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
-                  <button
-                    type="button"
-                    onClick={() => toggleSection('opponent')}
-                    className="w-full px-2.5 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex items-center justify-between text-left cursor-pointer"
-                  >
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-[#E91E63]">
-                      <Swords size={13} />
-                      <span>5. จุดเสี่ยงและตัวแก้ทางจากคู่แข่ง</span>
-                    </div>
-                    {openSections.opponent ? (
-                      <ChevronUp size={14} className="text-slate-400" />
-                    ) : (
-                      <ChevronDown size={14} className="text-slate-400" />
-                    )}
-                  </button>
-
-                  {openSections.opponent && (
-                    <div className="p-2.5 flex flex-col gap-2">
-                      {/* Matchup against locked opponent picks */}
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">
-                          ความได้เปรียบเทียบกับตัวที่คู่แข่งล็อคแล้ว:
-                        </span>
-                        {matchupAgainstOpponentPicks.length > 0 ? (
-                          <div className="flex flex-col gap-1">
-                            {matchupAgainstOpponentPicks.map((item) => (
-                              <div
-                                key={item.oppHero.name}
-                                className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <img
-                                    src={getHeroImageUrl(item.oppHero.name)}
-                                    alt={item.oppHero.name}
-                                    className="w-6 h-6 rounded object-cover border border-slate-200"
-                                  />
-                                  <span className="font-bold text-slate-800">
-                                    vs {item.oppHero.name}
-                                  </span>
-                                </div>
-
-                                {item.matchup ? (
-                                  <span
-                                    className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded ${
-                                      item.matchup.diff > 1
-                                        ? 'bg-emerald-100 text-emerald-800'
-                                        : item.matchup.diff < -1
-                                        ? 'bg-rose-100 text-rose-800'
-                                        : 'bg-slate-200 text-slate-700'
-                                    }`}
-                                  >
-                                    {item.matchup.diff > 1
-                                      ? 'ได้เปรียบ'
-                                      : item.matchup.diff < -1
-                                      ? 'เสียเปรียบ'
-                                      : 'สูสี'}{' '}
-                                    (
-                                    {item.matchup.diff > 0
-                                      ? `+${item.matchup.diff.toFixed(1)}%`
-                                      : `${item.matchup.diff.toFixed(1)}%`}
-                                    )
-                                  </span>
-                                ) : (
-                                  <span className="text-[9px] text-slate-400">ยังไม่มีสถิติตรง</span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 italic">
-                            คู่แข่งยังไม่ได้ล็อคฮีโร่
-                          </span>
-                        )}
+                {(inspectSubTab === 'all' || inspectSubTab === 'opponent') && (
+                  <div className="flex-shrink-0 isolate w-full bg-white border border-[#F3D5E2] rounded-xl overflow-hidden shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => toggleSection('opponent')}
+                      className="w-full px-2.5 py-1.5 bg-[#FFF0F5] border-b border-[#F3D5E2] flex items-center justify-between text-left cursor-pointer"
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-[#E91E63]">
+                        <Swords size={13} />
+                        <span>5. จุดเสี่ยงและตัวแก้ทางจากคู่แข่ง</span>
                       </div>
+                      {openSections.opponent ? (
+                        <ChevronUp size={14} className="text-slate-400" />
+                      ) : (
+                        <ChevronDown size={14} className="text-slate-400" />
+                      )}
+                    </button>
 
-                      {/* Anticipated Enemy Responses */}
-                      {anticipatedEnemyResponses.length > 0 && (
-                        <div className="flex flex-col gap-1 pt-1.5 border-t border-[#F3D5E2]">
-                          <span className="text-[10px] font-bold text-rose-700 flex items-center gap-1">
-                            <AlertTriangle size={11} />
-                            <span>
-                              ตัวที่คู่แข่งมีโอกาสหยิบมาแก้ทาง {currentHero.name} (Weak Against):
-                            </span>
+                    {openSections.opponent && (
+                      <div className="p-2.5 flex flex-col gap-2">
+                        {/* Matchup against locked opponent picks */}
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold text-slate-500 uppercase">
+                            ความได้เปรียบเทียบกับตัวที่คู่แข่งล็อคแล้ว:
                           </span>
-                          <div className="flex flex-col gap-1">
-                            {anticipatedEnemyResponses.map((item) => (
-                              <div
-                                key={item.opponentHero}
-                                onClick={() => onSelectHeroToInspect(item.opponentHero)}
-                                className="p-1.5 bg-rose-50/50 border border-rose-200 hover:border-rose-400 rounded-lg flex items-center justify-between text-xs cursor-pointer group"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <img
-                                    src={getHeroImageUrl(item.opponentHero)}
-                                    alt={item.opponentHero}
-                                    className="w-6 h-6 rounded object-cover border border-slate-200"
-                                  />
-                                  <div className="flex flex-col">
-                                    <span className="font-bold text-slate-900 group-hover:text-rose-700">
-                                      {item.opponentHero}
-                                    </span>
-                                    <span className="text-[9px] text-slate-500">
-                                      สถิติ Pro League {item.games} แมตช์
+                          {matchupAgainstOpponentPicks.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                              {matchupAgainstOpponentPicks.map((item) => (
+                                <div
+                                  key={item.oppHero.name}
+                                  className="p-1.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs flex-shrink-0"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <img
+                                      src={getHeroImageUrl(item.oppHero.name)}
+                                      alt={item.oppHero.name}
+                                      className="w-6 h-6 rounded object-cover border border-slate-200"
+                                    />
+                                    <span className="font-bold text-slate-800">
+                                      vs {item.oppHero.name}
                                     </span>
                                   </div>
+
+                                  {item.matchup ? (
+                                    <span
+                                      className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded ${
+                                        item.matchup.diff > 1
+                                          ? 'bg-emerald-100 text-emerald-800'
+                                          : item.matchup.diff < -1
+                                          ? 'bg-rose-100 text-rose-800'
+                                          : 'bg-slate-200 text-slate-700'
+                                      }`}
+                                    >
+                                      {item.matchup.diff > 1
+                                        ? 'ได้เปรียบ'
+                                        : item.matchup.diff < -1
+                                        ? 'เสียเปรียบ'
+                                        : 'สูสี'}{' '}
+                                      (
+                                      {item.matchup.diff > 0
+                                        ? `+${item.matchup.diff.toFixed(1)}%`
+                                        : `${item.matchup.diff.toFixed(1)}%`}
+                                      )
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9px] text-slate-400 italic">
+                                      ไม่มีข้อมูลสถิติการแก้ทางโดยตรงจากแหล่งข้อมูลที่กำหนด
+                                    </span>
+                                  )}
                                 </div>
-                                <span className="text-[9.5px] font-black text-rose-600 bg-white px-1.5 py-0.5 rounded border border-rose-200">
-                                  {item.diff.toFixed(1)}% Diff
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                          <span className="text-[8.5px] text-slate-400 italic">
-                            * การประเมินเชิงสถิติ RPL: โค้ชควรพิจารณาแบนล่วงหน้าหรือเตรียมตัวแก้ทาง
-                          </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 italic">
+                              คู่แข่งยังไม่ได้ล็อคฮีโร่
+                            </span>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </>
+
+                        {/* Anticipated Enemy Responses */}
+                        {anticipatedEnemyResponses.length > 0 && (
+                          <div className="flex flex-col gap-1 pt-1.5 border-t border-[#F3D5E2]">
+                            <span className="text-[10px] font-bold text-rose-700 flex items-center gap-1">
+                              <AlertTriangle size={11} />
+                              <span>
+                                ตัวที่คู่แข่งมีโอกาสหยิบมาแก้ทาง {currentHero.name} (Weak Against):
+                              </span>
+                            </span>
+                            <div className="flex flex-col gap-1">
+                              {anticipatedEnemyResponses.map((item) => (
+                                <div
+                                  key={item.opponentHero}
+                                  onClick={() => onSelectHeroToInspect(item.opponentHero)}
+                                  className="p-1.5 bg-rose-50/50 border border-rose-200 hover:border-rose-400 rounded-lg flex items-center justify-between text-xs cursor-pointer group flex-shrink-0"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <img
+                                      src={getHeroImageUrl(item.opponentHero)}
+                                      alt={item.opponentHero}
+                                      className="w-6 h-6 rounded object-cover border border-slate-200"
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="font-bold text-slate-900 group-hover:text-rose-700">
+                                        {item.opponentHero}
+                                      </span>
+                                      <span className="text-[9px] text-slate-500">
+                                        สถิติ Pro League {item.games} แมตช์
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <span className="text-[9.5px] font-black text-rose-600 bg-white px-1.5 py-0.5 rounded border border-rose-200">
+                                    {item.diff.toFixed(1)}% Diff
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                            <span className="text-[8.5px] text-slate-400 italic">
+                              * การประเมินเชิงสถิติ RPL: โค้ชควรพิจารณาแบนล่วงหน้าหรือเตรียมตัวแก้ทาง
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}
@@ -2157,7 +2245,7 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                     ) : (
                       <div className="p-2 text-center text-slate-500 text-[11px] bg-slate-50 rounded-lg border border-slate-200">
                         <span>
-                          ไม่พบตัวแก้ทางตรงในพูลฮีโร่ที่ยังไม่ถูกแบนสำหรับ {activeOppHero.name}
+                          ไม่มีข้อมูลสถิติการแก้ทางโดยตรงจากแหล่งข้อมูลที่กำหนด สำหรับ {activeOppHero.name}
                         </span>
                       </div>
                     )}

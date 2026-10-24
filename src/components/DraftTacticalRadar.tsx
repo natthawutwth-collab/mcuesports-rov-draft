@@ -9,6 +9,7 @@ import {
   RPL_2026_PLAYED_WITH_DATA,
   RPL_2026_SUMMER_DATASET,
 } from '../data/rpl2026SummerStats';
+import { HeroMatchup, HeroSynergy } from '../types/stats';
 import {
   DraftPredictionService,
   DraftTacticalIntelligence,
@@ -197,7 +198,7 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
     bluePickNames.forEach((bHero) => {
       const matchData = RPL_2026_PLAYED_AGAINST_DATA[bHero] || [];
       redPickNames.forEach((rHero) => {
-        const found = matchData.find((m) => m.opponentHero === rHero);
+        const found = matchData.find((m: HeroMatchup) => m.opponentHero === rHero);
         if (found) {
           if (found.winRate > 52) {
             blueCounterWins++;
@@ -215,7 +216,7 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
     for (let i = 0; i < bluePickNames.length; i++) {
       const allyData = RPL_2026_PLAYED_WITH_DATA[bluePickNames[i]] || [];
       for (let j = i + 1; j < bluePickNames.length; j++) {
-        const found = allyData.find((a) => a.allyHero === bluePickNames[j]);
+        const found = allyData.find((a: HeroSynergy) => a.allyHero === bluePickNames[j]);
         if (found && (found.winRate >= 52 || (found.diff && found.diff > 0))) {
           blueCombosCount++;
         }
@@ -226,7 +227,7 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
     for (let i = 0; i < redPickNames.length; i++) {
       const allyData = RPL_2026_PLAYED_WITH_DATA[redPickNames[i]] || [];
       for (let j = i + 1; j < redPickNames.length; j++) {
-        const found = allyData.find((a) => a.allyHero === redPickNames[j]);
+        const found = allyData.find((a: HeroSynergy) => a.allyHero === redPickNames[j]);
         if (found && (found.winRate >= 52 || (found.diff && found.diff > 0))) {
           redCombosCount++;
         }
@@ -292,7 +293,7 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
       // 3. Counter advantage against enemy locked picks
       const againstData = RPL_2026_PLAYED_AGAINST_DATA[hero.name] || [];
       enemyPicks.forEach((eHero) => {
-        const foundMatchup = againstData.find((m) => m.opponentHero === eHero);
+        const foundMatchup = againstData.find((m: HeroMatchup) => m.opponentHero === eHero);
         if (foundMatchup && foundMatchup.games >= 3) {
           if (foundMatchup.winRate >= 55) {
             score += 12;
@@ -309,7 +310,7 @@ export const DraftTacticalRadar: React.FC<DraftTacticalRadarProps> = ({
       // 4. Synergy boost with friendly locked picks
       const allyData = RPL_2026_PLAYED_WITH_DATA[hero.name] || [];
       friendlyPicks.forEach((fHero) => {
-        const foundAlly = allyData.find((a) => a.allyHero === fHero);
+        const foundAlly = allyData.find((a: HeroSynergy) => a.allyHero === fHero);
         if (foundAlly && foundAlly.games >= 3) {
           if (foundAlly.winRate >= 56 || (foundAlly.diff && foundAlly.diff > 2)) {
             score += 14;

@@ -1,5 +1,7 @@
+export type ActiveSeasonKey = 'summer_2026' | 'winter_2026' | 'combined_2026';
+
 export interface HeroStats {
-  heroName?: string;
+  heroName: string;
   hero?: string;
   games: number;
   wins: number;
@@ -14,6 +16,9 @@ export interface HeroStats {
   blueLosses?: number;
   redWins?: number;
   redLosses?: number;
+  season?: string;
+  sourceUrl?: string;
+  isVerifiedLiquipedia?: boolean;
 }
 
 export interface HeroMatchup {
@@ -24,6 +29,9 @@ export interface HeroMatchup {
   losses: number;
   winRate: number; // e.g. 66.7 (%)
   diff: number; // win rate difference, e.g. +12.0 or -15.0 (%)
+  season?: string;
+  sourceUrl?: string;
+  isDirectH2H?: boolean;
 }
 
 export interface HeroSynergy {
@@ -34,6 +42,9 @@ export interface HeroSynergy {
   losses: number;
   winRate: number; // e.g. 70.0 (%)
   diff?: number; // synergy boost over base win rate, e.g. +14.1%
+  season?: string;
+  sourceUrl?: string;
+  isDirectSynergy?: boolean;
 }
 
 export interface TournamentStatsDataset {
@@ -43,18 +54,27 @@ export interface TournamentStatsDataset {
   totalMatches: number;
   totalGames: number;
   lastUpdated: string;
+  fetchedAt?: string;
+  fetchStatus?: 'verified_liquipedia' | 'cached' | 'error_unavailable';
+  isCombined?: boolean;
   heroes: Record<string, HeroStats>;
   matchups: Record<string, HeroMatchup[]>; // Played Against (เจอ)
   playedWith?: Record<string, HeroSynergy[]>; // Played With (เล่นกับ)
 }
 
-export type StatsSourceType = 'json' | 'csv' | 'api' | 'builtin';
+export type StatsSourceType = 'builtin' | 'json' | 'csv' | 'api';
 
 export interface DataSourceStatus {
   sourceType: StatsSourceType;
   tournamentName: string;
+  season: string;
+  sourceUrl: string;
   heroCount: number;
   matchupCount: number;
   totalGames: number;
+  lastUpdated: string;
+  fetchedAt?: string;
+  fetchStatus?: 'verified_liquipedia' | 'cached' | 'error_unavailable';
   isCustomLoaded: boolean;
+  isCombined?: boolean;
 }

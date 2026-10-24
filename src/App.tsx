@@ -1065,6 +1065,10 @@ export default function App() {
                   <div
                     id="coach-dock-column"
                     className="hidden xl:flex w-[320px] 2xl:w-[360px] flex-shrink-0 flex-col transition-all min-h-0"
+                    style={{
+                      height: `${blueColumnHeight}px`,
+                      maxHeight: `${blueColumnHeight}px`,
+                    }}
                   >
                     {renderCoachDockBody()}
                   </div>
@@ -1073,8 +1077,6 @@ export default function App() {
             )}
           </div>
 
-
-
           {/* Slide-out Coach Drawer overlay for screens < 1280px & mobile */}
           {isSidePanelOpen && (
             <div className="xl:hidden fixed inset-0 z-50 flex justify-end">
@@ -1082,22 +1084,10 @@ export default function App() {
                 className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity"
                 onClick={() => handleSetSidePanelOpen(false)}
               />
-              <div className="relative w-full sm:w-[380px] max-w-full h-full bg-white border-l-2 border-[#F3D5E2] shadow-2xl p-3 flex flex-col z-10 overflow-y-auto custom-scrollbar font-['Prompt']">
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#F3D5E2]">
-                  <span className="font-['Prompt'] font-bold text-xs text-[#E91E63] flex items-center gap-1.5 uppercase">
-                    <span>🎯</span>
-                    <span>COACHING DOCK</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleSetSidePanelOpen(false)}
-                    className="p-1 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 cursor-pointer"
-                    title="ปิดหน้าต่าง Coaching Dock"
-                  >
-                    <X size={16} />
-                  </button>
+              <div className="relative w-full sm:w-[400px] max-w-full h-full bg-white border-l-2 border-[#F3D5E2] shadow-2xl p-2 sm:p-2.5 flex flex-col z-10 overflow-hidden font-['Prompt']">
+                <div className="flex-1 min-h-0 w-full h-full">
+                  {renderCoachDockBody()}
                 </div>
-                {renderCoachDockBody()}
               </div>
             </div>
           )}

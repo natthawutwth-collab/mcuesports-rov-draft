@@ -59,8 +59,15 @@ export function useHeroStats(selectedHeroName: string | null = null, oppPicks: s
     statsDataProvider.resetToDefault();
   }, []);
 
+  const activeSeason = statsDataProvider.getActiveSeason();
+  const setActiveSeason = useCallback((season: any) => {
+    statsDataProvider.setActiveSeason(season);
+  }, []);
+
   return {
     status,
+    activeSeason,
+    setActiveSeason,
     heroStats,
     heroMatchups,
     liveMatchups,

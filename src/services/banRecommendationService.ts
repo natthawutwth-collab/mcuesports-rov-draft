@@ -5,11 +5,7 @@
 import { Hero, PositionKey } from '../types/draft';
 import { HeroStats } from '../types/stats';
 import { HEROES } from '../data/heroes';
-import {
-  RPL_2026_HEROES_DATA,
-  RPL_2026_PLAYED_AGAINST_DATA,
-  RPL_2026_PLAYED_WITH_DATA,
-} from '../data/rpl2026SummerStats';
+import { statsDataProvider, AUTHORIZED_SOURCES } from './statsDataProvider';
 import { RPL_2026_PRO_COMPS } from '../data/proMetaComps';
 
 export const LIQUIPEDIA_RPL_2026_URL =
@@ -112,7 +108,7 @@ export function getTopProLeagueBans(
 
   const scored = availableCandidates
     .map((hero) => {
-      const stats = RPL_2026_HEROES_DATA[hero.name];
+      const stats = statsDataProvider.getHeroStats(hero.name);
       if (!stats) return null;
       if (stats.bans < 5 && stats.banRate < 5) return null;
 
@@ -146,7 +142,7 @@ export function getTopProLeagueBans(
           | 'high'
           | 'medium',
         sideContext: `Ban Rate ${stats.banRate}% (${stats.bans} เกม)`,
-        liquipediaUrl: LIQUIPEDIA_RPL_2026_URL,
+        liquipediaUrl: statsDataProvider.getStatus().sourceUrl || LIQUIPEDIA_RPL_2026_URL,
       };
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -193,7 +189,7 @@ export function getBlueSideRecommendedBans(
 
   const scored = availableCandidates
     .map((hero) => {
-      const stats = RPL_2026_HEROES_DATA[hero.name];
+      const stats = statsDataProvider.getHeroStats(hero.name);
       if (!stats) return null;
       if (stats.presenceRate < 5 && stats.bans < 4 && stats.games < 5) return null;
 
@@ -240,7 +236,7 @@ export function getBlueSideRecommendedBans(
       // -------------------------------------------------------------
       // DRAFT ANALYSIS FACTOR 2: ตัดคอมโบโปรลีกที่ Red กำลังจะสร้าง (Combo Denial)
       // -------------------------------------------------------------
-      const candidateAllies = RPL_2026_PLAYED_WITH_DATA[hero.name] || [];
+      const candidateAllies = statsDataProvider.getHeroPlayedWith(hero.name);
       for (const redHero of validRedPicks) {
         const duoMatch = candidateAllies.find((a) => a.allyHero === redHero);
         if (duoMatch && duoMatch.games >= 2 && duoMatch.winRate >= 54) {
@@ -276,7 +272,7 @@ export function getBlueSideRecommendedBans(
       // -------------------------------------------------------------
       // DRAFT ANALYSIS FACTOR 3: ปกป้องตัวที่ฝั่งเรา (Blue) เลือกไปแล้ว (Counter Protection)
       // -------------------------------------------------------------
-      const candidateMatchups = RPL_2026_PLAYED_AGAINST_DATA[hero.name] || [];
+      const candidateMatchups = statsDataProvider.getHeroPlayedAgainst(hero.name);
       for (const blueHero of validBluePicks) {
         const h2hMatch = candidateMatchups.find((m) => m.opponentHero === blueHero);
         if (h2hMatch && h2hMatch.games >= 2 && h2hMatch.winRate >= 53) {
@@ -362,7 +358,7 @@ export function getBlueSideRecommendedBans(
         countersFriendlyPick: counterDetail,
         deniesOppCombo: comboDetail,
         sideContext: `Red WR: ${redWR.toFixed(1)}% (${redGames} เกม)`,
-        liquipediaUrl: LIQUIPEDIA_RPL_2026_URL,
+        liquipediaUrl: statsDataProvider.getStatus().sourceUrl || LIQUIPEDIA_RPL_2026_URL,
       };
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -411,7 +407,7 @@ export function getRedSideRecommendedBans(
 
   const scored = availableCandidates
     .map((hero) => {
-      const stats = RPL_2026_HEROES_DATA[hero.name];
+      const stats = statsDataProvider.getHeroStats(hero.name);
       if (!stats) return null;
       if (stats.presenceRate < 5 && stats.bans < 4 && stats.games < 5) return null;
 
@@ -469,7 +465,7 @@ export function getRedSideRecommendedBans(
       // -------------------------------------------------------------
       // DRAFT ANALYSIS FACTOR 3: ตัดคอมโบโปรลีกที่ Blue กำลังจะสร้าง (Combo Denial)
       // -------------------------------------------------------------
-      const candidateAllies = RPL_2026_PLAYED_WITH_DATA[hero.name] || [];
+      const candidateAllies = statsDataProvider.getHeroPlayedWith(hero.name);
       for (const blueHero of validBluePicks) {
         const duoMatch = candidateAllies.find((a) => a.allyHero === blueHero);
         if (duoMatch && duoMatch.games >= 2 && duoMatch.winRate >= 54) {
@@ -504,7 +500,7 @@ export function getRedSideRecommendedBans(
       // -------------------------------------------------------------
       // DRAFT ANALYSIS FACTOR 4: ปกป้องตัวที่ฝั่งเรา (Red) เลือกไปแล้ว (Counter Protection)
       // -------------------------------------------------------------
-      const candidateMatchups = RPL_2026_PLAYED_AGAINST_DATA[hero.name] || [];
+      const candidateMatchups = statsDataProvider.getHeroPlayedAgainst(hero.name);
       for (const redHero of validRedPicks) {
         const h2hMatch = candidateMatchups.find((m) => m.opponentHero === redHero);
         if (h2hMatch && h2hMatch.games >= 2 && h2hMatch.winRate >= 53) {
@@ -590,7 +586,7 @@ export function getRedSideRecommendedBans(
         countersFriendlyPick: counterDetail,
         deniesOppCombo: comboDetail,
         sideContext: `Blue WR: ${blueWR.toFixed(1)}% (${blueGames} เกม)`,
-        liquipediaUrl: LIQUIPEDIA_RPL_2026_URL,
+        liquipediaUrl: statsDataProvider.getStatus().sourceUrl || LIQUIPEDIA_RPL_2026_URL,
       };
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);

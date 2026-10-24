@@ -1,7 +1,20 @@
 import React, { useState } from 'react';
-import { X, ShieldAlert, Swords, TrendingUp, TrendingDown, Database, ExternalLink, Activity, Users, Shield } from 'lucide-react';
+import {
+  X,
+  Swords,
+  TrendingUp,
+  TrendingDown,
+  Database,
+  ExternalLink,
+  Activity,
+  Users,
+  Shield,
+  CheckCircle2,
+  Calendar,
+} from 'lucide-react';
 import { useHeroStats } from '../hooks/useHeroStats';
 import { HEROES, getHeroImageUrl } from '../data/heroes';
+import { ActiveSeasonKey } from '../types/stats';
 
 interface HeroStatsSidePanelProps {
   heroName: string | null;
@@ -20,12 +33,34 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
   onSelectHeroToInspect,
   onOpenDataModal,
 }) => {
-  const { heroStats, heroMatchups, liveMatchups, playedWith, playedAgainst, status } = useHeroStats(heroName, oppPicks);
+  const {
+    heroStats,
+    heroMatchups,
+    liveMatchups,
+    playedWith,
+    playedAgainst,
+    status,
+    activeSeason,
+    setActiveSeason,
+  } = useHeroStats(heroName, oppPicks);
+
   const [activeTab, setActiveTab] = useState<'matchups' | 'playedWith' | 'playedAgainst'>('matchups');
 
   if (!isOpen) return null;
 
-  const currentHero = heroName ? HEROES.find((h) => h.name.toLowerCase() === heroName.toLowerCase()) : null;
+  const currentHero = heroName
+    ? HEROES.find((h) => h.name.toLowerCase() === heroName.toLowerCase())
+    : null;
+
+  const getSourceUrlForCurrentSeason = () => {
+    if (activeSeason === 'winter_2026') {
+      return 'https://liquipedia.net/honorofkings/RoV_Pro_League/2026/Winter/Statistics';
+    }
+    if (activeSeason === 'summer_2026') {
+      return 'https://liquipedia.net/honorofkings/RoV_Pro_League/2026/Summer/Statistics';
+    }
+    return 'https://liquipedia.net/honorofkings/RoV_Pro_League/2026/Summer/Statistics';
+  };
 
   return (
     <aside className="w-full h-full bg-white border-2 border-[#F3D5E2] rounded-2xl shadow-xl flex flex-col overflow-hidden transition-all text-[#1F2937] font-['Prompt'] select-none">
@@ -36,16 +71,21 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
           <span className="font-['Prompt'] font-bold text-xs tracking-wider text-[#1F2937] uppercase truncate">
             MATCHUP & HERO STATS
           </span>
+          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-0.5">
+            <CheckCircle2 size={9} />
+            <span>LIQUIPEDIA</span>
+          </span>
         </div>
         <div className="flex items-center gap-1 flex-shrink-0">
           <a
-            href="https://liquipedia.net/honorofkings/RoV_Pro_League/2026/Summer/Statistics"
+            href={getSourceUrlForCurrentSeason()}
             target="_blank"
             rel="noopener noreferrer"
-            title="เปิดหน้าสถิติ Liquipedia RPL 2026 Summer"
-            className="p-1 rounded-lg bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors border border-slate-300 shadow-2xs"
+            title="เปิดหน้าสถิติ Liquipedia RoV Pro League 2026"
+            className="p-1 rounded-lg bg-white hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors border border-slate-300 shadow-2xs flex items-center gap-1 text-[10px] font-bold"
           >
-            <ExternalLink size={13} />
+            <ExternalLink size={12} />
+            <span className="hidden sm:inline">Source</span>
           </a>
           {onOpenDataModal && (
             <button
@@ -65,9 +105,54 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
         </div>
       </div>
 
-      {/* 2. Hero Profile Banner */}
+      {/* 2. Season Selector Tabs (Strict: Summer 2026 / Winter 2026 / Combined 2026) */}
+      <div className="px-2.5 py-1.5 bg-[#FFF8FB] border-b border-[#F3D5E2] flex flex-col gap-1 flex-shrink-0">
+        <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
+          <span className="flex items-center gap-1">
+            <Calendar size={11} className="text-[#E91E63]" />
+            <span>ฤดูกาลแข่งขัน (RPL 2026):</span>
+          </span>
+          <span className="text-[9.5px] text-slate-500 font-normal">
+            รวม {status.totalGames} เกม
+          </span>
+        </div>
+        <div className="grid grid-cols-3 gap-1 p-0.5 bg-white rounded-lg border border-[#F3D5E2]">
+          <button
+            onClick={() => setActiveSeason('summer_2026')}
+            className={`py-1 px-1 rounded text-[10px] font-bold transition-all cursor-pointer truncate ${
+              activeSeason === 'summer_2026'
+                ? 'bg-[#E91E63] text-white shadow-2xs'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            Summer 2026
+          </button>
+          <button
+            onClick={() => setActiveSeason('winter_2026')}
+            className={`py-1 px-1 rounded text-[10px] font-bold transition-all cursor-pointer truncate ${
+              activeSeason === 'winter_2026'
+                ? 'bg-[#E91E63] text-white shadow-2xs'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            Winter 2026
+          </button>
+          <button
+            onClick={() => setActiveSeason('combined_2026')}
+            className={`py-1 px-1 rounded text-[10px] font-bold transition-all cursor-pointer truncate ${
+              activeSeason === 'combined_2026'
+                ? 'bg-[#89114D] text-white shadow-2xs'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            รวม 2 ฤดูกาล
+          </button>
+        </div>
+      </div>
+
+      {/* 3. Hero Profile Banner */}
       {heroName && currentHero ? (
-        <div className="p-2.5 sm:p-3 bg-[#FFF8FB] border-b border-[#F3D5E2] flex items-center justify-between gap-2.5 flex-shrink-0">
+        <div className="p-2.5 sm:p-3 bg-white border-b border-[#F3D5E2] flex items-center justify-between gap-2.5 flex-shrink-0">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-[#E91E63] shadow-xs flex-shrink-0 bg-slate-100">
               <img
@@ -105,7 +190,7 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
         </div>
       )}
 
-      {/* 3. Main Stats & Matchups Content */}
+      {/* 4. Main Stats & Matchups Content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 sm:p-3 custom-scrollbar flex flex-col gap-3">
         {/* If no hero selected */}
         {!heroName && (
@@ -123,24 +208,24 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="font-['Prompt'] font-bold text-[10.5px] tracking-wider text-[#1F2937] flex items-center gap-1">
-                <span>📊 HERO INFORMATION</span>
+                <span>📊 ประเภท A: สถิติการแข่งขันจาก LIQUIPEDIA</span>
               </span>
-              <span className="text-[9.5px] font-['Prompt'] text-slate-500">
-                LIQUEPEDIA STATS
+              <span className="text-[9px] font-['Prompt'] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                VERIFIED
               </span>
             </div>
 
-            {/* Check if Hero has tournament stats */}
-            {!heroStats ? (
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col items-center justify-center text-center">
+            {/* Check if Hero has tournament stats in active season */}
+            {!heroStats || heroStats.games === 0 ? (
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col items-center justify-center text-center">
                 <span className="px-2 py-0.5 rounded bg-white text-slate-700 font-['Prompt'] font-bold text-xs tracking-wider border border-slate-300 shadow-2xs">
-                  NO DATA
+                  ไม่มีข้อมูลการแข่งขันในฤดูกาลนี้
                 </span>
                 <span className="text-[11px] font-['Prompt'] text-slate-600 mt-2">
-                  ไม่มีข้อมูลสถิติในการแข่งขัน {status.tournamentName}
+                  ไม่มีการบันทึกการ Pick ใน {status.tournamentName}
                 </span>
                 <span className="text-[10px] font-['Prompt'] text-slate-400 mt-0.5">
-                  (ไม่มีการบันทึกการเล่นหรือแบนในทัวร์นาเมนต์นี้)
+                  (ระบบไม่สร้างสถิติจำลองตามหลัก Data Integrity)
                 </span>
               </div>
             ) : (
@@ -199,7 +284,9 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
 
                 {/* Additional Tournament Metrics */}
                 <div className="px-2.5 py-1.5 rounded-lg bg-[#FFF8FB] border border-[#F3D5E2] flex flex-wrap items-center justify-between gap-1 text-[10px] sm:text-[10.5px] font-['Prompt'] text-slate-600">
-                  <span className="whitespace-nowrap">Presence (P+B): <strong className="text-slate-800 font-bold">{heroStats.presenceRate.toFixed(1)}%</strong></span>
+                  <span className="whitespace-nowrap">
+                    Presence (P+B): <strong className="text-slate-800 font-bold">{heroStats.presenceRate.toFixed(1)}%</strong>
+                  </span>
                   {heroStats.blueWins !== undefined && heroStats.redWins !== undefined && (
                     <span className="whitespace-nowrap">
                       Blue: <strong className="text-sky-700 font-bold">{Math.round((heroStats.blueWins / ((heroStats.blueWins + (heroStats.blueLosses || 0)) || 1)) * 100)}%</strong> | Red: <strong className="text-rose-700 font-bold">{Math.round((heroStats.redWins / ((heroStats.redWins + (heroStats.redLosses || 0)) || 1)) * 100)}%</strong>
@@ -259,7 +346,7 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
                 <div className="flex items-center justify-between">
                   <span className="font-['Prompt'] font-bold text-[11px] tracking-wider text-sky-700 flex items-center gap-1.5">
                     <Swords size={12} />
-                    <span>VS OPPONENT PICKS (REAL-TIME)</span>
+                    <span>VS OPPONENT PICKS (REAL-TIME H2H)</span>
                   </span>
                   <span className="text-[10px] font-['Prompt'] text-slate-500">
                     {oppPicks.length} ENEMY PICKS
@@ -299,8 +386,8 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
                           </span>
                         </div>
                       ) : (
-                        <span className="text-[10px] font-['Prompt'] text-slate-400 italic flex-shrink-0">
-                          No Data
+                        <span className="text-[9.5px] font-['Prompt'] text-slate-400 italic flex-shrink-0">
+                          ไม่มีข้อมูลสถิติการแก้ทางโดยตรงจากแหล่งข้อมูลที่กำหนด
                         </span>
                       )}
                     </div>
@@ -314,7 +401,7 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
               <div className="flex items-center justify-between">
                 <span className="font-['Prompt'] font-bold text-[11px] tracking-wider text-emerald-700 flex items-center gap-1.5">
                   <TrendingUp size={13} />
-                  <span>STRONG AGAINST (ได้เปรียบ)</span>
+                  <span>STRONG AGAINST (ได้เปรียบ H2H จริง)</span>
                 </span>
                 {heroMatchups && heroMatchups.strongAgainst.length > 0 && (
                   <span className="text-[10px] font-['Prompt'] text-emerald-700 font-bold">
@@ -325,11 +412,11 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
 
               {!heroMatchups || heroMatchups.strongAgainst.length === 0 ? (
                 <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
-                  <span className="text-[11px] font-['Prompt'] text-slate-500 font-bold">
-                    NO DATA
+                  <span className="text-[10.5px] font-['Prompt'] text-slate-500 font-bold">
+                    ไม่มีข้อมูลสถิติการแก้ทางโดยตรงจากแหล่งข้อมูลที่กำหนด
                   </span>
-                  <p className="text-[10.5px] font-['Prompt'] text-slate-400 mt-0.5">
-                    ไม่มีข้อมูลสถิติฮีโร่ที่ได้เปรียบในทัวร์นาเมนต์นี้
+                  <p className="text-[10px] font-['Prompt'] text-slate-400 mt-0.5">
+                    (ไม่มีบันทึกการพบกันจริงที่มีอัตราชนะได้เปรียบใน {status.tournamentName})
                   </p>
                 </div>
               ) : (
@@ -370,7 +457,7 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
               <div className="flex items-center justify-between">
                 <span className="font-['Prompt'] font-bold text-[11px] tracking-wider text-rose-700 flex items-center gap-1.5">
                   <TrendingDown size={13} />
-                  <span>WEAK AGAINST (เสียเปรียบ)</span>
+                  <span>WEAK AGAINST (เสียเปรียบ H2H จริง)</span>
                 </span>
                 {heroMatchups && heroMatchups.weakAgainst.length > 0 && (
                   <span className="text-[10px] font-['Prompt'] text-rose-700 font-bold">
@@ -381,11 +468,11 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
 
               {!heroMatchups || heroMatchups.weakAgainst.length === 0 ? (
                 <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-center">
-                  <span className="text-[11px] font-['Prompt'] text-slate-500 font-bold">
-                    NO DATA
+                  <span className="text-[10.5px] font-['Prompt'] text-slate-500 font-bold">
+                    ไม่มีข้อมูลสถิติการแก้ทางโดยตรงจากแหล่งข้อมูลที่กำหนด
                   </span>
-                  <p className="text-[10.5px] font-['Prompt'] text-slate-400 mt-0.5">
-                    ไม่มีข้อมูลสถิติฮีโร่ที่เสียเปรียบในทัวร์นาเมนต์นี้
+                  <p className="text-[10px] font-['Prompt'] text-slate-400 mt-0.5">
+                    (ไม่มีบันทึกการพบกันจริงที่มีอัตราชนะเสียเปรียบใน {status.tournamentName})
                   </p>
                 </div>
               ) : (
@@ -437,16 +524,16 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
             </div>
 
             <p className="text-[10.5px] font-['Prompt'] text-slate-600 bg-emerald-50 p-2 rounded-lg border border-emerald-300">
-              🤝 อัตราชนะเมื่อ <strong className="text-slate-900 font-bold">{heroName}</strong> ได้เล่นร่วมทีมเดียวกับฮีโร่ตัวอื่น จากสถิติ RoV Pro League 2026 Summer
+              🤝 อัตราชนะเมื่อ <strong className="text-slate-900 font-bold">{heroName}</strong> ได้เล่นร่วมทีมเดียวกัน จาก Liquipedia {status.tournamentName}
             </p>
 
             {playedWith.length === 0 ? (
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center">
-                <span className="text-[11px] font-['Prompt'] text-slate-500 font-bold">
-                  NO PLAYED WITH DATA
+                <span className="text-[11px] font-['Prompt'] text-slate-600 font-bold">
+                  ไม่มีสถิติคู่หูโดยตรงจากแหล่งข้อมูลที่กำหนด
                 </span>
-                <p className="text-[10.5px] font-['Prompt'] text-slate-400 mt-1">
-                  ยังไม่มีข้อมูลคอมโบเพื่อนร่วมทีมสำหรับฮีโร่ตัวนี้
+                <p className="text-[10px] font-['Prompt'] text-slate-400 mt-1">
+                  (ยังไม่มีบันทึกการเล่นร่วมทีมใน {status.tournamentName})
                 </p>
               </div>
             ) : (
@@ -469,7 +556,7 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
                             {combo.allyHero}
                           </span>
                           <span className="text-[8.5px] font-['Prompt'] text-emerald-800 font-semibold px-1 py-0.2 rounded bg-emerald-100 flex-shrink-0">
-                            คู่ขา
+                            Direct Synergy
                           </span>
                         </div>
                         <span className="text-[9.5px] font-['Prompt'] text-slate-500 truncate">
@@ -513,16 +600,16 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
             </div>
 
             <p className="text-[10.5px] font-['Prompt'] text-slate-600 bg-sky-50 p-2 rounded-lg border border-sky-300">
-              ⚔️ อัตราชนะ Head-to-Head เมื่อ <strong className="text-slate-900 font-bold">{heroName}</strong> ต้องเจอกับฮีโร่ฝั่งตรงข้ามใน RoV Pro League 2026 Summer
+              ⚔️ อัตราชนะ Head-to-Head เมื่อ <strong className="text-slate-900 font-bold">{heroName}</strong> พบกับฮีโร่ฝั่งตรงข้ามใน {status.tournamentName}
             </p>
 
             {playedAgainst.length === 0 ? (
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center">
-                <span className="text-[11px] font-['Prompt'] text-slate-500 font-bold">
-                  NO PLAYED AGAINST DATA
+                <span className="text-[11px] font-['Prompt'] text-slate-600 font-bold">
+                  ไม่มีข้อมูลสถิติการแก้ทางโดยตรงจากแหล่งข้อมูลที่กำหนด
                 </span>
-                <p className="text-[10.5px] font-['Prompt'] text-slate-400 mt-1">
-                  ยังไม่มีข้อมูลเจอกับฮีโร่ฝั่งตรงข้ามสำหรับฮีโร่ตัวนี้
+                <p className="text-[10px] font-['Prompt'] text-slate-400 mt-1">
+                  (ยังไม่มีบันทึกการพบกันจริงใน {status.tournamentName})
                 </p>
               </div>
             ) : (
@@ -546,7 +633,9 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
                           </span>
                           <span
                             className={`text-[8.5px] font-['Prompt'] font-bold px-1 py-0.2 rounded border flex-shrink-0 ${
-                              m.diff >= 0 ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-rose-50 border-rose-300 text-rose-700'
+                              m.diff >= 0
+                                ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                                : 'bg-rose-50 border-rose-300 text-rose-700'
                             }`}
                           >
                             {m.diff >= 0 ? 'ได้เปรียบ' : 'เสียเปรียบ'}
@@ -582,20 +671,17 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
         )}
       </div>
 
-      {/* 4. Footer info */}
-      <div className="p-3 border-t border-[#F3D5E2] bg-[#FFF8FB] flex items-center justify-between text-[10.5px] font-['Prompt'] text-slate-600">
-        <div className="flex items-center gap-1">
-          <Database size={12} className="text-slate-400" />
-          <span>Liquipedia RoV Pro League 2026 Summer</span>
+      {/* 5. Footer info with verified sources notice */}
+      <div className="p-2.5 sm:p-3 border-t border-[#F3D5E2] bg-[#FFF8FB] flex flex-col gap-1 text-[10px] font-['Prompt'] text-slate-600">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 truncate">
+            <Database size={11} className="text-[#E91E63] flex-shrink-0" />
+            <span className="truncate">Liquipedia RPL 2026 ({status.season})</span>
+          </div>
+          <span className="text-[9px] font-semibold text-emerald-700 flex-shrink-0">
+            ✓ Strictly Verified
+          </span>
         </div>
-        {onOpenDataModal && (
-          <button
-            onClick={onOpenDataModal}
-            className="text-[#E91E63] hover:text-[#D81B60] font-['Prompt'] font-bold text-xs uppercase tracking-wider cursor-pointer"
-          >
-            Import Data →
-          </button>
-        )}
       </div>
     </aside>
   );

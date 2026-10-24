@@ -6,6 +6,7 @@
 
 import { HEROES } from '../data/heroes';
 import { RPL_2026_PLAYED_WITH_DATA, RPL_2026_PLAYED_AGAINST_DATA, RPL_2026_HEROES_DATA } from '../data/rpl2026SummerStats';
+import { HeroSynergy } from '../types/stats';
 import { META_SYNERGY, META_COUNTERS } from '../data/metaData';
 import { TeamSide, Hero } from '../types/draft';
 
@@ -358,7 +359,7 @@ export class DraftPredictionService {
 
       // Check Real RPL Played With Synergies
       const rplSynergies = RPL_2026_PLAYED_WITH_DATA[heroName] || [];
-      rplSynergies.slice(0, 3).forEach((syn) => {
+      rplSynergies.slice(0, 3).forEach((syn: HeroSynergy) => {
         const partnerName = syn.allyHero || syn.hero;
         if (!partnerName) return;
         if (syn.games >= 5 && syn.winRate >= 55) {
@@ -410,7 +411,7 @@ export class DraftPredictionService {
 
       // Check Real RPL Played With Synergies
       const rplSynergies = RPL_2026_PLAYED_WITH_DATA[heroName] || [];
-      rplSynergies.slice(0, 3).forEach((syn) => {
+      rplSynergies.slice(0, 3).forEach((syn: HeroSynergy) => {
         const partnerName = syn.allyHero || syn.hero;
         if (!partnerName) return;
         if (syn.games >= 5 && syn.winRate >= 55) {

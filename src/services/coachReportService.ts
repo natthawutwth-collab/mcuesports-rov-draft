@@ -199,7 +199,7 @@ class CoachReportService {
     let completenessTier: 'high' | 'moderate' | 'low' = 'low';
     let missingDataNotice = '';
 
-    if (completenessScore >= 80) {
+    if (completenessScore >= 70) {
       completenessTier = 'high';
       missingDataNotice = 'ข้อมูลมีความสมบูรณ์สูง มีทั้งประวัติ Scrim และสถิติโปรลีกรองรับการตัดสินใจ';
     } else if (completenessScore >= 50) {
@@ -211,7 +211,7 @@ class CoachReportService {
     }
 
     const dataCompleteness: DataCompletenessAudit = {
-      isComplete: completenessScore >= 75,
+      isComplete: completenessScore >= 70,
       completenessScore,
       completenessTier,
       scrimGamesFound: scrimGamesTotal,
