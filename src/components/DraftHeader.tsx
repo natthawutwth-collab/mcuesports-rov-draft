@@ -238,7 +238,7 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
             <button
               type="button"
               onClick={onToggleCoachPanel}
-              title={isSidePanelOpen ? 'ปิด Draft Assistant' : 'เปิด Draft Assistant (หน้าต่างช่วยวิเคราะห์ระหว่างดราฟต์)'}
+              title={isSidePanelOpen ? 'ปิดผู้ช่วยดราฟต์' : 'เปิดผู้ช่วยดราฟต์ (หน้าต่างช่วยวิเคราะห์และสถิติ)'}
               className={`font-['Prompt'] text-[9.5px] sm:text-[10.5px] font-bold tracking-wide border px-2 sm:px-2.5 py-0.5 rounded-lg cursor-pointer transition-all flex items-center gap-1.5 shadow-2xs ${
                 isSidePanelOpen
                   ? 'bg-[#E91E63] border-[#C2185B] text-white shadow-xs'
@@ -246,7 +246,7 @@ export const DraftHeader: React.FC<DraftHeaderProps> = ({
               }`}
             >
               <span>🎯</span>
-              <span>DRAFT ASSISTANT</span>
+              <span>ผู้ช่วยดราฟต์</span>
               {isSidePanelOpen && (
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               )}

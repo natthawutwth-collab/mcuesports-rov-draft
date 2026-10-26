@@ -32,3 +32,34 @@ export interface HeroPlayerBadge {
   category?: PlayerCategory;
   categories?: PlayerCategory[];
 }
+
+export interface CoachComboSubstitute {
+  originalHero: string;
+  substituteHero: string;
+  reason: string;
+}
+
+export interface CoachTeamCombo {
+  id: string;
+  name: string;
+  coreHeroes: string[];
+  substitutes: CoachComboSubstitute[];
+  timing: 'early' | 'mid' | 'late' | 'all';
+  notes: string;
+  updatedAt: number;
+}
+
+export interface TeamBalancePhase {
+  score: number; // 1-5
+  plan: string;
+  keyObjectives: string;
+}
+
+export interface CoachTeamBalance {
+  earlyGame: TeamBalancePhase;
+  midGame: TeamBalancePhase;
+  lateGame: TeamBalancePhase;
+  overallNotes: string;
+  updatedAt: number;
+}
+

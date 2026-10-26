@@ -14,6 +14,7 @@ import { StatsImportExportModal } from './components/StatsImportExportModal';
 import { PlayersPage } from './components/PlayersPage';
 import { DraftHistoryPage } from './components/DraftHistoryPage';
 import { DashboardView } from './components/DashboardView';
+import { SettingsView } from './components/SettingsView';
 import { AppView } from './components/BrandBar';
 import { PreDraftModal } from './components/PreDraftModal';
 import { SaveDraftModal } from './components/SaveDraftModal';
@@ -40,17 +41,17 @@ const SIDE_PANEL_OPEN_KEY = 'mcu_rov_side_panel_open';
 const SIDE_PANEL_TAB_KEY = 'mcu_rov_side_panel_tab';
 
 const VALID_VIEWS = new Set<AppView>([
-  'dashboard', 'draft', 'scouting', 'series_prep', 'simulator', 'scrim', 'calibration', 'match_prep', 'players', 'history'
+  'draft', 'players', 'history', 'settings', 'dashboard', 'scouting', 'series_prep', 'simulator', 'scrim', 'calibration', 'match_prep'
 ]);
 
 const getInitialView = (): AppView => {
   if (typeof window !== 'undefined') {
-    // 1. Check URL hash first (e.g. #dashboard, #players, #history, #draft, #scouting, #series_prep, #simulator)
+    // 1. Check URL hash first (e.g. #draft, #players, #history, #settings, #dashboard, etc.)
     const hash = window.location.hash.replace(/^#\/?/, '').toLowerCase() as AppView;
     if (VALID_VIEWS.has(hash)) {
       return hash;
     }
-    // 2. Check query param (e.g. ?view=scouting)
+    // 2. Check query param (e.g. ?view=settings)
     try {
       const params = new URLSearchParams(window.location.search);
       const queryView = (params.get('view') || params.get('tab')) as AppView;
@@ -70,7 +71,8 @@ const getInitialView = (): AppView => {
       // ignore
     }
   }
-  return 'dashboard';
+  // Default to primary Draft Arena as requested by user
+  return 'draft';
 };
 
 const getInitialSidePanelOpen = (): boolean => {
@@ -640,37 +642,60 @@ export default function App() {
       />
 
       {/* 2. Breadcrumb Navigation */}
-      {currentView === 'dashboard' ? (
-        <div className="flex items-center gap-2 text-[11px] font-['Prompt'] font-semibold text-slate-500 px-1">
-          <span className="text-slate-700">🏠 HOME</span>
-          <span>›</span>
-          <span className="text-[#E91E63] font-bold">COACH EXECUTIVE DASHBOARD</span>
-        </div>
-      ) : currentView === 'draft' ? (
+      {currentView === 'draft' ? (
         <div className="hidden sm:block">
           <Breadcrumb />
+        </div>
+      ) : currentView === 'players' ? (
+        <div className="flex items-center gap-2 text-[11px] font-['Prompt'] font-semibold text-slate-500 px-1">
+          <span
+            onClick={() => handleSelectView('draft')}
+            className="cursor-pointer hover:text-[#E91E63] transition-colors"
+          >
+            ⚔️ หน้าดราฟ
+          </span>
+          <span>›</span>
+          <span className="text-[#E91E63] font-bold">จัดการทีม (ROSTER & HERO POOL)</span>
         </div>
       ) : currentView === 'history' ? (
         <div className="flex items-center gap-2 text-[11px] font-['Prompt'] font-semibold text-slate-500 px-1">
           <span
-            onClick={() => handleSelectView('dashboard')}
+            onClick={() => handleSelectView('draft')}
             className="cursor-pointer hover:text-[#E91E63] transition-colors"
           >
-            🏠 HOME
+            ⚔️ หน้าดราฟ
           </span>
           <span>›</span>
-          <span className="text-amber-600 font-bold">DRAFT HISTORY & ARCHIVES</span>
+          <span className="text-amber-600 font-bold">สรุปดราฟ & ประวัติการแข่ง (DRAFT HISTORY)</span>
+        </div>
+      ) : currentView === 'settings' ? (
+        <div className="flex items-center gap-2 text-[11px] font-['Prompt'] font-semibold text-slate-500 px-1">
+          <span
+            onClick={() => handleSelectView('draft')}
+            className="cursor-pointer hover:text-[#E91E63] transition-colors"
+          >
+            ⚔️ หน้าดราฟ
+          </span>
+          <span>›</span>
+          <span className="text-[#E91E63] font-bold">ตั้งค่า & เครื่องมือขั้นสูง (SETTINGS & TOOLS)</span>
         </div>
       ) : (
         <div className="flex items-center gap-2 text-[11px] font-['Prompt'] font-semibold text-slate-500 px-1">
           <span
-            onClick={() => handleSelectView('dashboard')}
+            onClick={() => handleSelectView('draft')}
             className="cursor-pointer hover:text-[#E91E63] transition-colors"
           >
-            🏠 HOME
+            ⚔️ หน้าดราฟ
           </span>
           <span>›</span>
-          <span className="text-[#E91E63] font-bold">ROSTER & HERO POOL</span>
+          <span
+            onClick={() => handleSelectView('settings')}
+            className="cursor-pointer hover:text-[#E91E63] transition-colors"
+          >
+            ⚙️ ตั้งค่า
+          </span>
+          <span>›</span>
+          <span className="text-[#E91E63] font-bold uppercase">{currentView.replace('_', ' ')}</span>
         </div>
       )}
 
@@ -799,6 +824,31 @@ export default function App() {
             startNewDraft();
             showToast(`⚔️ เริ่ม Game ${nextGameNum}: ${rec.redTeam.teamName} (Blue) vs ${rec.blueTeam.teamName} (Red)`);
           }}
+        />
+      ) : currentView === 'settings' ? (
+        <SettingsView
+          onSelectView={handleSelectView}
+          teamId={teamId}
+          onChangeTeamId={(newId) => {
+            changeTeamId(newId);
+            showToast(`🔑 สลับไปใช้รหัสทีม "${newId}" เรียบร้อยแล้ว`);
+          }}
+          isCloudConnected={isPlayersCloudConnected}
+          isSyncing={isPlayersSyncing}
+          lastSyncedAt={playersLastSyncedAt}
+          onForceSync={async () => {
+            const ok = await forceSyncPlayersToCloud();
+            if (ok) showToast('☁️ บันทึกรายชื่อนักแข่งขึ้น Cloud สำเร็จแล้ว ข้อมูลจะซิงค์ไปทุกเครื่อง');
+            return ok;
+          }}
+          onReloadCloud={async () => {
+            const ok = await reloadPlayersFromCloud();
+            if (ok) showToast('🔄 ดึงข้อมูลนักแข่งล่าสุดจาก Cloud สำเร็จ');
+            return ok;
+          }}
+          onOpenDataModal={() => setIsDataModalOpen(true)}
+          draftsCount={historyRecords.length}
+          playersCount={players.length}
         />
       ) : (
         <>

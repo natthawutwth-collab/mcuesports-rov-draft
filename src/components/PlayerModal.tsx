@@ -43,6 +43,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
 }) => {
   const [name, setName] = useState(initialPlayer?.name || '');
   const [nickname, setNickname] = useState(initialPlayer?.nickname || '');
+  const [avatarUrl, setAvatarUrl] = useState(initialPlayer?.avatarUrl || '');
   const [position, setPosition] = useState<PlayerPosition>(initialPlayer?.position || 'DSL');
 
   // Categories state: array supporting up to 2 categories (Male+Mixed or Female+Mixed)
@@ -153,7 +154,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
       position,
       category: categories[0] || 'male',
       categories,
-      avatarUrl: initialPlayer?.avatarUrl || '',
+      avatarUrl: avatarUrl.trim() || initialPlayer?.avatarUrl || '',
       heroPool,
     });
     onClose();
@@ -215,6 +216,34 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                 }}
                 placeholder="เช่น ธนากรณ์ ใจดี"
                 className="w-full bg-[#FFF8FB] border border-[#F3D5E2] focus:border-[#E91E63] focus:bg-white rounded-lg px-3 py-2 text-[#1F2937] text-sm font-['Prompt'] outline-none transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Avatar URL field with preview */}
+          <div>
+            <label className="block text-xs font-['Prompt'] font-bold tracking-wider text-slate-700 uppercase mb-1">
+              รูปนักแข่ง (Avatar URL)
+            </label>
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl border border-[#F3D5E2] bg-slate-100 overflow-hidden flex-shrink-0 flex items-center justify-center">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => ((e.target as HTMLElement).style.display = 'none')}
+                  />
+                ) : (
+                  <span className="text-slate-400 font-bold text-xs">MCU</span>
+                )}
+              </div>
+              <input
+                type="url"
+                value={avatarUrl}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                placeholder="https://... (URL รูปภาพ หรือเว้นว่างเพื่อใช้โลโก้ทีม)"
+                className="flex-1 bg-[#FFF8FB] border border-[#F3D5E2] focus:border-[#E91E63] focus:bg-white rounded-lg px-3 py-2 text-[#1F2937] text-xs font-['Prompt'] outline-none transition-colors"
               />
             </div>
           </div>
@@ -397,7 +426,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                   }`}
                 >
                   <span>⭐</span>
-                  <span>Signature</span>
+                  <span>ถนัด (ดาวทอง)</span>
                 </button>
                 <button
                   type="button"
@@ -408,8 +437,8 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                       : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  <span>★</span>
-                  <span>Comfortable</span>
+                  <span>⭐</span>
+                  <span>พอเล่นได้ (ดาวเงิน)</span>
                 </button>
               </div>
             </div>
@@ -443,10 +472,10 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
               <div>
                 <div className="flex items-center gap-1 text-[11px] font-['Prompt'] font-bold text-[#B45309] tracking-wider uppercase mb-1.5">
                   <Star size={12} className="fill-[#F59E0B] text-[#F59E0B]" />
-                  <span>SIGNATURE HEROES (⭐ สีทอง)</span>
+                  <span>ฮีโร่ที่ถนัด (⭐ ดาวทอง: {signatures.length})</span>
                 </div>
                 {signatures.length === 0 ? (
-                  <span className="text-[11px] text-slate-400 font-['Prompt']">ยังไม่มีฮีโร่ระดับ Signature</span>
+                  <span className="text-[11px] text-slate-400 font-['Prompt']">ยังไม่มีฮีโร่ระดับ ถนัด (ดาวทอง)</span>
                 ) : (
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {signatures.map((item) => (
@@ -463,7 +492,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                         <button
                           type="button"
                           onClick={() => handleToggleTier(item.heroName)}
-                          title="เปลี่ยนเป็น Comfortable (★)"
+                          title="สลับเป็น พอเล่นได้ (ดาวเงิน)"
                           className="p-0.5 hover:bg-[#FDE68A] rounded text-[#B45309] cursor-pointer"
                         >
                           ⇄
@@ -486,10 +515,10 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
               <div className="pt-2 border-t border-[#F3D5E2]">
                 <div className="flex items-center gap-1 text-[11px] font-['Prompt'] font-bold text-slate-600 tracking-wider uppercase mb-1.5">
                   <Star size={12} className="fill-slate-400 text-slate-400" />
-                  <span>COMFORTABLE HEROES (★ สีเงิน)</span>
+                  <span>ฮีโร่ที่พอเล่นได้ (⭐ ดาวเงิน: {comfortables.length})</span>
                 </div>
                 {comfortables.length === 0 ? (
-                  <span className="text-[11px] text-slate-400 font-['Prompt']">ยังไม่มีฮีโร่ระดับ Comfortable</span>
+                  <span className="text-[11px] text-slate-400 font-['Prompt']">ยังไม่มีฮีโร่ระดับ พอเล่นได้ (ดาวเงิน)</span>
                 ) : (
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {comfortables.map((item) => (
