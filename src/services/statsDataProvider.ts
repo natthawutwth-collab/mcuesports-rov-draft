@@ -34,6 +34,13 @@ export const HERO_ALIAS_MAP: Record<string, string> = {
   'violet': 'Violet',
   'elansu': 'Elsu',
   'elsu': 'Elsu',
+  'diaochan': 'Diao Chan',
+  'diao chan': 'Diao Chan',
+  'เตียวเสี้ยน': 'Diao Chan',
+  'flowborn': 'Flowborn (Marksman)',
+  'flowborn (marksman)': 'Flowborn (Marksman)',
+  'flowborn mid': 'Flowborn (Mage)',
+  'flowborn (mage)': 'Flowborn (Mage)',
 };
 
 export const AUTHORIZED_SOURCES = {
@@ -383,11 +390,34 @@ class StatsDataProviderService {
       }
     }
 
-    if (!stats || stats.games === 0) {
+    if (!stats || (stats.games === 0 && (stats.bans ?? 0) === 0)) {
       return null;
     }
 
     return stats;
+  }
+
+  /**
+   * Returns verified stats across all 3 requested categories:
+   * 1. ข้อมูลรวม (Combined 2026: Summer + Winter, 576 games total)
+   * 2. ข้อมูล Winter 2026 (285 games total from Liquipedia)
+   * 3. ข้อมูล Summer 2026 (291 games total from Liquipedia)
+   */
+  public getHeroAllSeasonsStats(heroName: string): {
+    combined: HeroStats | null;
+    winter: HeroStats | null;
+    summer: HeroStats | null;
+    hasAnyData: boolean;
+  } {
+    const combined = this.getHeroStats(heroName, 'combined_2026');
+    const winter = this.getHeroStats(heroName, 'winter_2026');
+    const summer = this.getHeroStats(heroName, 'summer_2026');
+    return {
+      combined,
+      winter,
+      summer,
+      hasAnyData: Boolean(combined || winter || summer),
+    };
   }
 
   /**

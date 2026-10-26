@@ -35,6 +35,7 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
 }) => {
   const {
     heroStats,
+    allSeasonsStats,
     heroMatchups,
     liveMatchups,
     playedWith,
@@ -205,31 +206,270 @@ export const HeroStatsSidePanel: React.FC<HeroStatsSidePanelProps> = ({
 
         {/* HERO INFORMATION SECTION */}
         {heroName && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5">
+            {/* Header: Verified Liquipedia Badge & Source */}
             <div className="flex items-center justify-between">
               <span className="font-['Prompt'] font-bold text-[10.5px] tracking-wider text-[#1F2937] flex items-center gap-1">
-                <span>📊 ประเภท A: สถิติการแข่งขันจาก LIQUIPEDIA</span>
+                <span>📊 สถิติการแข่งขันจาก LIQUIPEDIA (RPL 2026)</span>
               </span>
-              <span className="text-[9px] font-['Prompt'] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                VERIFIED
+              <span className="text-[9px] font-['Prompt'] text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                100% REAL STATS
               </span>
             </div>
 
-            {/* Check if Hero has tournament stats in active season */}
+            {/* 3-WAY BREAKDOWN SECTION (1. ข้อมูลรวม 2. ข้อมูล Winter 2026 3. ข้อมูล Summer 2026) */}
+            <div className="flex flex-col gap-1.5 bg-[#FFF8FB] p-2 rounded-xl border border-[#F3D5E2]">
+              <div className="flex items-center justify-between">
+                <span className="font-['Prompt'] font-bold text-[10px] text-slate-700 flex items-center gap-1">
+                  <span>เปรียบเทียบสถิติ 3 ฤดูกาล:</span>
+                </span>
+                <span className="text-[9px] text-slate-500 font-medium">
+                  {allSeasonsStats.hasAnyData ? 'มีบันทึกการแข่งขัน' : 'ไม่มีสถิติใน RPL 2026'}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                {/* 1. ข้อมูลรวม (Combined 2026) */}
+                <div
+                  onClick={() => setActiveSeason('combined_2026')}
+                  className={`p-2 rounded-lg border transition-all cursor-pointer text-left ${
+                    activeSeason === 'combined_2026'
+                      ? 'bg-purple-50/90 border-[#89114D] shadow-xs ring-1 ring-[#89114D]/30'
+                      : 'bg-white hover:bg-purple-50/40 border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-[#89114D] flex items-center gap-1">
+                      <span className="w-4 h-4 rounded-full bg-[#89114D] text-white text-[9px] flex items-center justify-center font-black">
+                        1
+                      </span>
+                      <span>ข้อมูลรวม (Summer & Winter 2026)</span>
+                    </span>
+                    <span className="text-[8.5px] font-bold px-1.5 py-0.2 rounded bg-purple-100 text-purple-900 border border-purple-200">
+                      รวม 576 เกม
+                    </span>
+                  </div>
+
+                  {allSeasonsStats.combined ? (
+                    <div className="grid grid-cols-4 gap-1 mt-1.5 pt-1.5 border-t border-purple-100 text-center">
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-500 font-medium">WIN RATE</span>
+                        <span
+                          className={`text-xs font-black ${
+                            allSeasonsStats.combined.winRate >= 60
+                              ? 'text-emerald-700'
+                              : allSeasonsStats.combined.winRate >= 50
+                              ? 'text-sky-700'
+                              : 'text-rose-700'
+                          }`}
+                        >
+                          {allSeasonsStats.combined.winRate.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-500 font-medium">GAMES</span>
+                        <span className="text-xs font-bold text-slate-800">
+                          {allSeasonsStats.combined.games} ({allSeasonsStats.combined.wins}W-
+                          {allSeasonsStats.combined.losses}L)
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-500 font-medium">PICK RATE</span>
+                        <span className="text-xs font-bold text-slate-800">
+                          {allSeasonsStats.combined.pickRate.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-500 font-medium">BAN RATE</span>
+                        <span className="text-xs font-bold text-[#E91E63]">
+                          {allSeasonsStats.combined.banRate.toFixed(1)}% ({allSeasonsStats.combined.bans})
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[9.5px] text-slate-400 italic text-center py-1 mt-1 border-t border-purple-100">
+                      ไม่มีข้อมูลการแข่งขันรวมใน 2 ฤดูกาลนี้ (0 Pick / 0 Ban)
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. ข้อมูล Winter 2026 */}
+                <div
+                  onClick={() => setActiveSeason('winter_2026')}
+                  className={`p-2 rounded-lg border transition-all cursor-pointer text-left ${
+                    activeSeason === 'winter_2026'
+                      ? 'bg-sky-50/90 border-[#0284C7] shadow-xs ring-1 ring-[#0284C7]/30'
+                      : 'bg-white hover:bg-sky-50/40 border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-[#0284C7] flex items-center gap-1">
+                      <span className="w-4 h-4 rounded-full bg-[#0284C7] text-white text-[9px] flex items-center justify-center font-black">
+                        2
+                      </span>
+                      <span>ข้อมูล Winter 2026</span>
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[8.5px] font-bold px-1.5 py-0.2 rounded bg-sky-100 text-sky-900 border border-sky-200">
+                        285 เกม
+                      </span>
+                      <a
+                        href="https://liquipedia.net/honorofkings/RoV_Pro_League/2026/Winter/Statistics"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-slate-400 hover:text-sky-600 transition-colors"
+                        title="เปิดหน้าสถิติ Liquipedia Winter 2026"
+                      >
+                        <ExternalLink size={11} />
+                      </a>
+                    </div>
+                  </div>
+
+                  {allSeasonsStats.winter ? (
+                    <div className="grid grid-cols-4 gap-1 mt-1.5 pt-1.5 border-t border-sky-100 text-center">
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-500 font-medium">WIN RATE</span>
+                        <span
+                          className={`text-xs font-black ${
+                            allSeasonsStats.winter.winRate >= 60
+                              ? 'text-emerald-700'
+                              : allSeasonsStats.winter.winRate >= 50
+                              ? 'text-sky-700'
+                              : 'text-rose-700'
+                          }`}
+                        >
+                          {allSeasonsStats.winter.games > 0
+                            ? `${allSeasonsStats.winter.winRate.toFixed(1)}%`
+                            : '0%'}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-500 font-medium">GAMES</span>
+                        <span className="text-xs font-bold text-slate-800">
+                          {allSeasonsStats.winter.games} ({allSeasonsStats.winter.wins}W-
+                          {allSeasonsStats.winter.losses}L)
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-500 font-medium">PICK RATE</span>
+                        <span className="text-xs font-bold text-slate-800">
+                          {allSeasonsStats.winter.pickRate.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-500 font-medium">BAN RATE</span>
+                        <span className="text-xs font-bold text-[#E91E63]">
+                          {allSeasonsStats.winter.banRate.toFixed(1)}% ({allSeasonsStats.winter.bans})
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[9.5px] text-slate-400 italic text-center py-1 mt-1 border-t border-sky-100">
+                      ไม่มีข้อมูลในฤดูกาล Winter 2026 (0 Pick / 0 Ban)
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. ข้อมูล Summer 2026 */}
+                <div
+                  onClick={() => setActiveSeason('summer_2026')}
+                  className={`p-2 rounded-lg border transition-all cursor-pointer text-left ${
+                    activeSeason === 'summer_2026'
+                      ? 'bg-amber-50/90 border-[#D97706] shadow-xs ring-1 ring-[#D97706]/30'
+                      : 'bg-white hover:bg-amber-50/40 border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-[#D97706] flex items-center gap-1">
+                      <span className="w-4 h-4 rounded-full bg-[#D97706] text-white text-[9px] flex items-center justify-center font-black">
+                        3
+                      </span>
+                      <span>ข้อมูล Summer 2026</span>
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[8.5px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-200">
+                        291 เกม
+                      </span>
+                      <a
+                        href="https://liquipedia.net/honorofkings/RoV_Pro_League/2026/Summer/Statistics"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-slate-400 hover:text-amber-600 transition-colors"
+                        title="เปิดหน้าสถิติ Liquipedia Summer 2026"
+                      >
+                        <ExternalLink size={11} />
+                      </a>
+                    </div>
+                  </div>
+
+                  {allSeasonsStats.summer ? (
+                    <div className="grid grid-cols-4 gap-1 mt-1.5 pt-1.5 border-t border-amber-100 text-center">
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-500 font-medium">WIN RATE</span>
+                        <span
+                          className={`text-xs font-black ${
+                            allSeasonsStats.summer.winRate >= 60
+                              ? 'text-emerald-700'
+                              : allSeasonsStats.summer.winRate >= 50
+                              ? 'text-sky-700'
+                              : 'text-rose-700'
+                          }`}
+                        >
+                          {allSeasonsStats.summer.games > 0
+                            ? `${allSeasonsStats.summer.winRate.toFixed(1)}%`
+                            : '0%'}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-500 font-medium">GAMES</span>
+                        <span className="text-xs font-bold text-slate-800">
+                          {allSeasonsStats.summer.games} ({allSeasonsStats.summer.wins}W-
+                          {allSeasonsStats.summer.losses}L)
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-500 font-medium">PICK RATE</span>
+                        <span className="text-xs font-bold text-slate-800">
+                          {allSeasonsStats.summer.pickRate.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-500 font-medium">BAN RATE</span>
+                        <span className="text-xs font-bold text-[#E91E63]">
+                          {allSeasonsStats.summer.banRate.toFixed(1)}% ({allSeasonsStats.summer.bans})
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-[9.5px] text-slate-400 italic text-center py-1 mt-1 border-t border-amber-100">
+                      ไม่มีข้อมูลในฤดูกาล Summer 2026 (0 Pick / 0 Ban)
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Check if Hero has tournament stats in currently active season */}
             {!heroStats || heroStats.games === 0 ? (
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col items-center justify-center text-center">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex flex-col items-center justify-center text-center">
                 <span className="px-2 py-0.5 rounded bg-white text-slate-700 font-['Prompt'] font-bold text-xs tracking-wider border border-slate-300 shadow-2xs">
-                  ไม่มีข้อมูลการแข่งขันในฤดูกาลนี้
+                  ไม่มีข้อมูลการแข่งขันใน {status.tournamentName}
                 </span>
-                <span className="text-[11px] font-['Prompt'] text-slate-600 mt-2">
-                  ไม่มีการบันทึกการ Pick ใน {status.tournamentName}
+                <span className="text-[10.5px] font-['Prompt'] text-slate-600 mt-1.5">
+                  ไม่มีการบันทึกการ Pick ในฤดูกาลที่เลือก ({heroStats?.bans ? `โดนแบน ${heroStats.bans} ครั้ง` : '0 Pick / 0 Ban'})
                 </span>
-                <span className="text-[10px] font-['Prompt'] text-slate-400 mt-0.5">
+                <span className="text-[9.5px] font-['Prompt'] text-slate-400 mt-0.5">
                   (ระบบไม่สร้างสถิติจำลองตามหลัก Data Integrity)
                 </span>
               </div>
             ) : (
               <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between text-[10px] font-bold text-slate-600">
+                  <span>รายละเอียดเชิงลึกมุมมองปัจจุบัน ({status.tournamentName}):</span>
+                </div>
+
                 {/* 3 Key Metric Cards */}
                 <div className="grid grid-cols-3 gap-1.5">
                   {/* WIN RATE */}

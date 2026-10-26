@@ -54,6 +54,7 @@ import {
   Clock,
   Compass,
   BookOpen,
+  ExternalLink,
 } from 'lucide-react';
 
 export type AssistantSituationalMode = 'inspect' | 'counter_opp' | 'banned_combos' | 'smart_ban' | 'summary';
@@ -121,6 +122,12 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
     if (!heroName) return null;
     return allHeroes.find((h) => h.name.toLowerCase() === heroName.toLowerCase()) || null;
   }, [heroName, allHeroes]);
+
+  // 3-Seasons Statistics Breakdown for Inspected Hero (1. ข้อมูลรวม 2. Winter 2026 3. Summer 2026)
+  const inspectedHeroAllStats = useMemo(() => {
+    if (!currentHero) return null;
+    return statsDataProvider.getHeroAllSeasonsStats(currentHero.name);
+  }, [currentHero]);
 
   // Situational Tab Mode State:
   const [situationalMode, setSituationalMode] = useState<AssistantSituationalMode>(() => {
@@ -1166,6 +1173,171 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
                       </button>
                     )}
                   </div>
+
+                  {/* 3-Season RPL 2026 Breakdown (1. ข้อมูลรวม 2. Winter 2026 3. Summer 2026) */}
+                  {inspectedHeroAllStats && (
+                    <div className="mt-2 pt-2 border-t border-[#F3D5E2] flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-700 flex items-center gap-1">
+                          <span>📊 สถิติ RPL 2026 (100% Liquipedia Verified):</span>
+                        </span>
+                        <a
+                          href="https://liquipedia.net/honorofkings/RoV_Pro_League/2026/Winter/Statistics"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[9px] font-bold text-sky-700 hover:text-sky-900 flex items-center gap-0.5"
+                          title="เปิดหน้าสถิติ Liquipedia Winter 2026"
+                        >
+                          <ExternalLink size={10} />
+                          <span>Liquipedia</span>
+                        </a>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
+                        {/* 1. ข้อมูลรวม */}
+                        <div className="p-1.5 rounded-lg bg-purple-50/70 border border-purple-200 flex flex-col gap-0.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9.5px] font-bold text-[#89114D] flex items-center gap-0.5">
+                              <span>1. ข้อมูลรวม</span>
+                            </span>
+                            <span className="text-[8px] font-bold px-1 py-0.1 rounded bg-purple-200/80 text-purple-900">
+                              576 เกม
+                            </span>
+                          </div>
+                          {inspectedHeroAllStats.combined ? (
+                            <div className="flex flex-col text-[9.5px]">
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500 text-[8.5px]">WR:</span>
+                                <span
+                                  className={`font-black ${
+                                    inspectedHeroAllStats.combined.winRate >= 60
+                                      ? 'text-emerald-700'
+                                      : inspectedHeroAllStats.combined.winRate >= 50
+                                      ? 'text-sky-700'
+                                      : 'text-rose-700'
+                                  }`}
+                                >
+                                  {inspectedHeroAllStats.combined.winRate.toFixed(1)}%
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500 text-[8.5px]">Pick:</span>
+                                <span className="font-medium text-slate-700">
+                                  {inspectedHeroAllStats.combined.games} เกม ({inspectedHeroAllStats.combined.pickRate.toFixed(1)}%)
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500 text-[8.5px]">Ban:</span>
+                                <span className="font-medium text-[#E91E63]">
+                                  {inspectedHeroAllStats.combined.bans} แบน ({inspectedHeroAllStats.combined.banRate.toFixed(1)}%)
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-[8.5px] text-slate-400 italic py-1 text-center">
+                              ไม่มีข้อมูลรวม (0 Pick / 0 Ban)
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 2. ข้อมูล Winter 2026 */}
+                        <div className="p-1.5 rounded-lg bg-sky-50/70 border border-sky-200 flex flex-col gap-0.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9.5px] font-bold text-[#0284C7] flex items-center gap-0.5">
+                              <span>2. Winter 2026</span>
+                            </span>
+                            <span className="text-[8px] font-bold px-1 py-0.1 rounded bg-sky-200/80 text-sky-900">
+                              285 เกม
+                            </span>
+                          </div>
+                          {inspectedHeroAllStats.winter ? (
+                            <div className="flex flex-col text-[9.5px]">
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500 text-[8.5px]">WR:</span>
+                                <span
+                                  className={`font-black ${
+                                    inspectedHeroAllStats.winter.winRate >= 60
+                                      ? 'text-emerald-700'
+                                      : inspectedHeroAllStats.winter.winRate >= 50
+                                      ? 'text-sky-700'
+                                      : 'text-rose-700'
+                                  }`}
+                                >
+                                  {inspectedHeroAllStats.winter.games > 0
+                                    ? `${inspectedHeroAllStats.winter.winRate.toFixed(1)}%`
+                                    : '0%'}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500 text-[8.5px]">Pick:</span>
+                                <span className="font-medium text-slate-700">
+                                  {inspectedHeroAllStats.winter.games} เกม ({inspectedHeroAllStats.winter.pickRate.toFixed(1)}%)
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500 text-[8.5px]">Ban:</span>
+                                <span className="font-medium text-[#E91E63]">
+                                  {inspectedHeroAllStats.winter.bans} แบน ({inspectedHeroAllStats.winter.banRate.toFixed(1)}%)
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-[8.5px] text-slate-400 italic py-1 text-center">
+                              ไม่มีข้อมูลใน Winter (0 Pick / 0 Ban)
+                            </span>
+                          )}
+                        </div>
+
+                        {/* 3. ข้อมูล Summer 2026 */}
+                        <div className="p-1.5 rounded-lg bg-amber-50/70 border border-amber-200 flex flex-col gap-0.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[9.5px] font-bold text-[#D97706] flex items-center gap-0.5">
+                              <span>3. Summer 2026</span>
+                            </span>
+                            <span className="text-[8px] font-bold px-1 py-0.1 rounded bg-amber-200/80 text-amber-900">
+                              291 เกม
+                            </span>
+                          </div>
+                          {inspectedHeroAllStats.summer ? (
+                            <div className="flex flex-col text-[9.5px]">
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500 text-[8.5px]">WR:</span>
+                                <span
+                                  className={`font-black ${
+                                    inspectedHeroAllStats.summer.winRate >= 60
+                                      ? 'text-emerald-700'
+                                      : inspectedHeroAllStats.summer.winRate >= 50
+                                      ? 'text-sky-700'
+                                      : 'text-rose-700'
+                                  }`}
+                                >
+                                  {inspectedHeroAllStats.summer.games > 0
+                                    ? `${inspectedHeroAllStats.summer.winRate.toFixed(1)}%`
+                                    : '0%'}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500 text-[8.5px]">Pick:</span>
+                                <span className="font-medium text-slate-700">
+                                  {inspectedHeroAllStats.summer.games} เกม ({inspectedHeroAllStats.summer.pickRate.toFixed(1)}%)
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-slate-500 text-[8.5px]">Ban:</span>
+                                <span className="font-medium text-[#E91E63]">
+                                  {inspectedHeroAllStats.summer.bans} แบน ({inspectedHeroAllStats.summer.banRate.toFixed(1)}%)
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-[8.5px] text-slate-400 italic py-1 text-center">
+                              ไม่มีข้อมูลใน Summer (0 Pick / 0 Ban)
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Tactical Inspector Sub-Navigation Filter Bar */}

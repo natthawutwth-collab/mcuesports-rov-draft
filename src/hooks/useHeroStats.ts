@@ -19,6 +19,12 @@ export function useHeroStats(selectedHeroName: string | null = null, oppPicks: s
     return statsDataProvider.getHeroStats(selectedHeroName);
   }, [selectedHeroName, status]);
 
+  // All 3-Seasons Stats Comparison (1. ข้อมูลรวม, 2. Winter 2026, 3. Summer 2026)
+  const allSeasonsStats = useMemo(() => {
+    if (!selectedHeroName) return { combined: null, winter: null, summer: null, hasAnyData: false };
+    return statsDataProvider.getHeroAllSeasonsStats(selectedHeroName);
+  }, [selectedHeroName, status]);
+
   // Hero Matchups (Strong Against / Weak Against, or null for "No Data")
   const heroMatchups = useMemo(() => {
     if (!selectedHeroName) return null;
@@ -69,6 +75,7 @@ export function useHeroStats(selectedHeroName: string | null = null, oppPicks: s
     activeSeason,
     setActiveSeason,
     heroStats,
+    allSeasonsStats,
     heroMatchups,
     liveMatchups,
     playedWith,
@@ -77,6 +84,7 @@ export function useHeroStats(selectedHeroName: string | null = null, oppPicks: s
     loadFromCsv,
     loadFromApi,
     resetToDefault,
+    getHeroAllSeasonsStats: statsDataProvider.getHeroAllSeasonsStats.bind(statsDataProvider),
     getHeadToHead: statsDataProvider.getHeadToHead.bind(statsDataProvider),
     getLiveDraftSynergies: statsDataProvider.getLiveDraftSynergies.bind(statsDataProvider),
     getHeroSynergyPair: statsDataProvider.getHeroSynergyPair.bind(statsDataProvider),

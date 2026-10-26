@@ -663,6 +663,7 @@ export const HEROES: Hero[] = [
     "avatarUrl": "https://res.cloudinary.com/dtzdhbllb/image/upload/Diao_Chan.jpg",
     "tags": [
       "diaochan",
+      "diao chan",
       "เตียวเสี้ยน",
       "mid",
       "mage"
@@ -923,6 +924,7 @@ export const HEROES: Hero[] = [
     "avatarUrl": "https://res.cloudinary.com/dtzdhbllb/image/upload/v1775747198/Flowborn.png",
     "tags": [
       "flowborn",
+      "flowborn (marksman)",
       "โฟลว์บอร์น",
       "adl",
       "marksman"
@@ -943,6 +945,7 @@ export const HEROES: Hero[] = [
     "avatarUrl": "https://res.cloudinary.com/dtzdhbllb/image/upload/v1777620554/Flowborn_mid.jpg",
     "tags": [
       "flowborn mid",
+      "flowborn (mage)",
       "โฟลว์บอร์น (มิด)",
       "mid",
       "mage"
