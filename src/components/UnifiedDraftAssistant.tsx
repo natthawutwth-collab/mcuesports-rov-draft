@@ -22,6 +22,7 @@ import {
 import { getHeroImageUrl, HEROES } from '../data/heroes';
 import { statsDataProvider } from '../services/statsDataProvider';
 import { RPL_2026_PRO_COMPS } from '../data/proMetaComps';
+import { ProDraftIntelligencePanel } from './ProDraftIntelligencePanel';
 import {
   X,
   Swords,
@@ -41,7 +42,9 @@ import {
   ExternalLink,
   Flame,
   FileText,
-  AlertCircle
+  AlertCircle,
+  Sparkles,
+  Target,
 } from 'lucide-react';
 
 interface UnifiedDraftAssistantProps {
@@ -102,6 +105,9 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
   onOpenPostDraftModal,
   matchMetadata,
 }) => {
+  // Assistant Mode: 'intelligence' (4 Pro categories) vs 'decision' (3 core coach questions)
+  const [assistantMode, setAssistantMode] = useState<'intelligence' | 'decision'>('intelligence');
+
   // Collapsible state for Section 5 (Deep-Dive Stats & Synergies)
   const [isDetailsExpanded, setIsDetailsExpanded] = useState<boolean>(false);
 
@@ -328,18 +334,77 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
       </div>
 
       {/* ───────────────────────────────────────────────────────────── */}
-      {/* Scrollable Content Container (Clean, Dense, Non-bloated)        */}
+      {/* Assistant Mode Switcher: Pro 4-Category vs Decision Assistant */}
       {/* ───────────────────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-3 space-y-3 bg-[#FFF8FB]/30 text-xs">
-        {/* ========================================================= */}
-        {/* SECTION 1: คำแนะนำหลัก (Main Recommendation - BAN or PICK)  */}
-        {/* ========================================================= */}
-        <div className="bg-white border border-[#F3D5E2] rounded-xl p-3 shadow-2xs space-y-2.5">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-[11px] text-slate-500 uppercase flex items-center gap-1.5">
-              <span>{isBanTurn ? '🚫' : '🎯'}</span>
-              <span>1. คำแนะนำหลัก ({isBanTurn ? 'จังหวะ BAN' : 'จังหวะ PICK'})</span>
-            </span>
+      <div className="px-2.5 pt-2 pb-1.5 bg-[#FFF0F5]/60 border-b border-[#F3D5E2] flex items-center gap-1.5 flex-shrink-0">
+        <button
+          type="button"
+          onClick={() => setAssistantMode('intelligence')}
+          className={`flex-1 py-1.5 px-2 rounded-xl text-[10.5px] font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1 border shadow-2xs ${
+            assistantMode === 'intelligence'
+              ? 'bg-[#E91E63] text-white border-[#C2185B] shadow-xs'
+              : 'bg-white text-slate-700 hover:text-[#E91E63] border-[#F3D5E2]'
+          }`}
+          title="แผงวิเคราะห์ 4 หมวด: ชนะ/แพ้ทาง, เล่นคู่กันดี, ควรแบนตัวไหน, Combo ยอดนิยม"
+        >
+          <Sparkles size={12} />
+          <span>4 หมวดวิเคราะห์ (Pro Panel)</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setAssistantMode('decision')}
+          className={`flex-1 py-1.5 px-2 rounded-xl text-[10.5px] font-bold transition-all text-center cursor-pointer flex items-center justify-center gap-1 border shadow-2xs ${
+            assistantMode === 'decision'
+              ? 'bg-[#E91E63] text-white border-[#C2185B] shadow-xs'
+              : 'bg-white text-slate-700 hover:text-[#E91E63] border-[#F3D5E2]'
+          }`}
+          title="ตอบ 3 คำถามโค้ช: แนะนำหลัก, ผู้เล่นที่เหมาะสม, ตัวเลือกสำรอง"
+        >
+          <Target size={12} />
+          <span>ตอบ 3 คำถาม (Player Fit)</span>
+        </button>
+      </div>
+
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* Content Body: Mode 1 (Pro 4 Categories) or Mode 2 (Decision)   */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      {assistantMode === 'intelligence' ? (
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          <ProDraftIntelligencePanel
+            focusHero={activeFocusHero}
+            isBanTurn={isBanTurn}
+            isPickTurn={isPickTurn}
+            activeTurnTeam={activeTurnTeam}
+            isDraftComplete={isDraftComplete}
+            bannedHeroNames={bannedHeroNames}
+            pickedHeroNames={pickedHeroNames}
+            bluePicks={bluePicks}
+            redPicks={redPicks}
+            blueBans={blueBans}
+            redBans={redBans}
+            blueTeamName={blueTeamName}
+            redTeamName={redTeamName}
+            blueIsUs={blueIsUs}
+            smartBans={analysis.smartBans}
+            allHeroes={allHeroes}
+            players={players}
+            heroToPlayersMap={heroToPlayersMap}
+            onSelectHeroToInspect={onSelectHeroToInspect}
+            onPickHeroDirectly={onPickHeroDirectly}
+          />
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-3 space-y-3 bg-[#FFF8FB]/30 text-xs">
+          {/* ========================================================= */}
+          {/* SECTION 1: คำแนะนำหลัก (Main Recommendation - BAN or PICK)  */}
+          {/* ========================================================= */}
+          <div className="bg-white border border-[#F3D5E2] rounded-xl p-3 shadow-2xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-[11px] text-slate-500 uppercase flex items-center gap-1.5">
+                <span>{isBanTurn ? '🚫' : '🎯'}</span>
+                <span>1. คำแนะนำหลัก ({isBanTurn ? 'จังหวะ BAN' : 'จังหวะ PICK'})</span>
+              </span>
 
             {previewHero && (
               <span className="text-[9.5px] font-bold px-1.5 py-0.2 rounded bg-amber-50 text-amber-700 border border-amber-200" title="คลิกดูเพื่อพิจารณา ไม่เปลี่ยนสถานะดราฟต์">
@@ -819,6 +884,7 @@ export const UnifiedDraftAssistant: React.FC<UnifiedDraftAssistantProps> = ({
           )}
         </div>
       </div>
-    </div>
-  );
+    )}
+  </div>
+);
 };
